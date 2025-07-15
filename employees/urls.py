@@ -1,5 +1,6 @@
 from django.urls import path
 from employees import views
+from employees.views import EmployeeListAdd, EmployeeDetail
 
 urlpatterns = [
     # ==================== Personal Views ====================
@@ -7,6 +8,8 @@ urlpatterns = [
     path('personal/sony-accounts/', views.EmployeePanelOwnedSonyAccountList.as_view(), name='owned-sony-account-list'),
     path('personal/sony-accounts/<int:pk>/', views.EmployeePanelSonyAccountDetail.as_view(),
          name='sony-account-detail'),
+    path('personal/sony-accounts/choices', views.EmployeePanelSonyAccountChoices.as_view(),
+         name='sony-accounts-choices'),
     path('personal/sony-accounts/order/<int:order_id>/', views.EmployeePanelSonyAccountByOrderGamesView.as_view(),
          name='sony-account-by-order-games'),
 
@@ -28,7 +31,7 @@ urlpatterns = [
     path('products/', views.EmployeePanelProductList.as_view(), name='product-list'),
     path('products/<int:pk>/', views.EmployeePanelProductDetail.as_view(), name='product-detail'),
     path('products/add/', views.EmployeePanelAddProduct.as_view(), name='product-add'),
-
+    path('products/choices', views.EmployeePanelProductChoices.as_view(), name='product-choices'),
     # ==================== SonyAccounts Views ====================
     path('sony-accounts/new/', views.EmployeePanelGetNewSonyAccount.as_view(), name='sony-account-new'),
     path('sony-accounts/', views.EmployeePanelSonyAccountList.as_view(), name='sony-account-list'),
@@ -37,8 +40,8 @@ urlpatterns = [
     path('product-orders/', views.EmployeePanelProductOrderList.as_view(), name='product-order-list'),
     path('product-orders/<int:pk>/', views.EmployeePanelProductOrderDetail.as_view(), name='product-order-detail'),
     path('product-orders/add/', views.EmployeePanelAddOrder.as_view(), name='product-order-add'),
-
-    # ==================== AccountOrders Views ====================
+    path('product-orders/choices', views.EmployeePanelProductOrderChoices.as_view(), name='product-order-choices'),
+    # ==================== GameOrders Views ====================
     path('game-orders/', views.EmployeePanelGameOrderList.as_view(), name='accepted-game-order-list'),
     path('game-orders/<int:pk>/', views.EmployeePanelGameOrderDetail.as_view(), name='game-order-detail'),
 
@@ -50,4 +53,14 @@ urlpatterns = [
     path('transactions/', views.EmployeePanelTransactionList.as_view(), name='transaction-list'),
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),
     path('transactions/add/', views.EmployeePanelAddTransaction.as_view(), name='transaction-add'),
+    path('transactions/choices', views.EmployeePanelTransactionChoices.as_view(), name='-choices'),
+    # ==================== Employee Views ====================
+    path('user/create/', views.UserCreat.as_view(), name='user-create'),
+    path('', views.EmployeeListAdd.as_view(), name='list-add'),
+    path('<int:pk>/', views.EmployeeDetail.as_view(), name='employee-detail'),
+
+    # ==================== Customer Views ====================
+    path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),
+    path('customer/<int:pk>/', views.CustomerDetail.as_view(), name='customer-detail'),
+
 ]

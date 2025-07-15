@@ -19,6 +19,8 @@ class Employee(models.Model):
     has_access_to_accounts = models.BooleanField(default=False)
     has_access_to_products = models.BooleanField(default=False)
     has_access_to_customers = models.BooleanField(default=False)
+    has_access_to_employees = models.BooleanField(default=False)
+    has_access_to_add_users = models.BooleanField(default=False)
     has_access_to_transactions = models.BooleanField(default=False)
     has_access_to_calls = models.BooleanField(default=False)
     has_access_to_chat = models.BooleanField(default=False)

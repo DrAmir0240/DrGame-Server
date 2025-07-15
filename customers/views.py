@@ -180,17 +180,3 @@ class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
             is_deleted=False
         ).select_related('transaction_type', 'game_order', 'repair_order', 'order').distinct()
 
-# class CustomerProfileUpdateAPIView(generics.UpdateAPIView):
-#
-#     def get_object(self):
-#         try:
-#
-#             return BusinessCustomer.objects.get(user=self.request.user)
-#         except BusinessCustomer.DoesNotExist:
-#
-#             return get_object_or_404(Customer, user=self.request.user)
-#
-#     def get_serializer_class(self):
-#         if isinstance(self.request.user, BusinessCustomer):
-#             return BusinessCustomerProfileSerializer
-#         return CustomerProfileSerializer

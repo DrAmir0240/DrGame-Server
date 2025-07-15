@@ -26,7 +26,7 @@ class Order(models.Model):
     order_type = models.ForeignKey(OrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3)
     description = models.TextField(null=True, blank=True)
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True)
+    product = models.ManyToManyField(Product, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -107,30 +107,12 @@ class CourseOrder(models.Model):
         return f'Order #{self.id} - {self.customer} - {self.course}'
 
 
-class TransactionType(models.Model):
-    title = models.CharField(max_length=100, null=True)
-    description = models.TextField(null=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.title
-
-
 class Transaction(models.Model):
     payer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='payer')
     payer_str = models.CharField(max_length=100, null=True, blank=True)
     receiver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='receiver')
     receiver_str = models.CharField(max_length=100, null=True, blank=True)
-    transaction_type = models.ForeignKey(TransactionType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3)
-    status = models.CharField(max_length=10, null=True, choices=(
-        ('Success', 'موفق'),
-        ('Suspended', 'تعلیق'),
-        ('Cancelled', 'کنسل شده'),
-        ('Failed', 'ناموفق')
-    ))
     game_order = models.ForeignKey(GameOrder, on_delete=models.SET_NULL, blank=True, null=True,
                                    related_name='game_order')
     repair_order = models.ForeignKey(RepairOrder, on_delete=models.SET_NULL, blank=True, null=True,
@@ -150,5 +132,16 @@ class Transaction(models.Model):
             raise ValueError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
 
         super().save(*args, **kwargs)
+
     def __str__(self):
-        return f'{self.transaction_type.title}: {self.amount} - {self.description}'
+        if self.payer:
+            payer = self.payer
+        else:
+            payer = self.payer_str
+
+        if self.receiver:
+            receiver = self.receiver
+        else:
+            receiver = self.receiver_str
+
+        return f'تراکنش {payer} به {receiver}'

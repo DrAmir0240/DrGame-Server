@@ -1,5 +1,5 @@
 from django.contrib import admin
-from payments.models import TransactionType, Transaction, OrderType, Order, RepairOrder, GameOrder, GameOrderType, \
+from payments.models import Transaction, OrderType, Order, RepairOrder, GameOrder, GameOrderType, \
     RepairOrderType
 
 
@@ -41,13 +41,6 @@ class RepairOrderTypeAdmin(admin.ModelAdmin):
 
 @admin.register(RepairOrder)
 class RepairOrderAdmin(admin.ModelAdmin):
-    class Media:
-        fields = '__all__'
-        search_fields = '__all__'
-
-
-@admin.register(TransactionType)
-class TransactionTypeAdmin(admin.ModelAdmin):
     class Media:
         fields = '__all__'
         search_fields = '__all__'

@@ -1,9 +1,10 @@
 from rest_framework import serializers
 
 from accounts.models import CustomUser
-from employees.models import EmployeeTask
-from payments.models import GameOrder, Transaction, Order, RepairOrder, TransactionType
-from storage.models import Game, SonyAccount, Product
+from customers.models import Customer
+from employees.models import EmployeeTask, Employee
+from payments.models import GameOrder, Transaction, Order, RepairOrder, GameOrderType
+from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, CustomerConsole
 
 
 class SoftDeleteSerializerMixin:
@@ -11,6 +12,30 @@ class SoftDeleteSerializerMixin:
         instance.is_deleted = True
         instance.save()
         return instance
+
+
+class CustomUserSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['phone']
+        read_only_fields = ['is_deleted', 'is_active', 'is_staff', 'is_superuser']
+
+
+class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(read_only=True, slug_field='phone')
+
+    class Meta:
+        model = Employee
+        fields = "__all__"
+
+
+
+class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(read_only=True, slug_field='phone')
+
+    class Meta:
+        model = Customer
+        fields = "__all__"
 
 
 class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
@@ -46,10 +71,6 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
 
 
 class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    transaction_type = serializers.SlugRelatedField(
-        slug_field='title',
-        queryset=TransactionType.objects.filter(is_deleted=False)
-    )
     payer = serializers.SlugRelatedField(
         slug_field='phone',
         queryset=CustomUser.objects.all(),
@@ -68,7 +89,7 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
     class Meta:
         model = Transaction
         fields = [
-            'id', 'payer', 'payer_str', 'receiver', 'receiver_str', 'transaction_type', 'amount', 'status',
+            'id', 'payer', 'payer_str', 'receiver', 'receiver_str', 'amount',
             'game_order', 'repair_order', 'course_order', 'order', 'description', 'is_deleted',
             'created_at', 'updated_at'
         ]
@@ -80,6 +101,24 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
         if attrs.get('receiver') and attrs.get('receiver_str'):
             raise serializers.ValidationError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
         return attrs
+
+
+class EmployeeProductColorSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductColor
+        fields = ['id', 'title']
+
+
+class EmployeeProductCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = ['id', 'title']
+
+
+class EmployeeProductCompanySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductCompany
+        fields = ['id', 'title']
 
 
 class EmployeeProductSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
@@ -102,6 +141,12 @@ class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         return super().create(validated_data)
 
 
+class EmployeeCustomerConsoleSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = CustomerConsole
+        fields = "__all__"
+
+
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     order_type = serializers.SlugRelatedField(read_only=True, slug_field='title')
     customer = serializers.SlugRelatedField(read_only=True, slug_field='full_name')
@@ -120,6 +165,17 @@ class EmployeeGameOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSe
         model = GameOrder
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeStatusChoicesSerializer(serializers.Serializer):
+    value = serializers.CharField(max_length=50)
+    label = serializers.CharField(max_length=100)
+
+
+class EmployeeGameOrderTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameOrderType
+        fields = "__all__"
 
 
 class EmployeeRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
