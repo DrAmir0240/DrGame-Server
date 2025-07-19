@@ -17,7 +17,7 @@ class Employee(models.Model):
     has_access_to_orders = models.BooleanField(default=False)
     has_access_to_game_order = models.BooleanField(default=False)
     has_access_to_accounts = models.BooleanField(default=False)
-    has_access_to_products = models.BooleanField(default=False)
+    has_access_to_site = models.BooleanField(default=False)
     has_access_to_customers = models.BooleanField(default=False)
     has_access_to_employees = models.BooleanField(default=False)
     has_access_to_add_users = models.BooleanField(default=False)

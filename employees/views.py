@@ -15,7 +15,8 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, EmployeeGameOrderTypeSerializer, EmployeeCustomerConsoleSerializer, \
-    EmployeeStatusChoicesSerializer, CustomUserSerializer
+    EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer
+from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, OrderType, GameOrderType, RepairOrder
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     CustomerConsole
@@ -173,7 +174,7 @@ class EmployeePanelOwnedTransactionDetail(generics.RetrieveAPIView):
 
 
 # ==================== Product Views ====================
-@restrict_access('has_access_to_products')
+@restrict_access('has_access_to_site')
 class EmployeePanelProductList(generics.ListAPIView):
     serializer_class = EmployeeProductSerializer
     queryset = Product.objects.filter(is_deleted=False)
@@ -181,7 +182,7 @@ class EmployeePanelProductList(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_products')
+@restrict_access('has_access_to_site')
 class EmployeePanelProductDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EmployeeProductSerializer
     queryset = Product.objects.filter(is_deleted=False)
@@ -189,7 +190,7 @@ class EmployeePanelProductDetail(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_products')
+@restrict_access('has_access_to_site')
 class EmployeePanelAddProduct(generics.CreateAPIView):
     serializer_class = EmployeeProductSerializer
     queryset = Product.objects.filter(is_deleted=False)
@@ -197,7 +198,7 @@ class EmployeePanelAddProduct(generics.CreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_products')
+@restrict_access('has_access_to_site')
 class EmployeePanelProductChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         colors = ProductColor.objects.all()
@@ -501,3 +502,38 @@ class CustomerDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+# ==================== GameStore Views ====================
+@restrict_access('has_access_to_site')
+class EmployeeGameListCreate(generics.ListCreateAPIView):
+    serializer_class = EmployeeGameSerializer
+    queryset = Game.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+@restrict_access('has_access_to_site')
+class EmployeeGameDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeGameSerializer
+    queryset = Game.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+# ==================== Blog Views ====================
+@restrict_access('has_access_to_site')
+class EmployeeBlogListCreate(generics.ListCreateAPIView):
+    serializer_class = EmployeeBlogSerializer
+    queryset = BlogPost.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+@restrict_access('has_access_to_site')
+class EmployeeBlogDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeBlogSerializer
+    queryset = BlogPost.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'slug'

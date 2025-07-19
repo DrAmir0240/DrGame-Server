@@ -63,6 +63,7 @@ class BlogPost(models.Model):
     featured_image = models.ImageField(upload_to='blog_images/', blank=True, null=True, verbose_name="تصویر شاخص")
     meta_description = models.CharField(max_length=160, blank=True, null=True, verbose_name="توضیحات متا")
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft', verbose_name="وضعیت")
+    is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ به‌روزرسانی")
     published_at = models.DateTimeField(default=timezone.now, verbose_name="تاریخ انتشار")

@@ -3,8 +3,10 @@ from rest_framework import serializers
 from accounts.models import CustomUser
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
+from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, GameOrderType
-from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, CustomerConsole
+from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, CustomerConsole, \
+    GameImage
 
 
 class SoftDeleteSerializerMixin:
@@ -29,7 +31,6 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
         fields = "__all__"
 
 
-
 class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     user = serializers.SlugRelatedField(read_only=True, slug_field='phone')
 
@@ -38,11 +39,26 @@ class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSer
         fields = "__all__"
 
 
+class EmployeeGameImageSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = GameImage
+        fields = "__all__"
+
+
 class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    game_images = EmployeeGameImageSerializer(many=True)
+
     class Meta:
         model = Game
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = BlogPost
+        fields = "__all__"
+        read_only_fields = ['created_at', 'updated_at']
 
 
 class EmployeeSonyAccountMatchedSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
