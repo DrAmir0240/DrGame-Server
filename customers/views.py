@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.auth import CustomJWTAuthentication
+from accounts.permissions import IsCustomer
 from .models import Customer, BusinessCustomer
 from .serializers import (
     CustomerProfileSerializer,
@@ -68,29 +69,27 @@ class UpgradeToBusinessCustomerCreateAPIView(generics.CreateAPIView):
 
 class CustomerOrderListAPIView(generics.ListAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return Order.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                        is_deleted=False)
+        return Order.objects.filter(customer=customer, is_deleted=False)
 
 
 class CustomerOrderRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return Order.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                        is_deleted=False)
+        return Order.objects.filter(customer=customer, is_deleted=False)
 
 
 class CustomerGameOrderListAPIView(generics.ListAPIView):
     serializer_class = GameOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -101,7 +100,7 @@ class CustomerGameOrderListAPIView(generics.ListAPIView):
 
 class CustomerGameOrderRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = GameOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -112,7 +111,7 @@ class CustomerGameOrderRetrieveAPIView(generics.RetrieveAPIView):
 
 class CustomerRepairOrderListAPIView(generics.ListAPIView):
     serializer_class = RepairOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -123,7 +122,7 @@ class CustomerRepairOrderListAPIView(generics.ListAPIView):
 
 class CustomerRepairOrderRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = RepairOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -134,7 +133,7 @@ class CustomerRepairOrderRetrieveAPIView(generics.RetrieveAPIView):
 
 class CustomerCourseOrderListAPIView(generics.ListAPIView):
     serializer_class = CourseOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -145,7 +144,7 @@ class CustomerCourseOrderListAPIView(generics.ListAPIView):
 
 class CustomerCourseOrderRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = CourseOrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -156,7 +155,7 @@ class CustomerCourseOrderRetrieveAPIView(generics.RetrieveAPIView):
 
 class CustomerTransactionListAPIView(generics.ListAPIView):
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     filter_backends = [DjangoFilterBackend]
@@ -171,7 +170,7 @@ class CustomerTransactionListAPIView(generics.ListAPIView):
 
 class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -179,4 +178,3 @@ class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
             (Q(payer=self.request.user) | Q(receiver=self.request.user)),
             is_deleted=False
         ).select_related('transaction_type', 'game_order', 'repair_order', 'order').distinct()
-

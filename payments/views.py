@@ -78,7 +78,9 @@ class RequestPaymentView(GenericAPIView):
             description=order.description or "پرداخت سفارش"
         )
         result = transaction.request_payment()
-        return Response(result, status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
+        return Response(result,
+                        status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
+
 
 class ZarinpalCallbackView(APIView):
     permission_classes = [AllowAny]
@@ -93,5 +95,6 @@ class ZarinpalCallbackView(APIView):
         result = transaction.verify_payment()
         return redirect("https://gamedr.ir/customer/transactions")
 # Game Order
+# Repair order
 # Course Order
 # Account Order

@@ -104,13 +104,11 @@ class BusinessCustomerUpgradeSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    order_type = serializers.StringRelatedField()
-    product = ProductSerializer(read_only=True)
+    product = serializers.SlugRelatedField(slug_field='title', read_only=True, many=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'order_type','description', 'amount', 'product', 'created_at']
-        read_only_fields = fields
+        fields = "__all__"
 
 
 class GameOrderSerializer(serializers.ModelSerializer):
