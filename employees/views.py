@@ -17,7 +17,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeCustomerSerializer, EmployeeSerializer, EmployeeGameOrderTypeSerializer, EmployeeCustomerConsoleSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, OrderType, GameOrderType, RepairOrder
+from payments.models import GameOrder, Transaction, Order, GameOrderType, RepairOrder
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     CustomerConsole
 
@@ -305,11 +305,9 @@ class EmployeePanelAddOrder(generics.CreateAPIView):
 class EmployeePanelProductOrderChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         customers = Customer.objects.filter(is_deleted=False)
-        order_types = OrderType.objects.filter(is_deleted=False)
         products = Product.objects.filter(is_deleted=False)
         response_data = {
             'customers': EmployeeGameSerializer(customers, many=True).data,
-            'order_types': EmployeeGameSerializer(order_types, many=True).data,
             'products': EmployeeGameSerializer(products, many=True).data,
 
         }

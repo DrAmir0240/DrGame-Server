@@ -1,39 +1,48 @@
-# class CourseOrderSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CourseOrder
-#         fields = ['id', 'course', 'payment_status', 'price', 'created_at', 'updated_at', ]
-#         read_only_fields = ['payment_status', 'user']
-#
-#
-# class CourseOrderForAdminSerializer(serializers.ModelSerializer):
-#     user = serializers.CharField(source='user.phone')
-#
-#     class Meta:
-#         model = CourseOrder
-#         fields = ['id', 'user', 'course', 'payment_status', 'price', 'created_at', 'updated_at', ]
-#         read_only_fields = ['payment_status', 'user']
-#
-#
-# class CourseOrderCreateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CourseOrder
-#         fields = ['course']
-#
-#     def validate(self, data):
-#         course = data['course']
-#         if CourseOrder.objects.get(course=course):
-#             raise serializers.ValidationError('You have already bought this course!')
-#
-#     def create(self, validated_data):
-#         request = self.context.get('request')
-#         user_id = request.user.id
-#         course = validated_data.get('course')
-#         return CourseOrder.objects.create(user_id=user_id,
-#                                           price=course.price,
-#                                           **validated_data)
-#
-#
-# class CourseOrderUpdateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = CourseOrder
-#         fields = ['payment_status']
+from rest_framework import serializers
+
+from home.models import CartItem, Cart
+from payments.models import Order, Transaction, Product
+
+
+class ProductSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = ['id', 'title', 'price']
+
+
+class CartItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    total_item_price = serializers.ReadOnlyField()
+
+    class Meta:
+        model = CartItem
+        fields = ['id', 'product', 'quantity', 'total_item_price']
+
+
+class CartSerializer(serializers.ModelSerializer):
+    cart_items = CartItemSerializer(many=True, read_only=True)
+    total_price = serializers.ReadOnlyField()
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'user', 'created_at', 'cart_items', 'total_price']
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    products = ProductSerializer(many=True, read_only=True)
+    customer = serializers.StringRelatedField()
+
+    class Meta:
+        model = Order
+        fields = "__all__"
+        read_only_fields = ['created_at', 'updated_at', 'is_deleted', 'customer', 'order_type', 'amount', 'products']
+
+
+class TransactionSerializer(serializers.ModelSerializer):
+    order = OrderSerializer(read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = ['id', 'payer', 'receiver', 'amount', 'authority', 'ref_id', 'status', 'order', 'description',
+                  'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = "__all__"

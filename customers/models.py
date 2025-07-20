@@ -6,7 +6,7 @@ from accounts.models import CustomUser
 # Create your models here.
 
 class Customer(models.Model):
-    full_name = models.CharField(max_length=50, null=True, blank=True)
+    full_name = models.CharField(max_length=50)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='customer', null=True)
     address = models.TextField(null=True, blank=True)
     postal_code = models.CharField(max_length=10, null=True, blank=True)
@@ -16,7 +16,8 @@ class Customer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return str(self.full_name) if self.full_name else f"Customer {self.id}"
+        return self.full_name
+
 
 class BusinessCustomer(models.Model):
     full_name = models.CharField(max_length=50, null=True, blank=True)

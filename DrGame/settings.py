@@ -170,8 +170,8 @@ CACHES = {
     }
 }
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=5),
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=50),
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'AUTH_COOKIE': 'access_token',
@@ -230,6 +230,13 @@ AWS_S3_REGION_NAME = 'us-east-1'
 # FARAZ SMS Configuration
 FARAZ_URL = os.getenv("FARAZ_URL")
 FARAZ_API_KEY = os.getenv("FARAZ_API_KEY")
+
+# Zarrin Pall
+ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID")
+ZARINPAL_REQUEST_URL = os.getenv("ZARINPAL_REQUEST_URL")
+ZARINPAL_START_PAY_URL = os.getenv("ZARINPAL_START_PAY_URL")
+ZARINPAL_VERIFY_URL = os.getenv("ZARINPAL_VERIFY_URL")
+ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")
 
 # Django-storages configuration
 STORAGES = {

@@ -1,16 +1,9 @@
 from django.contrib import admin
-from payments.models import Transaction, OrderType, Order, RepairOrder, GameOrder, GameOrderType, \
+from payments.models import Transaction, Order, RepairOrder, GameOrder, GameOrderType, \
     RepairOrderType
 
 
 # Register your models here.
-@admin.register(OrderType)
-class OrderTypeAdmin(admin.ModelAdmin):
-    class Media:
-        fields = '__all__'
-        search_fields = '__all__'
-
-
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     class Media:

@@ -20,7 +20,7 @@ class ProductCategory(models.Model):
 
 
 class ProductColor(models.Model):
-    title = models.CharField(max_length=100, unique=True, null=True)
+    title = models.CharField(max_length=100, unique=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -40,10 +40,10 @@ class ProductCompany(models.Model):
 
 
 class Product(models.Model):
-    title = models.CharField(max_length=100, unique=True, null=True)
+    title = models.CharField(max_length=100, unique=True)
     main_img = models.ImageField(null=True, blank=True, upload_to='main_img/products/')
     description = models.TextField(max_length=5000, null=True, blank=True)
-    color = models.ForeignKey(ProductColor, on_delete=models.SET_NULL, null=True)
+    color = models.ForeignKey(ProductColor, on_delete=models.CASCADE)
     category = models.ForeignKey(ProductCategory, on_delete=models.SET_NULL, null=True, related_name='products')
     company = models.ForeignKey(ProductCompany, on_delete=models.SET_NULL, null=True)
     price = models.DecimalField(decimal_places=5, max_digits=20)

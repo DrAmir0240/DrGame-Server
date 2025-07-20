@@ -7,6 +7,7 @@ from django.utils import timezone
 from slugify import slugify
 
 from accounts.models import CustomUser
+from customers.models import Customer
 from storage.models import Product, ProductColor
 
 
@@ -14,12 +15,12 @@ from storage.models import Product, ProductColor
 
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(Customer, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.user.phone} cart'
+        return f'{self.user.full_name} cart'
 
     @property
     def total_price(self):
@@ -30,7 +31,6 @@ class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='cart_items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='items')
     quantity = models.PositiveIntegerField(default=1)
-
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -43,7 +43,7 @@ class CartItem(models.Model):
         return self.quantity * self.product.price
 
     def __str__(self):
-        return f'{self.product} : {self.quantity}'
+        return f'{self.product.title} : {self.quantity}'
 
 
 # Blog
