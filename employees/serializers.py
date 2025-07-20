@@ -24,7 +24,10 @@ class CustomUserSerializer(SoftDeleteSerializerMixin, serializers.ModelSerialize
 
 
 class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(read_only=True, slug_field='phone')
+    user = serializers.SlugRelatedField(
+        slug_field='phone',
+        queryset=CustomUser.objects.all()
+    )
 
     class Meta:
         model = Employee
@@ -32,7 +35,10 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
 
 
 class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    user = serializers.SlugRelatedField(read_only=True, slug_field='phone')
+    user = serializers.SlugRelatedField(
+        slug_field='phone',
+        queryset=CustomUser.objects.all()
+    )
 
     class Meta:
         model = Customer
