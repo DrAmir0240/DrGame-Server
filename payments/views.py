@@ -1,4 +1,4 @@
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation.trans_real import translation
 from rest_framework import generics, permissions
 from rest_framework.generics import GenericAPIView
@@ -91,7 +91,7 @@ class ZarinpalCallbackView(APIView):
             return Response({"status": "error", "message": "پرداخت توسط کاربر لغو شد."})
         transaction = get_object_or_404(Transaction, authority=authority)
         result = transaction.verify_payment()
-        return Response(result)
+        return redirect("https://gamedr.ir/customer/transactions")
 # Game Order
 # Course Order
 # Account Order
