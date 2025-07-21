@@ -127,17 +127,18 @@ class MostSoldGamesListAPIView(generics.ListAPIView):
 # cart
 class CartAPIView(generics.RetrieveAPIView):
     serializer_class = CartSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
 
-        return Cart.objects.filter(user=self.request.user, is_deleted=False).prefetch_related(
+        return Cart.objects.filter(user=self.request.user.customer, is_deleted=False).prefetch_related(
             'cart_items__product__color')
 
     def get_object(self):
         cart = self.get_queryset().first()
         if not cart:
-            return Cart.objects.create(user=self.request.user)
+            return Cart.objects.create(user=self.request.user.customer)
         return cart
 
     def get(self, request, *args, **kwargs):
@@ -151,11 +152,12 @@ class CartAPIView(generics.RetrieveAPIView):
 class AddToCartAPIView(generics.CreateAPIView):
     serializer_class = CartItemWriteSerializer
     queryset = CartItem.objects.select_related('cart', 'product__color').none()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
 
     def create(self, request, *args, **kwargs):
         cart, _ = Cart.objects.get_or_create(
-            user=request.user,
+            user=request.user.customer,
             is_deleted=False
         )
         serializer = self.get_serializer(data=request.data, context={'cart': cart})
@@ -170,10 +172,10 @@ class RemoveFromCartAPIView(generics.DestroyAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        return CartItem.objects.filter(cart__user=self.request.user)
+        return CartItem.objects.filter(cart__user=self.request.user.customer)
 
     def delete(self, request, *args, **kwargs):
-        cart = Cart.objects.filter(user=request.user, is_deleted=False).first()
+        cart = Cart.objects.filter(user=request.user.customer, is_deleted=False).first()
         if not cart:
             return Response(
                 {"detail": "هیچ سبد خرید فعالی پیدا نشد."},
