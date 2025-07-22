@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager
 from accounts.permissions import IsCustomer
-from payments.models import Order, Transaction
+from payments.models import Order, Transaction, OrderItem
 from home.models import Cart
 from payments.serializers import OrderSerializer, TransactionSerializer
 from django.core.exceptions import ValidationError
@@ -24,15 +24,12 @@ class OrderCreateAPIView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         try:
-            # دریافت سبد خرید کاربر
             cart = Cart.objects.get(user=self.request.user.customer, is_deleted=False)
             if not cart.cart_items.exists():
                 raise ValidationError("سبد خرید خالی است.")
 
-            # محاسبه مبلغ کل از آیتم‌های سبد خرید
             total_amount = cart.total_price
 
-            # ایجاد سفارش
             order = serializer.save(
                 customer=self.request.user.customer,
                 order_type='customer',
@@ -40,18 +37,21 @@ class OrderCreateAPIView(generics.CreateAPIView):
                 description=self.request.data.get('description', '')
             )
 
-            # افزودن محصولات از سبد خرید به سفارش
-            products = [item.product for item in cart.cart_items.all()]
-            order.product.set(products)
-            # پاک کردن سبد خرید پس از ثبت سفارش
+            for item in cart.cart_items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    product=item.product,
+                    quantity=item.quantity,
+                    price=item.product.price
+                )
+
             cart.cart_items.all().delete()
-            order.save()
+            cart.delete()
 
         except Cart.DoesNotExist:
             raise ValidationError("سبد خرید یافت نشد.")
         except Exception as e:
             raise ValidationError(f"خطا در ثبت سفارش: {str(e)}")
-
 
 class OrderDetailAPIView(generics.RetrieveAPIView):
     queryset = Order.objects.filter(is_deleted=False)

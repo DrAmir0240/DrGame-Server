@@ -21,13 +21,28 @@ class Order(models.Model):
     ), default='customer')
     amount = models.DecimalField(max_digits=12, decimal_places=3)
     description = models.TextField(null=True, blank=True)
-    product = models.ManyToManyField(Product, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'سفارش {self.customer.full_name} بابت {self.order_type.title}'
+        return f'سفارش {self.customer.full_name}'
+
+
+class OrderItem(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name='order_items')
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=12, decimal_places=3)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def total_price(self):
+        return self.price * self.quantity
+
+    def __str__(self):
+        return f'{self.product.title} x {self.quantity}'
 
 
 class GameOrderType(models.Model):

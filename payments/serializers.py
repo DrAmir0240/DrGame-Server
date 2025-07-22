@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from home.models import CartItem, Cart
-from payments.models import Order, Transaction, Product
+from payments.models import Order, Transaction, Product, OrderItem
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -28,15 +28,25 @@ class CartSerializer(serializers.ModelSerializer):
         fields = ['id', 'user', 'created_at', 'cart_items', 'total_price']
 
 
+class OrderItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer()
+
+    class Meta:
+        model = OrderItem
+        fields = ['product', 'quantity', 'price', 'total_price']
+
+
 class OrderSerializer(serializers.ModelSerializer):
-    products = ProductSerializer(many=True, read_only=True)
+    order_items = OrderItemSerializer(many=True, read_only=True)
     customer = serializers.StringRelatedField()
 
     class Meta:
         model = Order
-        fields = "__all__"
-        read_only_fields = ['created_at', 'updated_at', 'is_deleted', 'customer', 'order_type', 'amount', 'products']
-
+        fields = '__all__'
+        read_only_fields = [
+            'created_at', 'updated_at', 'is_deleted',
+            'customer', 'order_type', 'amount', 'order_items'
+        ]
 
 class TransactionSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
