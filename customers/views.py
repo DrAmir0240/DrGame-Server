@@ -7,14 +7,13 @@ from rest_framework.views import APIView
 
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsCustomer
-from .models import Customer, BusinessCustomer
+from .models import Customer
 from .serializers import (
     CustomerProfileSerializer,
-    BusinessCustomerUpgradeSerializer,
     OrderSerializer,
     GameOrderSerializer,
     RepairOrderSerializer,
-    TransactionSerializer, BusinessCustomerProfileSerializer, CustomerProfileCreateSerializer, CourseOrderSerializer
+    TransactionSerializer, CustomerProfileCreateSerializer, CourseOrderSerializer
 )
 
 from payments.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder
@@ -33,38 +32,15 @@ class CustomerProfileRetrieveAPIView(generics.RetrieveUpdateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_object(self):
-        try:
-
-            return BusinessCustomer.objects.get(user=self.request.user, is_deleted=False)
-        except BusinessCustomer.DoesNotExist:
-
-            return get_object_or_404(Customer, user=self.request.user, is_deleted=False)
+        return get_object_or_404(Customer, user=self.request.user, is_deleted=False)
 
     def get_serializer_class(self):
         obj = self.get_object()
-        if isinstance(obj, BusinessCustomer):
-            return BusinessCustomerProfileSerializer
         return CustomerProfileSerializer
 
 
 class UpgradeToBusinessCustomerCreateAPIView(generics.CreateAPIView):
-    serializer_class = BusinessCustomerUpgradeSerializer
-    queryset = BusinessCustomer.objects.select_related('user').all()
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def create(self, request, *args, **kwargs):
-        customer = get_object_or_404(Customer, user=request.user)
-        serializer = BusinessCustomerUpgradeSerializer(data=request.data, context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        customer.is_deleted = True
-        customer.save()
-
-        return Response(
-            {'status': 'success', 'message': 'Upgraded to business customer successfully'},
-            status=status.HTTP_201_CREATED
-        )
+    pass
 
 
 class CustomerOrderListAPIView(generics.ListAPIView):

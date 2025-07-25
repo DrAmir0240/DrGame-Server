@@ -6,7 +6,7 @@ from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, GameOrderType
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, CustomerConsole, \
-    GameImage
+    GameImage, DocCategory, Document
 
 
 class SoftDeleteSerializerMixin:
@@ -205,3 +205,21 @@ class EmployeeRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.Model
         model = RepairOrder
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeDocsSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        slug_field='title',
+        queryset=DocCategory.objects.all()
+    )
+
+    class Meta:
+        model = Document
+        fields = "__all__"
+
+
+class EmployeeDocCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    docs = EmployeeDocsSerializer(many=True, read_only=True)
+    class Meta:
+        model = DocCategory
+        fields = "__all__"

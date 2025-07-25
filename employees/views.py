@@ -15,11 +15,12 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, EmployeeGameOrderTypeSerializer, EmployeeCustomerConsoleSerializer, \
-    EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer
+    EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
+    EmployeeDocCategorySerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, GameOrderType, RepairOrder
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    CustomerConsole
+    CustomerConsole, Document, DocCategory
 
 
 # Create your views here.
@@ -535,3 +536,26 @@ class EmployeeBlogDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
+
+
+# ==================== Docs Views ====================
+class EmployeePanelDocument(generics.ListCreateAPIView):
+    queryset = Document.objects.filter(is_deleted=False)
+    serializer_class = EmployeeDocsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Document.objects.filter(is_deleted=False)
+    serializer_class = EmployeeDocsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lockup_field = 'id'
+
+
+class EmployeePanelDocCategory(generics.ListCreateAPIView):
+    queryset = DocCategory.objects.filter(is_deleted=False)
+    serializer_class = EmployeeDocCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]

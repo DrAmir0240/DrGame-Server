@@ -17,7 +17,7 @@ from accounts.models import CustomUser, OTP, APIKey, MainManager
 from accounts.serializers import VerifyOTPSerializer, VerifyOTPResponseSerializer, RefreshTokenSerializer, \
     RefreshTokenResponseSerializer, RequestOTPSerializer, RequestOTPResponseSerializer
 from accounts.throttles import PhoneRateThrottle
-from customers.models import Customer, BusinessCustomer
+from customers.models import Customer
 from employees.models import Employee, Repairman
 
 
@@ -295,8 +295,6 @@ class UserStatusView(APIView):
             user_type = "repairman"
         elif Customer.objects.filter(user=user).exists():
             user_type = "customer"
-        elif BusinessCustomer.objects.filter(user=user).exists():
-            user_type = "business_customer"
         else:
             user_type = "none"
 

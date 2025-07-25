@@ -47,11 +47,23 @@ class ProductSerializer(serializers.ModelSerializer):
     company = serializers.StringRelatedField(source='company.title')
     color = serializers.StringRelatedField(source='color.title')
     images = ProductImageSerializer(many=True, read_only=True)
+    discounted_price = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = ['id', 'title', 'main_img', 'images', 'description', 'color', 'category',
-                  'company', 'price', 'units_sold', 'stock', 'created_at', ]
+                  'company', 'price', 'discounted_price', 'units_sold', 'stock', 'created_at', ]
+
+    def get_discounted_price(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        customer = getattr(request.user, 'customer', None)
+        if customer and customer.discount > 0:
+            discount_percent = customer.discount
+            discounted_price = obj.price * (1 - discount_percent / 100)
+            return int(discounted_price)
+        return None
 
 
 class GameImagesSerializer(serializers.ModelSerializer):

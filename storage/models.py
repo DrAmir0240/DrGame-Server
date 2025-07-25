@@ -183,3 +183,26 @@ class CustomerConsole(models.Model):
 
     def __str__(self):
         return self.title + ' ' + self.owner.full_name
+
+
+class DocCategory(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Document(models.Model):
+    title = models.CharField(max_length=100)
+    file = models.FileField(upload_to='docs/')
+    category = models.ForeignKey(DocCategory, on_delete=models.SET_NULL, null=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title

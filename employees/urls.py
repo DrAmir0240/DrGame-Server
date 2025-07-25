@@ -72,4 +72,10 @@ urlpatterns = [
     # ==================== Blog Views ====================
     path('blog/list-add/', views.EmployeeBlogListCreate.as_view(), name='blog-list-add'),
     path('blog/<str:slug>/', views.EmployeeBlogDetail.as_view(), name='blog-detail'),
+
+    # ==================== Docs Views ====================
+    path('docs/', views.EmployeePanelDocument.as_view(), name='docs-list-add'),
+    path('docs/<int:pk>', views.EmployeePanelDetail.as_view(), name='docs-detail'),
+    path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
+
 ]
