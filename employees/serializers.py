@@ -216,10 +216,13 @@ class EmployeeDocsSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
     class Meta:
         model = Document
         fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
 
 class EmployeeDocCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     docs = EmployeeDocsSerializer(many=True, read_only=True)
+
     class Meta:
         model = DocCategory
         fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
