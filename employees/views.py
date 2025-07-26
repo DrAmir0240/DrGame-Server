@@ -14,13 +14,13 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
     EmployeeTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
-    EmployeeCustomerSerializer, EmployeeSerializer, EmployeeGameOrderTypeSerializer, EmployeeCustomerConsoleSerializer, \
+    EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, GameOrderType, RepairOrder
+from payments.models import GameOrder, Transaction, Order, RepairOrder
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    CustomerConsole, Document, DocCategory
+    Document, DocCategory
 
 
 # Create your views here.
@@ -347,8 +347,6 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         customers = Customer.objects.all()
         employees = Employee.objects.all()
-        order_types = GameOrderType.objects.all()
-        consoles = CustomerConsole.objects.all()
         games = Game.objects.all()
         sony_accounts = SonyAccount.objects.all()
 
@@ -359,8 +357,6 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
         response_data = {
             'customers': EmployeeCustomerSerializer(customers, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
-            'order_types': EmployeeGameOrderTypeSerializer(order_types, many=True).data,
-            'consoles': EmployeeCustomerConsoleSerializer(consoles, many=True).data,
             'games': EmployeeGameSerializer(games, many=True).data,
             'sony_accounts': EmployeeSonyAccountSerializer(sony_accounts, many=True).data,
             'status_choices': EmployeeStatusChoicesSerializer(status_choices, many=True).data,

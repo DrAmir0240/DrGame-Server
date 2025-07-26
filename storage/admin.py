@@ -80,13 +80,6 @@ class GameImageAdmin(admin.ModelAdmin):
         search_fields = '__all__'
 
 
-@admin.register(models.CustomerConsole)
-class OrderProductAdmin(admin.ModelAdmin):
-    class Media:
-        fields = '__all__'
-        search_fields = '__all__'
-
-
 @admin.register(models.DocCategory)
 class DocCategoryAdmin(admin.ModelAdmin):
     class Media:

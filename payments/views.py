@@ -9,8 +9,9 @@ from rest_framework.views import APIView
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager
 from accounts.permissions import IsCustomer
+from employees.serializers import EmployeeGameOrderSerializer
 from payments.models import Order, Transaction, OrderItem
-from home.models import Cart
+from home.models import Cart, GameCart
 from payments.serializers import OrderSerializer, TransactionSerializer
 from django.core.exceptions import ValidationError
 from rest_framework import status
@@ -95,7 +96,12 @@ class ZarinpalCallbackView(APIView):
         transaction = get_object_or_404(Transaction, authority=authority)
         result = transaction.verify_payment()
         return redirect("https://gamedr.ir/customer/transactions")
+
+
 # Game Order
+class GameOrderCreate(generics.CreateAPIView):
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
 # Repair order
 # Course Order
 # Account Order

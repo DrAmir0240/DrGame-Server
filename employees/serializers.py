@@ -4,8 +4,8 @@ from accounts.models import CustomUser
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, GameOrderType
-from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, CustomerConsole, \
+from payments.models import GameOrder, Transaction, Order, RepairOrder
+from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document
 
 
@@ -163,10 +163,6 @@ class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         return super().create(validated_data)
 
 
-class EmployeeCustomerConsoleSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    class Meta:
-        model = CustomerConsole
-        fields = "__all__"
 
 
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
@@ -192,12 +188,6 @@ class EmployeeGameOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSe
 class EmployeeStatusChoicesSerializer(serializers.Serializer):
     value = serializers.CharField(max_length=50)
     label = serializers.CharField(max_length=100)
-
-
-class EmployeeGameOrderTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = GameOrderType
-        fields = "__all__"
 
 
 class EmployeeRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

@@ -169,23 +169,6 @@ class SonyAccountGame(models.Model):
         return f"{self.sony_account} - {self.game}"
 
 
-class CustomerConsole(models.Model):
-    owner = models.OneToOneField(Customer, on_delete=models.CASCADE, blank=True, null=True)
-    title = models.CharField(max_length=100, blank=True, null=True)
-    brand = models.CharField(max_length=100, choices=(
-        ('Sony', 'Sony'),
-        ('X-Box', 'X-Box'),
-        ('Nintendo', 'Nintendo'),
-    ), blank=True, null=True)
-    model = models.CharField(max_length=100, blank=True, null=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.title + ' ' + self.owner.full_name
-
-
 class DocCategory(models.Model):
     title = models.CharField(max_length=100, unique=True)
     description = models.TextField(max_length=5000, null=True, blank=True)

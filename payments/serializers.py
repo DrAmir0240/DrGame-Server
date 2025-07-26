@@ -48,6 +48,8 @@ class OrderSerializer(serializers.ModelSerializer):
             'customer', 'order_type', 'amount', 'order_items'
         ]
 
+
+
 class TransactionSerializer(serializers.ModelSerializer):
     order = OrderSerializer(read_only=True)
 

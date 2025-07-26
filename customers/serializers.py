@@ -66,8 +66,7 @@ class GameOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameOrder
-        fields = ['id', 'order_type', 'amount', 'product', 'games_count',
-                  'selected_games_count', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'product', 'games_count', 'created_at']
         read_only_fields = fields
 
 

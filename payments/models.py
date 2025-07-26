@@ -1,12 +1,9 @@
-import json
-
 import requests
 from django.core.exceptions import ValidationError
 from django.db import models
-
 from employees.models import Employee
 from home.models import Course
-from storage.models import CustomerConsole, Product, Game, SonyAccount
+from storage.models import Product, Game, SonyAccount
 from accounts.models import CustomUser
 from customers.models import Customer
 from django.conf import settings
@@ -45,16 +42,12 @@ class OrderItem(models.Model):
         return f'{self.product.title} x {self.quantity}'
 
 
-class GameOrderType(models.Model):
-    title = models.CharField(max_length=100, null=True)
-    description = models.TextField(null=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class DeliveryMan(models.Model):
+    full_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=100)
 
     def __str__(self):
-        return self.title
+        return self.full_name + ' ' + self.phone_number
 
 
 class GameOrder(models.Model):
@@ -63,22 +56,24 @@ class GameOrder(models.Model):
                                        related_name='account_setter')
     data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
                                       related_name='data_uploader')
-    order_type = models.ForeignKey(GameOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3)
-    product = models.ForeignKey(CustomerConsole, on_delete=models.SET_NULL, null=True)
+    console = models.CharField(max_length=100, null=True, blank=True)
     games = models.ManyToManyField(Game, blank=True)
     games_count = models.IntegerField(default=0, null=True, blank=True)
-    selected_games_count = models.IntegerField(default=0, null=True, blank=True)
     status = models.CharField(max_length=50, choices=(
         ('waiting', 'در انتظار پرداخت'), ('payed', 'پرداخت شده'), ('in_progress', 'در حال انجام'),
         ('data', 'دیتا ریختن'), ('done', 'اتمام'), ('delivered', 'تحویل شده')), null=True)
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
+    delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                              related_name='delivery_console_to_drgame')
+    delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                                related_name='delivery_console_to_customer')
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'سفارش {self.customer.full_name} بابت {self.order_type.title}'
+        return f'سفارش {self.customer.full_name}'
 
 
 class RepairOrderType(models.Model):
@@ -96,7 +91,11 @@ class RepairOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3)
-    product = models.ForeignKey(CustomerConsole, on_delete=models.SET_NULL, null=True)
+    console = models.CharField(max_length=100, null=True, blank=True)
+    delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                              related_name='delivery_to_drgame')
+    delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                                related_name='delivery_to_customer')
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
