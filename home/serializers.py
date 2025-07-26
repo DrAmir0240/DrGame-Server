@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from slugify import slugify
 
+from employees.serializers import EmployeeGameSerializer
 from payments.models import CourseOrder
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Video, \
-    Course, HomeBanner
-from storage.models import Product, ProductColor
+    Course, HomeBanner, GameCart
+from storage.models import Product, ProductColor, Game
 
 
 # cart-item
@@ -89,6 +90,19 @@ class CartSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, obj):
         return obj.total_price
+
+
+class GameCartSerializer(serializers.ModelSerializer):
+    games = EmployeeGameSerializer(many=True)
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GameCart
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def get_total_price(self, obj):
+        return obj.total_price()
 
 
 ######################################

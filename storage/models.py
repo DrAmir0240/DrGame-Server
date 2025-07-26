@@ -93,6 +93,7 @@ class SonyAccountBank(models.Model):
 class Game(models.Model):
     title = models.CharField(max_length=100, unique=True, null=True)
     main_img = models.ImageField(null=True, blank=True, upload_to="main_img/game/")
+    price = models.IntegerField(default=200000)
     description = models.TextField(max_length=5000, null=True, blank=True)
     is_trend = models.BooleanField(default=False)
     units_sold = models.PositiveIntegerField(default=0)

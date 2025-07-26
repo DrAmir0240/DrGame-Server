@@ -53,6 +53,7 @@ class OrderCreateAPIView(generics.CreateAPIView):
         except Exception as e:
             raise ValidationError(f"خطا در ثبت سفارش: {str(e)}")
 
+
 class OrderDetailAPIView(generics.RetrieveAPIView):
     queryset = Order.objects.filter(is_deleted=False)
     serializer_class = OrderSerializer

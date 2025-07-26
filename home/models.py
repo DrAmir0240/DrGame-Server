@@ -8,11 +8,10 @@ from slugify import slugify
 
 from accounts.models import CustomUser
 from customers.models import Customer
-from storage.models import Product, ProductColor
+from storage.models import Product, ProductColor, Game
 
 
 # Shopping
-
 class Cart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
@@ -43,7 +42,21 @@ class CartItem(models.Model):
         return self.quantity * self.product.price
 
     def __str__(self):
-        return f'{self.product.title} : {self.quantity}'
+        return f'{self.product.title} : {self.quantity} for {self.cart}'
+
+
+class GameCart(models.Model):
+    user = models.OneToOneField(Customer, on_delete=models.CASCADE)
+    games = models.ManyToManyField(Game, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def total_price(self):
+        return sum(game.price for game in self.games.all())
+
+    def __str__(self):
+        return f'{self.user.full_name} game cart'
 
 
 # Blog

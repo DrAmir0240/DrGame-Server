@@ -4,7 +4,7 @@ from django.db.models import Prefetch
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.generics import get_object_or_404
+from rest_framework.generics import get_object_or_404, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,9 +17,9 @@ from .serializers import CartSerializer, UpdateBlogPostSerializer, \
     CreateBlogPostSerializer, AboutUsSerializer, ContactUsSerializer, ContactSubmissionSerializer, \
     BlogPostDetailSerializer, BlogPostListSerializer, CourseRetrieveSerializer, \
     CourseListCreateSerializer, CourseUpdateSerializer, VideoSerializer, VideoCreateSerializer, VideoUpdateSerializer, \
-    HomeBannerSerializer, CartItemWriteSerializer
+    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Course, \
-    Video, HomeBanner
+    Video, HomeBanner, GameCart
 
 
 # trending games
@@ -131,7 +131,6 @@ class CartAPIView(generics.RetrieveAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-
         return Cart.objects.filter(user=self.request.user.customer, is_deleted=False).prefetch_related(
             'cart_items__product__color')
 
@@ -213,6 +212,88 @@ class RemoveFromCartAPIView(generics.DestroyAPIView):
                 {"detail": "یک خطا رخ داده است.", "error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# game cart
+class GameCartRetrieveCreateView(generics.RetrieveAPIView):
+    serializer_class = GameCartSerializer
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_object(self):
+        customer = self.request.user.customer
+        cart, created = GameCart.objects.get_or_create(user=customer)
+        return cart
+
+    def retrieve(self, request, *args, **kwargs):
+        cart = self.get_object()
+        serializer = self.get_serializer(cart)
+
+        response_data = serializer.data
+
+        if not cart.games.exists():
+            response_data["message"] = "سبد خرید شما خالی است."
+
+        return Response(response_data, status=status.HTTP_200_OK)
+
+
+class AddGameToCartView(generics.UpdateAPIView):
+    serializer_class = GameCartSerializer
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_object(self):
+        customer = self.request.user.customer
+        cart, created = GameCart.objects.get_or_create(user=customer)
+        return cart
+
+    def update(self, request, *args, **kwargs):
+        game_id = kwargs.get('game_id')  # گرفتن از URL
+
+        if not game_id:
+            return Response({'detail': 'شناسه بازی نامعتبر است.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            game = Game.objects.get(id=game_id)
+        except Game.DoesNotExist:
+            return Response({'detail': 'بازی یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
+
+        cart = self.get_object()
+        if game in cart.games.all():
+            return Response({'detail': 'بازی قبلاً در سبد خرید موجود است.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart.games.add(game)
+        cart.save()
+        serializer = self.get_serializer(cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class RemoveGameFromCartView(generics.DestroyAPIView):
+    serializer_class = GameCartSerializer
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def delete(self, request, *args, **kwargs):
+        customer = request.user.customer
+        game_id = kwargs.get('game_id')
+
+        if not game_id:
+            return Response({"detail": "شناسه بازی نامعتبر است."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cart = GameCart.objects.filter(user=customer, is_deleted=False).first()
+        if not cart:
+            return Response({"detail": "سبد خریدی برای کاربر یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            game = Game.objects.get(id=game_id)
+        except Game.DoesNotExist:
+            return Response({"detail": "بازی مورد نظر وجود ندارد."}, status=status.HTTP_404_NOT_FOUND)
+
+        if game in cart.games.all():
+            cart.games.remove(game)
+            return Response({"detail": "بازی با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
+        else:
+            return Response({"detail": "این بازی در سبد خرید وجود ندارد."}, status=status.HTTP_400_BAD_REQUEST)
 
 
 # blog-post

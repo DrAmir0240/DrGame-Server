@@ -21,6 +21,11 @@ urlpatterns = [
     path('cart/add/', views.AddToCartAPIView.as_view(), name='add-to-cart'),
     path('cart/remove/<int:product_id>/', views.RemoveFromCartAPIView.as_view(), name='remove-from-cart'),
 
+    # ==================== GameCart URLs ====================
+    path('game-cart/', views.GameCartRetrieveCreateView.as_view(), name='game_cart_retrieve'),
+    path('game-cart/add/<int:game_id>/', views.AddGameToCartView.as_view(), name='add_game_to_cart'),
+    path('game-cart/remove/<int:game_id>/', views.RemoveGameFromCartView.as_view(), name='remove_game_from_cart'),
+
     # ==================== Blog URLs ====================
     path('blog/posts/', views.BlogPostListAPIView.as_view(), name='blog-post-list'),
     path('blog/posts/add/', views.BlogPostCreateAPIView.as_view(), name='blog-post-create'),
