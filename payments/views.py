@@ -16,6 +16,7 @@ from payments.serializers import OrderSerializer, TransactionSerializer, GameOrd
 from django.core.exceptions import ValidationError
 from rest_framework import status
 
+
 # callback url
 class ZarinpalCallbackView(APIView):
     permission_classes = [AllowAny]
@@ -126,6 +127,7 @@ class GameOrderCreate(generics.CreateAPIView):
             raise ValidationError("سبد خرید یافت نشد.")
         except Exception as e:
             raise ValidationError(f"خطا در ثبت سفارش: {str(e)}")
+
 
 class AssignDeliveryToDrGame(APIView):
     def post(self, request, order_id):
