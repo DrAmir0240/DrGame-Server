@@ -57,12 +57,25 @@ class GameOrder(models.Model):
     data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
                                       related_name='data_uploader')
     amount = models.DecimalField(max_digits=12, decimal_places=3)
+    order_type = models.CharField(max_length=30, choices=(
+        ('customer', 'سفارش از طریق مشتری'),
+        ('employee', 'سفارش از طریق کارمند')
+    ), default='customer')
     console = models.CharField(max_length=100, null=True, blank=True)
     games = models.ManyToManyField(Game, blank=True)
     games_count = models.IntegerField(default=0, null=True, blank=True)
     status = models.CharField(max_length=50, choices=(
-        ('waiting', 'در انتظار پرداخت'), ('payed', 'پرداخت شده'), ('in_progress', 'در حال انجام'),
-        ('data', 'دیتا ریختن'), ('done', 'اتمام'), ('delivered', 'تحویل شده')), null=True)
+        ('waiting', 'در انتظار پرداخت'),
+        ('paid_and_waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
+        ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
+        ('account_setting_queue', 'در لیست انتظار'),
+        ('account_setting_in_progress', 'در حال ست شدن اکانت'),
+        ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
+        ('error_on_accounts', 'مشکل در اکانت ها'),
+        ('done', 'انجام شده و در انتظار پیک'),
+        ('delivered_to_customer', 'تحویل شده توسط مشتری'),
+
+    ), null=True)
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                               related_name='delivery_console_to_drgame')
