@@ -294,11 +294,11 @@ class CourseOrderDetail(generics.RetrieveAPIView):
         return self.queryset.filter(customer=self.request.user.customer)
 
 
-class RequestPaymentForCourseOrder(generics.CreateAPIView):
+class RequestPaymentForCourseOrder(generics.RetrieveAPIView):
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
-    def preform(self, request, repair_id):
+    def post(self, request, repair_id):
         course_order = get_object_or_404(RepairOrder, id=repair_id)
         manager = get_object_or_404(MainManager, id=1)
         transaction = Transaction.objects.create(
