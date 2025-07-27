@@ -73,9 +73,14 @@ class GameOrder(models.Model):
         ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
         ('error_on_accounts', 'مشکل در اکانت ها'),
         ('done', 'انجام شده و در انتظار پیک'),
-        ('delivered_to_customer', 'تحویل شده توسط مشتری'),
+        ('delivered_to_customer', 'تحویل شده به مشتری'),
 
-    ), null=True)
+    ), default="waiting")
+    payment_status = models.CharField(max_length=30,
+                                      choices=(
+                                          ('paid', 'پرداخت شده'),
+                                          ('unpaid', 'پذداخت نشده')),
+                                      default='unpaid')
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                               related_name='delivery_console_to_drgame')
@@ -103,12 +108,26 @@ class RepairOrderType(models.Model):
 class RepairOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=3)
+    amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
     console = models.CharField(max_length=100, null=True, blank=True)
+    status = models.CharField(max_length=50, choices=(
+        ('registered', 'ثبت شده'),
+        ('waiting_for_delivery_to_drgame', 'در انتظار تحویل به دکترگیم'),
+        ('waiting_for_amount', 'در انتظار تعیین مبلغ'),
+        ('in_progress', 'در حال پردازش'),
+        ('done', 'در انتظار تحویل به مشتری'),
+        ('delivered_to_customer', 'تحویل شده به مشتری'),
+
+    ), default='registered')
+    payment_status = models.CharField(max_length=30, choices=(
+        ('پرداخت شده', 'paid'),
+        ('پرداخت نشده', 'unpaid')
+    ), default='unpaid')
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                               related_name='delivery_to_drgame')
     delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                                 related_name='delivery_to_customer')
+    description = models.TextField(null=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -119,8 +138,7 @@ class RepairOrder(models.Model):
 
 class CourseOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
-    course = models.ForeignKey(Course, on_delete=models.PROTECT, related_name='orders')
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=2000000)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

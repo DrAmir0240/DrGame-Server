@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from home.models import CartItem, Cart
-from payments.models import Order, Transaction, Product, OrderItem, GameOrder, DeliveryMan
+from payments.models import Order, Transaction, Product, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder
 from storage.serializers import GameSerializer
 
 
@@ -70,6 +70,21 @@ class GameOrderSerializer(serializers.ModelSerializer):
             'customer', 'games', 'amount', 'status', 'order_type', 'delivery_to_drgame',
             'is_deleted', 'created_at', 'updated_at'
         ]
+
+
+class RepairOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrder
+        fields = '__all__'
+        read_only_fields = ['created_at', 'updated_at', 'is_deleted', 'customer', 'order_type', 'amount',
+                            'delivery_to_drgame', 'delivery_to_customer']
+
+
+class CourseOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseOrder
+        fields = '__all__'
+        read_only_fields = fields
 
 
 class TransactionSerializer(serializers.ModelSerializer):
