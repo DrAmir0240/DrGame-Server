@@ -45,7 +45,7 @@ def restrict_access(*user_boolean_fields):
             if hasattr(user, 'main_manager'):
                 print("hello")
                 return original_initial(self, request, *args, **kwargs)
-            else:
+            if hasattr(user, 'employee'):
                 employee = request.user.employee
                 print("hello 2")
                 for field in user_boolean_fields:
@@ -57,6 +57,19 @@ def restrict_access(*user_boolean_fields):
                         raise PermissionDenied(f"Access denied: {field} is not True.")
 
                 return original_initial(self, request, *args, **kwargs)
+            if hasattr(user, 'customer'):
+                customer = request.user.customer
+                print("hello 3")
+                for field in user_boolean_fields:
+                    value = getattr(customer, field, None)
+                    print(f"{field}: {value}")
+
+                for field in user_boolean_fields:
+                    if not getattr(customer, field, False):
+                        raise PermissionDenied(f"Access denied: {field} is not True.")
+
+                return original_initial(self, request, *args, **kwargs)
+
 
         view_class.initial = new_initial
         return view_class

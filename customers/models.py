@@ -14,12 +14,10 @@ class Customer(models.Model):
     balance = models.DecimalField(max_digits=50, decimal_places=2, default=0)
     is_business = models.BooleanField(default=False)
     discount = models.PositiveIntegerField(default=0)
+    has_access_to_course = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.full_name
-
-
-
