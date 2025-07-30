@@ -10,7 +10,8 @@ from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager
 from accounts.permissions import IsCustomer
 from employees.serializers import EmployeeGameOrderSerializer
-from payments.models import Order, Transaction, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder
+from payments.models import Order, Transaction, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder, \
+    PaymentMethod
 from home.models import Cart, GameCart
 from payments.serializers import OrderSerializer, TransactionSerializer, GameOrderSerializer, DeliveryManSerializer, \
     RepairOrderSerializer, CourseOrderSerializer
@@ -89,9 +90,11 @@ class RequestPaymentForOrder(GenericAPIView):
     def post(self, request, order_id):
         order = get_object_or_404(Order, id=order_id, customer=request.user.customer)
         manager = get_object_or_404(MainManager, id=1)
+        payment_method = PaymentMethod.objects.filter(is_online=True).first()
         transaction = Transaction.objects.create(
             payer=request.user,
             receiver=manager.user,
+            payment_method=payment_method,
             order=order,
             amount=order.amount,
             description=order.description or "پرداخت سفارش"
@@ -149,9 +152,11 @@ class RequestPaymentForGameOrder(generics.RetrieveAPIView):
     def post(self, request, game_order_id):
         game_order = get_object_or_404(GameOrder, id=game_order_id)
         manager = get_object_or_404(MainManager, id=1)
+        payment_method = PaymentMethod.objects.filter(is_online=True).first()
         transaction = Transaction.objects.create(
             payer=request.user,
             receiver=manager.user,
+            payment_method=payment_method,
             game_order=game_order,
             amount=game_order.amount,
             description=f'پرداخت شفارش {request.user.customer}'
@@ -246,9 +251,12 @@ class RequestPaymentForRepairOrder(generics.RetrieveAPIView):
     def post(self, request, repair_id):
         repair_order = get_object_or_404(RepairOrder, id=repair_id)
         manager = get_object_or_404(MainManager, id=1)
+        payment_method = PaymentMethod.objects.filter(is_online=True).first()
         transaction = Transaction.objects.create(
             payer=request.user,
             receiver=manager.user,
+            payment_method=payment_method,
+            amount=repair_order.amount,
             repair_order=repair_order,
             description=f'پرداخت شفارش تعمیر {request.user.customer}'
         )
@@ -301,9 +309,12 @@ class RequestPaymentForCourseOrder(generics.RetrieveAPIView):
     def post(self, request, repair_id):
         course_order = get_object_or_404(RepairOrder, id=repair_id)
         manager = get_object_or_404(MainManager, id=1)
+        payment_method = PaymentMethod.objects.filter(is_online=True).first()
         transaction = Transaction.objects.create(
             payer=request.user,
             receiver=manager.user,
+            payment_method=payment_method,
+            amount=course_order.amount,
             course_order=course_order,
             description=f'پرداخت شفارش دوره {request.user.customer}'
         )

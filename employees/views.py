@@ -1,17 +1,18 @@
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status
+from rest_framework import generics, status, filters
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from django.db import transaction as db_transaction
+from django.db import transaction as db_transaction, transaction
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager
 from customers.models import Customer
-from employees.filters import EmployeeTaskFilter
+from employees.filters import EmployeeTaskFilter, TransactionFilter
 from employees.models import EmployeeTask, Employee
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
-    EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
+    EmployeeSonyAccountSerializer, EmployeeTransactionListSerializer, EmployeeProductSerializer, \
     EmployeeTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, \
@@ -109,12 +110,14 @@ class EmployeePanelTaskList(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmployeeTaskFilter
+    ordering_fields = ['deadline', 'created_at']
+    search_fields = ['title', 'description']
 
     def get_queryset(self):
         user = self.request.user
         try:
             employee = user.employee
-            return EmployeeTask.objects.filter(employee=employee)
+            return EmployeeTask.objects.filter(employee=employee, is_deleted=False)
         except AttributeError:
             return Response(status=404)
 
@@ -149,7 +152,7 @@ class EmployeePanelAddTask(generics.CreateAPIView):
 
 # -------------------- transactions --------------------
 class EmployeePanelOwnedTransactionList(generics.ListAPIView):
-    serializer_class = EmployeeTransactionSerializer
+    serializer_class = EmployeeTransactionListSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -162,7 +165,7 @@ class EmployeePanelOwnedTransactionList(generics.ListAPIView):
 
 
 class EmployeePanelOwnedTransactionDetail(generics.RetrieveAPIView):
-    serializer_class = EmployeeTransactionSerializer
+    serializer_class = EmployeeTransactionListSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -393,47 +396,69 @@ class EmployeePanelAddRepairOrder(generics.CreateAPIView):
 # ==================== Transactions Views ====================
 @restrict_access('has_access_to_transactions')
 class EmployeePanelTransactionList(generics.ListAPIView):
-    serializer_class = EmployeeTransactionSerializer
     queryset = Transaction.objects.filter(is_deleted=False)
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
+    serializer_class = EmployeeTransactionListSerializer
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = TransactionFilter
+    search_fields = ['description', 'ref_id']
+    ordering_fields = ['created_at', 'amount']
 
 
 @restrict_access('has_access_to_transactions')
 class EmployeePanelTransactionDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeeTransactionSerializer
+    serializer_class = EmployeeTransactionListSerializer
     queryset = Transaction.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'pk'
 
 
 @restrict_access('has_access_to_transactions')
 class EmployeePanelAddTransaction(generics.CreateAPIView):
-    serializer_class = EmployeeTransactionSerializer
+    serializer_class = EmployeeTransactionListSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
+    @transaction.atomic
     def perform_create(self, serializer):
-        try:
-            with db_transaction.atomic():
-                validated_data = serializer.validated_data
-                payer = validated_data.get('payer')
-                receiver = validated_data.get('receiver')
-                amount = validated_data['amount']
+        instance = serializer.save()
 
-                if payer:
-                    if payer.balance < amount:
-                        return Response({"detail": "موجودی payer کافی نیست."}, status=400)
-                    payer.balance -= amount
-                    payer.save()
-                if receiver:
-                    receiver.balance += amount
-                    receiver.save()
-                serializer.save()
-        except AttributeError:
-            return Response({"detail": "کاربر مرتبط یافت نشد."}, status=404)
-        except ValueError as e:
-            return Response({"detail": str(e)}, status=400)
+        payer = instance.payer
+        receiver = instance.receiver
+        amount = instance.amount
+        payment_method = instance.payment_method
+
+        try:
+            main_manager = MainManager.objects.get(user=receiver or payer)
+        except MainManager.DoesNotExist:
+            main_manager = None
+
+        if main_manager and receiver == main_manager.user:
+            if payment_method:
+                payment_method.balance += amount
+                payment_method.save()
+            main_manager.balance += amount
+            main_manager.save()
+
+        elif main_manager and payer == main_manager.user:
+            if payment_method:
+                if payment_method.balance < amount:
+                    raise ValidationError("موجودی متود پرداخت کافی نیست.")
+                payment_method.balance -= amount
+                payment_method.save()
+
+            if main_manager.balance < amount:
+                raise ValidationError("موجودی مین منیجر کافی نیست.")
+            main_manager.balance -= amount
+            main_manager.save()
+
+        if payer:
+            try:
+                customer = payer.customer
+                customer.balance = min(0, customer.balance - amount)
+                customer.save()
+            except Customer.DoesNotExist:
+                pass
 
 
 @restrict_access('has_access_to_transactions')
@@ -453,7 +478,6 @@ class EmployeePanelTransactionChoices(generics.ListAPIView):
             'orders': EmployeeProductOrderSerializer(orders, many=True).data,
 
         }
-
         return Response(response_data)
 
 

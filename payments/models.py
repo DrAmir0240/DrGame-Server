@@ -74,12 +74,11 @@ class GameOrder(models.Model):
         ('error_on_accounts', 'مشکل در اکانت ها'),
         ('done', 'انجام شده و در انتظار پیک'),
         ('delivered_to_customer', 'تحویل شده به مشتری'),
-
     ), default="waiting")
     payment_status = models.CharField(max_length=30,
                                       choices=(
                                           ('paid', 'پرداخت شده'),
-                                          ('unpaid', 'پذداخت نشده')),
+                                          ('unpaid', 'پرداخت نشده')),
                                       default='unpaid')
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
@@ -133,7 +132,7 @@ class RepairOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'سفارش {self.customer.full_name} بابت {self.order_type.title}'
+        return f'سفارش {self.customer.full_name} بابت {self.order_type}'
 
 
 class CourseOrder(models.Model):
@@ -144,7 +143,32 @@ class CourseOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'Order #{self.id} - {self.customer} - {self.course}'
+        return f'Order #{self.id} - {self.customer}'
+
+
+class PaymentMethod(models.Model):
+    title = models.CharField(max_length=100)
+    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(null=True, blank=True)
+    is_online = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.is_online:
+            qs = PaymentMethod.objects.filter(is_online=True, is_deleted=False)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            if qs.exists():
+                raise ValidationError("فقط یک متود پرداخت می‌تواند آنلاین باشد.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Payment method #{self.title}'
 
 
 class Transaction(models.Model):
@@ -152,10 +176,13 @@ class Transaction(models.Model):
     payer_str = models.CharField(max_length=100, null=True, blank=True)
     receiver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='receiver')
     receiver_str = models.CharField(max_length=100, null=True, blank=True)
+    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True,
+                                       related_name='transactions')
     amount = models.PositiveIntegerField()
     authority = models.CharField(max_length=100, blank=True)
     ref_id = models.CharField(max_length=100, blank=True, null=True)
     status = models.CharField(max_length=20, default='pending')
+    in_out = models.BooleanField(default=True)
     game_order = models.OneToOneField(GameOrder, on_delete=models.SET_NULL, blank=True, null=True,
                                       related_name='game_order')
     repair_order = models.OneToOneField(RepairOrder, on_delete=models.SET_NULL, blank=True, null=True,
@@ -277,14 +304,6 @@ class Transaction(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        if self.payer:
-            payer = self.payer
-        else:
-            payer = self.payer_str
-
-        if self.receiver:
-            receiver = self.receiver
-        else:
-            receiver = self.receiver_str
-
+        payer = self.payer if self.payer else self.payer_str if self.payer_str else "نامشخص"
+        receiver = self.receiver if self.receiver else self.receiver_str if self.receiver_str else "نامشخص"
         return f'تراکنش {payer} به {receiver}'

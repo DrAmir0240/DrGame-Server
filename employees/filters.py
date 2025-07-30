@@ -1,6 +1,10 @@
 # your_app/filters.py
+import django_filters
+
 from employees.models import EmployeeTask
 from django_filters import rest_framework as filters
+
+from payments.models import Transaction
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -9,6 +13,40 @@ class EmployeeTaskFilter(filters.FilterSet):
     deadline__gte = filters.DateTimeFilter(field_name='deadline', lookup_expr='gte')
     deadline__lte = filters.DateTimeFilter(field_name='deadline', lookup_expr='lte')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
+
     class Meta:
         model = EmployeeTask
         fields = ['type', 'status', 'deadline__gte', 'deadline__lte', 'title']
+
+
+class TransactionFilter(filters.FilterSet):
+    payer = filters.NumberFilter(field_name='payer__id')
+    payer_str = filters.CharFilter(field_name='payer_str', lookup_expr='icontains')
+    receiver = filters.NumberFilter(field_name='receiver__id')
+    receiver_str = filters.CharFilter(field_name='receiver_str', lookup_expr='icontains')
+    payment_method = filters.NumberFilter(field_name='payment_method__id')
+    in_out = filters.BooleanFilter(field_name='in_out')
+    order_type = filters.CharFilter(method='filter_by_order_type')
+
+    created_at_after = filters.DateFilter(field_name='created_at', lookup_expr='gte')
+    created_at_before = filters.DateFilter(field_name='created_at', lookup_expr='lte')
+
+    class Meta:
+        model = Transaction
+        fields = [
+            'payer', 'payer_str',
+            'receiver', 'receiver_str',
+            'payment_method', 'in_out',
+            'created_at_after', 'created_at_before'
+        ]
+
+    def filter_by_order_type(self, queryset, name, value):
+        if value == 'game':
+            return queryset.filter(game_order__isnull=False)
+        elif value == 'repair':
+            return queryset.filter(repair_order__isnull=False)
+        elif value == 'course':
+            return queryset.filter(course_order__isnull=False)
+        elif value == 'normal':
+            return queryset.filter(order__isnull=False)
+        return queryset

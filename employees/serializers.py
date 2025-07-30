@@ -92,7 +92,7 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
         return None
 
 
-class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeeTransactionListSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     payer = serializers.SlugRelatedField(
         slug_field='phone',
         queryset=CustomUser.objects.all(),
