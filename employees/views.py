@@ -398,9 +398,11 @@ class EmployeePanelAddRepairOrder(generics.CreateAPIView):
 class EmployeePanelTransactionList(generics.ListAPIView):
     queryset = Transaction.objects.filter(is_deleted=False)
     serializer_class = EmployeeTransactionListSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TransactionFilter
-    search_fields = ['description', 'ref_id']
+    search_fields = ['description', 'payment_method', 'payer', 'receiver']
     ordering_fields = ['created_at', 'amount']
 
 

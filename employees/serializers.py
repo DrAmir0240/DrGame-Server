@@ -110,12 +110,8 @@ class EmployeeTransactionListSerializer(SoftDeleteSerializerMixin, serializers.M
 
     class Meta:
         model = Transaction
-        fields = [
-            'id', 'payer', 'payer_str', 'receiver', 'receiver_str', 'amount',
-            'game_order', 'repair_order', 'course_order', 'order', 'description', 'is_deleted',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at', 'authority', 'ref_id', 'status']
 
     def validate(self, attrs):
         if attrs.get('payer') and attrs.get('payer_str'):
@@ -161,8 +157,6 @@ class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         validated_data['employee'] = employee
         validated_data['type'] = 'Personal'
         return super().create(validated_data)
-
-
 
 
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
