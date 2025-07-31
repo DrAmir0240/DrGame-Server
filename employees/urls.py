@@ -53,6 +53,7 @@ urlpatterns = [
     # ==================== Transactions Views ====================
     path('transactions/', views.EmployeePanelTransactionList.as_view(), name='transaction-list'),
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),
+    path('transactions/in/add/', views.EmployeePanelIncomingTransactionView.as_view(), name='in-transaction-add'),
     path('transactions/add/', views.EmployeePanelAddTransaction.as_view(), name='transaction-add'),
     path('transactions/choices', views.EmployeePanelTransactionChoices.as_view(), name='-choices'),
 

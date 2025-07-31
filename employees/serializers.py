@@ -4,7 +4,7 @@ from accounts.models import CustomUser
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document
 
@@ -92,32 +92,75 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
         return None
 
 
-class EmployeeTransactionListSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    payer = serializers.SlugRelatedField(
-        slug_field='phone',
-        queryset=CustomUser.objects.all(),
-        required=False,
-        allow_null=True
+class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    payment_method_id = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentMethod.objects.filter(is_deleted=False), source='payment_method'
     )
-    receiver = serializers.SlugRelatedField(
-        slug_field='phone',
-        queryset=CustomUser.objects.all(),
-        required=False,
-        allow_null=True
+    payer_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.filter(is_deleted=False), source='payer', required=False
     )
-    payer_str = serializers.CharField(required=False, allow_blank=True, allow_null=True)
-    receiver_str = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    receiver_id = serializers.PrimaryKeyRelatedField(
+        queryset=CustomUser.objects.filter(is_deleted=False), source='receiver', required=False
+    )
+    order_type = serializers.ChoiceField(
+        choices=[('order', 'Order'), ('game_order', 'GameOrder'), ('repair_order', 'RepairOrder')],
+        required=False, allow_blank=True, allow_null=True
+    )
+    order_id = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Transaction
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at', 'authority', 'ref_id', 'status']
+        fields = [
+            'id', 'payment_method_id', 'payer_id', 'receiver_id', 'amount', 'description',
+            'in_out', 'status', 'order_type', 'order_id', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'in_out', 'status', 'created_at', 'updated_at']
 
     def validate(self, attrs):
         if attrs.get('payer') and attrs.get('payer_str'):
             raise serializers.ValidationError("فقط یکی از payer یا payer_str باید مقدار داشته باشد.")
         if attrs.get('receiver') and attrs.get('receiver_str'):
             raise serializers.ValidationError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
+
+        order_type = attrs.get('order_type')
+        order_id = attrs.get('order_id')
+        if order_type or order_id:
+            if not (order_type and order_id):
+                raise serializers.ValidationError("هر دو فیلد order_type و order_id باید با هم ارائه شوند.")
+
+            payer = attrs.get('payer')
+            if not payer:
+                raise serializers.ValidationError("پرداخت‌کننده باید مشخص باشد.")
+            try:
+                customer = Customer.objects.get(user=payer, is_deleted=False)
+            except Customer.DoesNotExist:
+                raise serializers.ValidationError("پرداخت‌کننده باید یک مشتری باشد.")
+
+            if order_type == 'order':
+                try:
+                    order = Order.objects.get(id=order_id, is_deleted=False)
+                    if order.customer != customer:
+                        raise serializers.ValidationError("سفارش با مشتری مطابقت ندارد.")
+                    attrs['order'] = order
+                except Order.DoesNotExist:
+                    raise serializers.ValidationError("سفارش یافت نشد.")
+            elif order_type == 'game_order':
+                try:
+                    game_order = GameOrder.objects.get(id=order_id, is_deleted=False)
+                    if game_order.customer != customer:
+                        raise serializers.ValidationError("سفارش بازی با مشتری مطابقت ندارد.")
+                    attrs['game_order'] = game_order
+                except GameOrder.DoesNotExist:
+                    raise serializers.ValidationError("سفارش بازی یافت نشد.")
+            elif order_type == 'repair_order':
+                try:
+                    repair_order = RepairOrder.objects.get(id=order_id, is_deleted=False)
+                    if repair_order.customer != customer:
+                        raise serializers.ValidationError("سفارش تعمیر با مشتری مطابقت ندارد.")
+                    attrs['repair_order'] = repair_order
+                except RepairOrder.DoesNotExist:
+                    raise serializers.ValidationError("سفارش تعمیر یافت نشد.")
+
         return attrs
 
 

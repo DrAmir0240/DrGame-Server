@@ -31,6 +31,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
 
 class MainManager(models.Model):
+    id = models.IntegerField(primary_key=True, unique=True, default=1)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='main_manager')
     name = models.CharField(max_length=100, unique=True)
     access = models.CharField(max_length=1, choices=(('1', '1'),), unique=True)
@@ -85,6 +86,7 @@ class OTP(models.Model):
         except requests.exceptions.RequestException as e:
             print(f"Request Error: {str(e)}")
             return False, f"خطا در ارتباط با سرویس پیامک: {str(e)}"
+
 
 class APIKey(models.Model):
     key = models.CharField(max_length=70, unique=True)
