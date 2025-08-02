@@ -1,6 +1,7 @@
+from django.db import transaction
 from rest_framework import serializers
 
-from accounts.models import CustomUser
+from accounts.models import CustomUser, MainManager
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
@@ -121,47 +122,204 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
             raise serializers.ValidationError("فقط یکی از payer یا payer_str باید مقدار داشته باشد.")
         if attrs.get('receiver') and attrs.get('receiver_str'):
             raise serializers.ValidationError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
+        return attrs
 
-        order_type = attrs.get('order_type')
-        order_id = attrs.get('order_id')
-        if order_type or order_id:
-            if not (order_type and order_id):
-                raise serializers.ValidationError("هر دو فیلد order_type و order_id باید با هم ارائه شوند.")
 
-            payer = attrs.get('payer')
-            if not payer:
-                raise serializers.ValidationError("پرداخت‌کننده باید مشخص باشد.")
-            try:
-                customer = Customer.objects.get(user=payer, is_deleted=False)
-            except Customer.DoesNotExist:
-                raise serializers.ValidationError("پرداخت‌کننده باید یک مشتری باشد.")
+class EmployeeIncomingTransactionSerializer(serializers.ModelSerializer):
+    payment_method_id = serializers.IntegerField(write_only=True)
+    customer_id = serializers.IntegerField(required=False, write_only=True)
+    payer_str = serializers.CharField(required=False, allow_blank=True)
+    order_type = serializers.ChoiceField(choices=['order', 'game_order', 'repair_order'], write_only=True,
+                                         required=False)
+    order_id = serializers.IntegerField(required=False, write_only=True)
+    amount = serializers.IntegerField(required=False)
 
-            if order_type == 'order':
-                try:
-                    order = Order.objects.get(id=order_id, is_deleted=False)
-                    if order.customer != customer:
-                        raise serializers.ValidationError("سفارش با مشتری مطابقت ندارد.")
-                    attrs['order'] = order
-                except Order.DoesNotExist:
-                    raise serializers.ValidationError("سفارش یافت نشد.")
-            elif order_type == 'game_order':
-                try:
-                    game_order = GameOrder.objects.get(id=order_id, is_deleted=False)
-                    if game_order.customer != customer:
-                        raise serializers.ValidationError("سفارش بازی با مشتری مطابقت ندارد.")
-                    attrs['game_order'] = game_order
-                except GameOrder.DoesNotExist:
-                    raise serializers.ValidationError("سفارش بازی یافت نشد.")
-            elif order_type == 'repair_order':
-                try:
-                    repair_order = RepairOrder.objects.get(id=order_id, is_deleted=False)
-                    if repair_order.customer != customer:
-                        raise serializers.ValidationError("سفارش تعمیر با مشتری مطابقت ندارد.")
-                    attrs['repair_order'] = repair_order
-                except RepairOrder.DoesNotExist:
-                    raise serializers.ValidationError("سفارش تعمیر یافت نشد.")
+    class Meta:
+        model = Transaction
+        fields = [
+            'payment_method_id', 'customer_id', 'payer_str',
+            'order_type', 'order_id', 'amount',
+            'description', 'in_out'
+        ]
+
+    def validate(self, attrs):
+        customer_id = attrs.get('customer_id')
+        payer_str = attrs.get('payer_str')
+
+        if customer_id and payer_str:
+            raise serializers.ValidationError("یا customer_id یا payer_str را وارد کنید، نه هر دو.")
+
+        if not customer_id and not payer_str:
+            raise serializers.ValidationError("حداقل یکی از customer_id یا payer_str الزامی است.")
 
         return attrs
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            payment_method_id = validated_data.pop('payment_method_id')
+            customer_id = validated_data.pop('customer_id', None)
+            payer_str = validated_data.pop('payer_str', None)
+            order_type = validated_data.pop('order_type', None)
+            order_id = validated_data.pop('order_id', None)
+            amount = validated_data.pop('amount', None)
+
+            # گرفتن متود پرداخت
+            try:
+                payment_method = PaymentMethod.objects.get(id=payment_method_id, is_deleted=False)
+            except PaymentMethod.DoesNotExist:
+                raise serializers.ValidationError({"payment_method_id": "متود پرداخت پیدا نشد."})
+
+            # گرفتن مشتری و یوزر
+            user = None
+            customer = None
+            if customer_id:
+                try:
+                    customer = Customer.objects.get(id=customer_id, is_deleted=False)
+                    user = customer.user
+                except Customer.DoesNotExist:
+                    raise serializers.ValidationError({"customer_id": "مشتری پیدا نشد."})
+
+            # گرفتن سفارش و تنظیم مبلغ
+            order_obj = None
+            if order_type == 'order':
+                order_obj = Order.objects.filter(id=order_id, is_deleted=False).first()
+            elif order_type == 'game_order':
+                order_obj = GameOrder.objects.filter(id=order_id, is_deleted=False).first()
+            elif order_type == 'repair_order':
+                order_obj = RepairOrder.objects.filter(id=order_id, is_deleted=False).first()
+
+            if order_id and not order_obj:
+                raise serializers.ValidationError({"order_id": "سفارشی با این مشخصات پیدا نشد."})
+
+            if order_obj and not amount:
+                amount = int(order_obj.amount)
+            elif not amount:
+                raise serializers.ValidationError({"amount": "مبلغ الزامی است اگر سفارشی انتخاب نشده باشد."})
+
+            # ساخت تراکنش
+            tx = Transaction.objects.create(
+                payer=user if user else None,
+                payer_str=None if user else payer_str,
+                receiver=None,  # گیرنده مشخص نیست (می‌تونی مثلاً MainManager یا System باشه)
+                receiver_str='دکتر گیم',
+                payment_method=payment_method,
+                amount=amount,
+                in_out=True,
+                description=validated_data.get("description", ""),
+                status='paid'
+            )
+
+            # وصل کردن تراکنش به سفارش
+            if order_obj:
+                order_obj.transaction = tx
+                order_obj.payment_status = 'paid'
+                order_obj.save()
+
+            # افزایش موجودی
+            payment_method.balance += amount
+            payment_method.save()
+
+            if customer:
+                customer.balance += amount
+                customer.save()
+
+            return tx
+
+
+class EmployeesOutgoingTransactionSerializer(serializers.ModelSerializer):
+    payment_method_id = serializers.IntegerField(write_only=True)
+    employee_id = serializers.IntegerField(required=False, write_only=True)
+    receiver_str = serializers.CharField(required=False, allow_blank=True)
+    amount = serializers.IntegerField()
+    receiver_info = serializers.SerializerMethodField()
+    payment_method_title = serializers.CharField(source='payment_method.title', read_only=True)
+
+    class Meta:
+        model = Transaction
+        fields = [
+            'payment_method_id', 'employee_id', 'receiver_str',
+            'amount', 'description',
+            'receiver_info', 'payment_method_title'
+        ]
+
+    def validate(self, attrs):
+        employee_id = attrs.get('employee_id')
+        receiver_str = attrs.get('receiver_str')
+
+        if employee_id and receiver_str:
+            raise serializers.ValidationError("یا employee_id یا receiver_str را وارد کنید، نه هر دو.")
+
+        if not employee_id and not receiver_str:
+            raise serializers.ValidationError("حداقل یکی از employee_id یا receiver_str الزامی است.")
+
+        return attrs
+
+    def create(self, validated_data):
+        with transaction.atomic():
+            employee_id = validated_data.pop('employee_id', None)
+            receiver_str = validated_data.pop('receiver_str', None)
+            payment_method_id = validated_data.pop('payment_method_id')
+            amount = validated_data.pop('amount')
+
+            # بررسی و گرفتن متود پرداخت
+            try:
+                payment_method = PaymentMethod.objects.get(id=payment_method_id, is_deleted=False)
+            except PaymentMethod.DoesNotExist:
+                raise serializers.ValidationError({"payment_method_id": "متود پرداخت پیدا نشد."})
+
+            # بررسی و گرفتن گیرنده
+            receiver_user = None
+            if employee_id:
+                try:
+                    employee = Employee.objects.get(id=employee_id)
+                    receiver_user = employee.user
+                except Employee.DoesNotExist:
+                    raise serializers.ValidationError({"employee_id": "کارمند پیدا نشد."})
+
+            # بررسی موجودی
+            if payment_method.balance < amount:
+                raise serializers.ValidationError("موجودی متود پرداخت کافی نیست.")
+
+            # ساخت تراکنش
+            tx = Transaction.objects.create(
+                payer_str="دکتر گیم",
+                receiver=receiver_user if receiver_user else None,
+                receiver_str=receiver_str,
+                payment_method=payment_method,
+                amount=amount,
+                in_out=False,
+                description=validated_data.get('description', ''),
+                status='paid'
+            )
+
+            # به‌روزرسانی موجودی‌ها
+            payment_method.balance -= amount
+            payment_method.save()
+
+            if receiver_user and hasattr(receiver_user, 'employee'):
+                receiver_user.employee.balance -= amount
+                receiver_user.employee.save()
+
+            return tx
+
+    def get_receiver_info(self, obj):
+        if obj.receiver:
+            employee = getattr(obj.receiver, 'employee', None)
+            if employee:
+                return {
+                    "id": employee.id,
+                    "full_name": getattr(employee, 'full_name', obj.receiver.phone),
+                    "phone": obj.receiver.phone,
+                    "balance": employee.balance
+                }
+            return {
+                "id": obj.receiver.id,
+                "phone": obj.receiver.phone,
+                "full_name": obj.receiver.phone
+            }
+        elif obj.receiver_str:
+            return {"receiver_str": obj.receiver_str}
+        return None
 
 
 class EmployeeProductColorSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

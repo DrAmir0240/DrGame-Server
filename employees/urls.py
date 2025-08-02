@@ -53,9 +53,9 @@ urlpatterns = [
     # ==================== Transactions Views ====================
     path('transactions/', views.EmployeePanelTransactionList.as_view(), name='transaction-list'),
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),
-    path('transactions/in/add/', views.EmployeePanelIncomingTransactionView.as_view(), name='in-transaction-add'),
-    path('transactions/add/', views.EmployeePanelAddTransaction.as_view(), name='transaction-add'),
-    path('transactions/choices', views.EmployeePanelTransactionChoices.as_view(), name='-choices'),
+    path('transactions/in/add/', views.EmployeePanelAddIncomingTransactionView.as_view(), name='in-transaction-add'),
+    path('transactions/out/add/', views.EmployeePanelAddOutGoingTransaction.as_view(), name='out-transaction-add'),
+    path('transactions/choices', views.EmployeePanelTransactionPayerReceiverChoices.as_view(), name='-choices'),
 
     # ==================== Employee Views ====================
     path('user/create/', views.UserCreat.as_view(), name='user-create'),

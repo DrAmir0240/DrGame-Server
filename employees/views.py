@@ -1,4 +1,5 @@
 from django.db.models import Q, Count
+from django.dispatch import receiver
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
@@ -8,8 +9,9 @@ from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager
 from customers.models import Customer
+from employees.apps import EmployeesConfig
 from employees.filters import EmployeeTaskFilter, TransactionFilter
-from employees.models import EmployeeTask, Employee
+from employees.models import EmployeeTask, Employee, EmployeeFile
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -17,7 +19,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
-    EmployeeDocCategorySerializer
+    EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -415,148 +417,30 @@ class EmployeePanelTransactionDetail(generics.RetrieveUpdateDestroyAPIView):
     lookup_field = 'pk'
 
 
-@restrict_access('has_access_to_transactions')
-class EmployeePanelAddTransaction(generics.CreateAPIView):
-    serializer_class = EmployeeTransactionSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-    @transaction.atomic
-    def perform_create(self, serializer):
-        instance = serializer.save()
-
-        payer = instance.payer
-        receiver = instance.receiver
-        amount = instance.amount
-        payment_method = instance.payment_method
-
-        try:
-            main_manager = MainManager.objects.get(user=receiver or payer)
-        except MainManager.DoesNotExist:
-            main_manager = None
-
-        if main_manager and receiver == main_manager.user:
-            if payment_method:
-                payment_method.balance += amount
-                payment_method.save()
-            main_manager.balance += amount
-            main_manager.save()
-
-        elif main_manager and payer == main_manager.user:
-            if payment_method:
-                if payment_method.balance < amount:
-                    raise ValidationError("موجودی متود پرداخت کافی نیست.")
-                payment_method.balance -= amount
-                payment_method.save()
-
-            if main_manager.balance < amount:
-                raise ValidationError("موجودی مین منیجر کافی نیست.")
-            main_manager.balance -= amount
-            main_manager.save()
-
-        if payer:
-            try:
-                customer = payer.customer
-                customer.balance = min(0, customer.balance - amount)
-                customer.save()
-            except Customer.DoesNotExist:
-                pass
-
-
-class EmployeePanelIncomingTransactionView(generics.CreateAPIView):
+class EmployeePanelAddIncomingTransactionView(generics.CreateAPIView):
     queryset = Transaction.objects.filter(is_deleted=False)
-    serializer_class = EmployeeTransactionSerializer
+    serializer_class = EmployeeIncomingTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+ 
+
+
+class EmployeePanelAddOutGoingTransaction(generics.CreateAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False)
+    serializer_class = EmployeesOutgoingTransactionSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
-    def perform_create(self, serializer):
-        with db_transaction.atomic():
-            try:
-                main_manager = MainManager.objects.get(id=1)
-                receiver = main_manager.user
-            except MainManager.DoesNotExist:
-                return Response(
-                    {"detail": "MainManager با id=1 یافت نشد."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # بررسی اینکه payer یک مشتری باشد
-            payer_id = self.request.data.get('payer')
-            try:
-                customer = Customer.objects.get(id=payer_id, is_deleted=False)
-            except Customer.DoesNotExist:
-                return Response(
-                    {"detail": "پرداخت‌کننده باید یک مشتری باشد."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # دریافت payment_method
-            payment_method_id = self.request.data.get('payment_method_id')
-            try:
-                payment_method = PaymentMethod.objects.get(id=payment_method_id, is_deleted=False)
-            except PaymentMethod.DoesNotExist:
-                return Response(
-                    {"detail": "روش پرداخت معتبر نیست."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            # آماده‌سازی داده‌های تراکنش
-            transaction_data = {
-                'payer': customer.user,
-                'receiver': receiver,
-                'in_out': True,
-                'status': 'pending'
-            }
-
-            # افزودن سفارش مرتبط فقط در صورت وجود order_type و order_id
-            order_type = self.request.data.get('order_type')
-            order_id = self.request.data.get('order_id')
-            if order_type and order_id:
-                if order_type == 'order':
-                    transaction_data['order'] = serializer.validated_data['order']
-                elif order_type == 'game_order':
-                    transaction_data['game_order'] = serializer.validated_data['game_order']
-                elif order_type == 'repair_order':
-                    transaction_data['repair_order'] = serializer.validated_data['repair_order']
-
-            # ثبت تراکنش
-            transaction = serializer.save(**transaction_data)
-
-            # به‌روزرسانی موجودی‌ها
-            payment_method.balance += transaction.amount
-            customer.balance += transaction.amount
-            payment_method.save()
-            customer.save()
-
-            # به‌روزرسانی وضعیت سفارش فقط در صورت وجود سفارش
-            if order_type and order_id:
-                if order_type == 'game_order' and transaction.game_order:
-                    transaction.game_order.payment_status = 'paid'
-                    transaction.game_order.save()
-                elif order_type == 'repair_order' and transaction.repair_order:
-                    transaction.repair_order.payment_status = 'paid'
-                    transaction.repair_order.save()
-                elif order_type == 'order' and transaction.order:
-                    # مدل Order فیلد payment_status ندارد، در صورت نیاز منطق دیگری اضافه کنید
-                    pass
-
 
 @restrict_access('has_access_to_transactions')
-class EmployeePanelTransactionChoices(generics.ListAPIView):
+class EmployeePanelTransactionPayerReceiverChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         customers = Customer.objects.all()
         employees = Employee.objects.all()
-        game_orders = GameOrder.objects.all()
-        repair_orders = RepairOrder.objects.all()
-        orders = Order.objects.all()
 
         response_data = {
             'customers': EmployeeCustomerSerializer(customers, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
-            'game_orders': EmployeeGameOrderSerializer(game_orders, many=True).data,
-            'repair_orders': EmployeeRepairOrderSerializer(repair_orders, many=True).data,
-            'orders': EmployeeProductOrderSerializer(orders, many=True).data,
-
         }
         return Response(response_data)
 
