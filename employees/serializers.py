@@ -5,7 +5,7 @@ from accounts.models import CustomUser, MainManager
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document
 
@@ -360,15 +360,25 @@ class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         return super().create(validated_data)
 
 
+class EmployeeOrderItemSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    product = EmployeeProductSerializer(read_only=True)
+    class Meta:
+        model = OrderItem
+        fields = '__all__'
+        read_only_fields = ['is_deleted', 'created_at']
+
+
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    order_type = serializers.SlugRelatedField(read_only=True, slug_field='title')
-    customer = serializers.SlugRelatedField(read_only=True, slug_field='full_name')
-    product = EmployeeProductSerializer()
+    customer = serializers.SerializerMethodField()
+    order_items = EmployeeOrderItemSerializer(read_only=True, many=True)
 
     class Meta:
         model = Order
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def get_customer(self, obj):
+        return obj.customer.full_name if obj.customer else None
 
 
 class EmployeeGameOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

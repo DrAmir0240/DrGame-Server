@@ -422,7 +422,6 @@ class EmployeePanelAddIncomingTransactionView(generics.CreateAPIView):
     serializer_class = EmployeeIncomingTransactionSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
- 
 
 
 class EmployeePanelAddOutGoingTransaction(generics.CreateAPIView):
@@ -437,12 +436,36 @@ class EmployeePanelTransactionPayerReceiverChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         customers = Customer.objects.all()
         employees = Employee.objects.all()
-
         response_data = {
             'customers': EmployeeCustomerSerializer(customers, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
         }
         return Response(response_data)
+
+
+class EmployeePanelTransactionOrderChoices(generics.ListAPIView):
+    serializer_class = None
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        customer_id = self.kwargs.get('customer_id')
+        order_type = self.kwargs.get('order_type')
+
+        if order_type == 'order':
+            self.serializer_class = EmployeeProductOrderSerializer
+            return Order.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        elif order_type == 'game_order':
+            self.serializer_class = EmployeeGameOrderSerializer
+            return GameOrder.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        elif order_type == 'repair_order':
+            self.serializer_class = EmployeeRepairOrderSerializer
+            return RepairOrder.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        raise ValidationError(
+            {"order_type": "نوع سفارش نامعتبر است. باید یکی از [order, game_order, repair_order] باشد."})
 
 
 # ==================== Employees Views ====================

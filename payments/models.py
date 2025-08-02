@@ -173,6 +173,11 @@ class Order(models.Model):
         ('employee', 'سفارش از طریق کارمند')
     ), default='customer')
     amount = models.DecimalField(max_digits=12, decimal_places=3)
+    payment_status = models.CharField(max_length=30,
+                                      choices=(
+                                          ('paid', 'پرداخت شده'),
+                                          ('unpaid', 'پرداخت نشده')),
+                                      default='unpaid')
     transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='order')
     description = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
