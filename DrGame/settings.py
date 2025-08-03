@@ -39,22 +39,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # local apps
-    'accounts',
-    'management',
-    'employees',
-    'storage',
-    'payments',
-    'home',
-    'customers',
+    'accounts', 'management',
+    'employees', 'storage',
+    'payments', 'home',
+    'customers', 'messenger',
     # third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
-    'django_ratelimit',
-    'corsheaders',
-    'drf_spectacular',
-    'django_redis',
-    'storages',
-    'django_filters',
+    'django_ratelimit', 'corsheaders',
+    'drf_spectacular', 'django_redis',
+    'storages', 'django_filters',
     'debug_toolbar',  # for debug
 ]
 
