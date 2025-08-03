@@ -103,6 +103,8 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
     receiver_id = serializers.PrimaryKeyRelatedField(
         queryset=CustomUser.objects.filter(is_deleted=False), source='receiver', required=False
     )
+    payer_customer = serializers.SerializerMethodField()
+    receiver_employee = serializers.SerializerMethodField()
     order_type = serializers.ChoiceField(
         choices=[('order', 'Order'), ('game_order', 'GameOrder'), ('repair_order', 'RepairOrder')],
         required=False, allow_blank=True, allow_null=True
@@ -112,8 +114,13 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
     class Meta:
         model = Transaction
         fields = [
-            'id', 'payment_method_id', 'payer_id', 'receiver_id', 'amount', 'description',
-            'in_out', 'status', 'order_type', 'order_id', 'created_at', 'updated_at'
+            'id', 'payment_method_id',
+            'payer_id', 'payer_customer',
+            'receiver_id', 'receiver_employee',
+            'amount','description',
+            'in_out', 'status',
+            'order_type', 'order_id',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'in_out', 'status', 'created_at', 'updated_at']
 
@@ -123,6 +130,26 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
         if attrs.get('receiver') and attrs.get('receiver_str'):
             raise serializers.ValidationError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
         return attrs
+
+    def get_payer_customer(self, obj):
+        customer = getattr(obj.payer, 'customer', None)
+        if customer:
+            return {
+                'id': customer.id,
+                'full_name': customer.full_name,
+                'balance': customer.balance,
+            }
+        return None
+
+    def get_receiver_employee(self, obj):
+        employee = getattr(obj.receiver, 'employee', None)
+        if employee:
+            return {
+                'id': employee.id,
+                'full_name': employee.first_name + ' ' + employee.last_name,
+                'position': employee.position if hasattr(employee, 'position') else None,
+            }
+        return None
 
 
 class EmployeeIncomingTransactionSerializer(serializers.ModelSerializer):
@@ -362,6 +389,7 @@ class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
 
 class EmployeeOrderItemSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     product = EmployeeProductSerializer(read_only=True)
+
     class Meta:
         model = OrderItem
         fields = '__all__'
