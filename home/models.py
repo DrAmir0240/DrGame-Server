@@ -68,7 +68,7 @@ class GameCart(models.Model):
 
 
 class GameCartItem(models.Model):
-    game_cart = models.ForeignKey(GameCart, on_delete=models.CASCADE)
+    game_cart = models.ForeignKey(GameCart, on_delete=models.CASCADE, related_name='games')
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     price = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

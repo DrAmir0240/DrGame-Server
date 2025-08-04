@@ -116,7 +116,7 @@ class GameOrderCreate(generics.CreateAPIView):
             game_cart = GameCart.objects.get(user=customer, is_deleted=False)
             if not game_cart.games.exists():
                 raise ValidationError("سبد خرید خالی است.")
-            total_amount = game_cart.total_price()
+            total_amount = game_cart.price
 
             game_order = serializer.save(
                 customer=customer,

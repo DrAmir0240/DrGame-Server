@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from payments.models import CourseOrder
 from .models import Cart, CartItem, BlogPost, ContactUs, AboutUs, ContactSubmission, Course, \
-    Video, HomeBanner
+    Video, HomeBanner, GameCart, GameCartItem
 
 
 @admin.register(Cart)
@@ -13,6 +13,20 @@ class CartAdmin(admin.ModelAdmin):
 @admin.register(CartItem)
 class CartAdmin(admin.ModelAdmin):
     list_display = ['id', 'cart', 'product', 'quantity', 'is_deleted', 'updated_at', ]
+
+
+@admin.register(GameCart)
+class GameCartAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
+@admin.register(GameCartItem)
+class GameCartItemAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
 
 
 @admin.register(BlogPost)

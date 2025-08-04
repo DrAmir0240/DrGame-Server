@@ -1,6 +1,6 @@
 from django.contrib import admin
 from payments.models import Transaction, Order, RepairOrder, GameOrder, \
-    RepairOrderType, DeliveryMan, PaymentMethod
+    RepairOrderType, DeliveryMan, PaymentMethod, GameOrderItem
 
 
 # Register your models here.
@@ -13,6 +13,13 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(GameOrder)
 class GameOrderAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
+@admin.register(GameOrderItem)
+class GameOrderItemAdmin(admin.ModelAdmin):
     class Media:
         fields = '__all__'
         search_fields = '__all__'
