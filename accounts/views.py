@@ -171,7 +171,7 @@ class VerifyOTPView(APIView):
             httponly=True,
             secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
             samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-            max_age=3600
+            max_age=int(settings.SIMPLE_JWT['ACCESS_TOKEN_LIFETIME'].total_seconds())
         )
         response.set_cookie(
             key='refresh_token',
@@ -179,7 +179,7 @@ class VerifyOTPView(APIView):
             httponly=True,
             secure=settings.SIMPLE_JWT['AUTH_COOKIE_SECURE'],
             samesite=settings.SIMPLE_JWT['AUTH_COOKIE_SAMESITE'],
-            max_age=432000
+            max_age=int(settings.SIMPLE_JWT['REFRESH_TOKEN_LIFETIME'].total_seconds())
         )
         return response
 
