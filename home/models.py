@@ -46,17 +46,39 @@ class CartItem(models.Model):
 
 
 class GameCart(models.Model):
+    GAME_CART_TYPE = (
+        ('online_ps4', 'online_ps4'),
+        ('online_ps5', 'online_ps5'),
+        ('offline_ps4', 'offline_ps4'),
+        ('offline_ps5', 'offline_ps5'),
+        ('data_ps4', 'data_ps4'),
+        ('data_ps5', 'data_ps5'),
+        ('xbox', 'xbox'),
+        ('nintendo', 'nintendo'),
+    )
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
-    games = models.ManyToManyField(Game, blank=True)
+    type = models.CharField(max_length=500, choices=GAME_CART_TYPE, default='online_ps4')
+    price = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
 
-    def total_price(self):
-        return sum(game.price for game in self.games.all())
-
     def __str__(self):
         return f'{self.user.full_name} game cart'
+
+
+class GameCartItem(models.Model):
+    game_cart = models.ForeignKey(GameCart, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    price = models.PositiveIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [['game', 'game_cart']]
+
+    def __str__(self):
+        return f"{self.game.title} game cart {self.game_cart}"
 
 
 # Blog

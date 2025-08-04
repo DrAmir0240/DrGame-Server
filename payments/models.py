@@ -213,6 +213,26 @@ class DeliveryMan(models.Model):
 
 
 class GameOrder(models.Model):
+    GAME_ORDER_CONSOLE_TYPE = (
+        ('online_ps4', 'online_ps4'),
+        ('online_ps5', 'online_ps5'),
+        ('offline_ps4', 'offline_ps4'),
+        ('offline_ps5', 'offline_ps5'),
+        ('data_ps4', 'data_ps4'),
+        ('data_ps5', 'data_ps5'),
+        ('xbox', 'xbox'),
+        ('nintendo', 'nintendo'),
+    )
+    GAME_ORDER_STATUS = (
+        ('paid_and_waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
+        ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
+        ('account_setting_queue', 'در لیست انتظار'),
+        ('account_setting_in_progress', 'در حال ست شدن اکانت'),
+        ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
+        ('error_on_accounts', 'مشکل در اکانت ها'),
+        ('done', 'انجام شده و در انتظار پیک'),
+        ('delivered_to_customer', 'تحویل شده به مشتری'),
+    )
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
                                        related_name='account_setter')
@@ -223,25 +243,13 @@ class GameOrder(models.Model):
         ('customer', 'سفارش از طریق مشتری'),
         ('employee', 'سفارش از طریق کارمند')
     ), default='customer')
+    order_console_type = models.CharField(max_length=30, choices=GAME_ORDER_CONSOLE_TYPE, null=True)
     console = models.CharField(max_length=100, null=True, blank=True)
-    games = models.ManyToManyField(Game, blank=True)
-    games_count = models.IntegerField(default=0, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=(
-        ('waiting', 'در انتظار پرداخت'),
-        ('paid_and_waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
-        ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
-        ('account_setting_queue', 'در لیست انتظار'),
-        ('account_setting_in_progress', 'در حال ست شدن اکانت'),
-        ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
-        ('error_on_accounts', 'مشکل در اکانت ها'),
-        ('done', 'انجام شده و در انتظار پیک'),
-        ('delivered_to_customer', 'تحویل شده به مشتری'),
-    ), default="waiting")
-    payment_status = models.CharField(max_length=30,
-                                      choices=(
-                                          ('paid', 'پرداخت شده'),
-                                          ('unpaid', 'پرداخت نشده')),
-                                      default='unpaid')
+    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS, default="waiting")
+    payment_status = models.CharField(max_length=30, choices=(
+        ('paid', 'پرداخت شده'),
+        ('unpaid', 'پرداخت نشده')
+    ), default='unpaid')
     transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='game_order')
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
@@ -254,6 +262,20 @@ class GameOrder(models.Model):
 
     def __str__(self):
         return f'سفارش {self.customer.full_name}'
+
+
+class GameOrderItem(models.Model):
+    game_order = models.ForeignKey(GameOrder, on_delete=models.CASCADE)
+    game = models.ForeignKey(Game, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
+    amount = models.IntegerField()
+    is_done = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.game_order}: {self.game}"
 
 
 class RepairOrderType(models.Model):
