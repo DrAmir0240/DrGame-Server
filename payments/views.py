@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation.trans_real import translation
 from rest_framework import generics, permissions
@@ -110,6 +111,7 @@ class GameOrderCreate(generics.CreateAPIView):
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         data_serializer = self.get_serializer(data=request.data)
         data_serializer.is_valid(raise_exception=True)
@@ -138,29 +140,53 @@ class GameOrderCreate(generics.CreateAPIView):
                 console=console
             )
 
-            for game in game_cart.games:
+            for game in game_cart.games.all():
                 if cart_type == 'online_ps4':
-                    amount = game.online_ps4_price
+                    if game.game.online_ps4_price:
+                        amount = game.game.online_ps4_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'online_ps5':
-                    amount = game.online_ps5_price
+                    if game.game.online_ps5_price:
+                        amount = game.game.online_ps5_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'offline_ps4':
-                    amount = game.offline_ps4_price
+                    if game.game.offline_ps4_price:
+                        amount = game.game.offline_ps4_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'offline_ps5':
-                    amount = game.offline_ps5_price
+                    if game.game.offline_ps5_price:
+                        amount = game.game.offline_ps5_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'data_ps4':
-                    amount = game.data_ps4_price
+                    if game.game.data_ps4_price:
+                        amount = game.game.data_ps4_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'data_ps5':
-                    amount = game.data_ps5_price
+                    if game.game.data_ps5_price:
+                        amount = game.game.data_ps5_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'xbox':
-                    amount = game.xbox_price
+                    if game.game.xbox_price:
+                        amount = game.game.xbox_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 elif cart_type == 'nintendo':
-                    amount = game.nintendo_price
+                    if game.game.nintendo_price:
+                        amount = game.game.nintendo_price
+                    else:
+                        raise ValidationError(f'{game.game.title} برای {cart_type} موجود نیست ')
                 else:
                     raise ValidationError("نوع سبد خرید نامعتبر است.")
 
                 GameOrderItem.objects.create(
                     game_order=game_order,
-                    game=game,
+                    game=game.game,
                     amount=amount
                 )
                 total_amount += amount
@@ -170,7 +196,6 @@ class GameOrderCreate(generics.CreateAPIView):
 
             game_cart.delete()
 
-            # 🔁 اینجا سفارش ساخته شده رو با Serializer اصلی برمی‌گردونیم
             response_serializer = GameOrderSerializer(game_order)
             return Response(response_serializer.data, status=201)
 

@@ -240,7 +240,7 @@ class GameOrder(models.Model):
                                        related_name='account_setter')
     data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
                                       related_name='data_uploader')
-    amount = models.DecimalField(max_digits=12, decimal_places=3)
+    amount = models.IntegerField(null=True, blank=True)
     order_type = models.CharField(max_length=30, choices=(
         ('customer', 'سفارش از طریق مشتری'),
         ('employee', 'سفارش از طریق کارمند')
@@ -267,10 +267,10 @@ class GameOrder(models.Model):
 
 
 class GameOrderItem(models.Model):
-    game_order = models.ForeignKey(GameOrder, on_delete=models.CASCADE)
+    game_order = models.ForeignKey(GameOrder, on_delete=models.CASCADE, related_name='games')
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
-    amount = models.IntegerField()
+    amount = models.IntegerField(null=True, blank=True)
     is_done = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

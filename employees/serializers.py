@@ -105,6 +105,7 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
     )
     payer_customer = serializers.SerializerMethodField()
     receiver_employee = serializers.SerializerMethodField()
+    payment_method = serializers.SerializerMethodField()
     order_type = serializers.ChoiceField(
         choices=[('order', 'Order'), ('game_order', 'GameOrder'), ('repair_order', 'RepairOrder')],
         required=False, allow_blank=True, allow_null=True
@@ -114,10 +115,10 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
     class Meta:
         model = Transaction
         fields = [
-            'id', 'payment_method_id',
+            'id', 'payment_method_id', 'payment_method',
             'payer_id', 'payer_customer',
             'receiver_id', 'receiver_employee',
-            'amount','description',
+            'amount', 'description',
             'in_out', 'status',
             'order_type', 'order_id',
             'created_at', 'updated_at'
@@ -148,6 +149,14 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
                 'id': employee.id,
                 'full_name': employee.first_name + ' ' + employee.last_name,
                 'position': employee.position if hasattr(employee, 'position') else None,
+            }
+        return None
+
+    def get_payment_method(self, obj):
+        if obj.payment_method_id:
+            payment_method = PaymentMethod.objects.get(is_deleted=False, id=obj.payment_method_id)
+            return {
+                'payment_method': payment_method.title
             }
         return None
 

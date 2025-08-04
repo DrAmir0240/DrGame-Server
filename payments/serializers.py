@@ -58,6 +58,8 @@ class DeliveryManSerializer(serializers.ModelSerializer):
 
 
 class GameOrderItemSerializer(serializers.ModelSerializer):
+    game = GameSerializer(read_only=True)
+
     class Meta:
         model = GameOrderItem
         fields = '__all__'
@@ -70,10 +72,7 @@ class GameOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameOrder
-        fields = [
-            'id', 'customer', 'games', 'amount', 'status', 'order_type', 'delivery_to_drgame',
-            'is_deleted', 'created_at', 'updated_at'
-        ]
+        fields = '__all__'
         read_only_fields = [
             'customer', 'games', 'amount', 'status', 'order_type', 'delivery_to_drgame',
             'is_deleted', 'created_at', 'updated_at'
