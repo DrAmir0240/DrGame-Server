@@ -331,7 +331,7 @@ class EmployeePanelGameOrderList(generics.ListCreateAPIView):
 
 @restrict_access('has_access_to_game_order')
 class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeeGameSerializer
+    serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'pk'
