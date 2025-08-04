@@ -11,10 +11,10 @@ from accounts.models import MainManager
 from accounts.permissions import IsCustomer
 from employees.serializers import EmployeeGameOrderSerializer
 from payments.models import Order, Transaction, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder, \
-    PaymentMethod
+    PaymentMethod, GameOrderItem
 from home.models import Cart, GameCart
 from payments.serializers import OrderSerializer, TransactionSerializer, GameOrderSerializer, DeliveryManSerializer, \
-    RepairOrderSerializer, CourseOrderSerializer
+    RepairOrderSerializer, CourseOrderSerializer, GameOrderCreateSerializer
 from django.core.exceptions import ValidationError
 from rest_framework import status
 
@@ -106,27 +106,73 @@ class RequestPaymentForOrder(GenericAPIView):
 
 # ==================== GameOrder Views ====================
 class GameOrderCreate(generics.CreateAPIView):
-    serializer_class = GameOrderSerializer
+    serializer_class = GameOrderCreateSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
-    def perform_create(self, serializer):
+    def create(self, request, *args, **kwargs):
+        data_serializer = self.get_serializer(data=request.data)
+        data_serializer.is_valid(raise_exception=True)
+
+        console = data_serializer.validated_data.get('console')
+        cart_type = data_serializer.validated_data['type']
+
         try:
-            customer = self.request.user.customer
+            customer = request.user.customer
             game_cart = GameCart.objects.get(user=customer, is_deleted=False)
+
             if not game_cart.games.exists():
                 raise ValidationError("سبد خرید خالی است.")
-            total_amount = game_cart.price
 
-            game_order = serializer.save(
+            # ست کردن نوع سبد روی cart
+            game_cart.type = cart_type
+            game_cart.save()
+
+            total_amount = 0
+            game_order = GameOrder.objects.create(
                 customer=customer,
                 order_type='customer',
-                games=game_cart.games.all(),
-                amount=total_amount,
-                status='waiting',
+                amount=0,  # مقدار اولیه، بعداً آپدیت میشه
+                status='waiting_for_delivery',
+                order_console_type=cart_type,
+                console=console
             )
+
+            for game in game_cart.games:
+                if cart_type == 'online_ps4':
+                    amount = game.online_ps4_price
+                elif cart_type == 'online_ps5':
+                    amount = game.online_ps5_price
+                elif cart_type == 'offline_ps4':
+                    amount = game.offline_ps4_price
+                elif cart_type == 'offline_ps5':
+                    amount = game.offline_ps5_price
+                elif cart_type == 'data_ps4':
+                    amount = game.data_ps4_price
+                elif cart_type == 'data_ps5':
+                    amount = game.data_ps5_price
+                elif cart_type == 'xbox':
+                    amount = game.xbox_price
+                elif cart_type == 'nintendo':
+                    amount = game.nintendo_price
+                else:
+                    raise ValidationError("نوع سبد خرید نامعتبر است.")
+
+                GameOrderItem.objects.create(
+                    game_order=game_order,
+                    game=game,
+                    amount=amount
+                )
+                total_amount += amount
+
+            game_order.amount = total_amount
+            game_order.save()
+
             game_cart.delete()
-            return game_order
+
+            # 🔁 اینجا سفارش ساخته شده رو با Serializer اصلی برمی‌گردونیم
+            response_serializer = GameOrderSerializer(game_order)
+            return Response(response_serializer.data, status=201)
 
         except GameCart.DoesNotExist:
             raise ValidationError("سبد خرید یافت نشد.")

@@ -11,15 +11,17 @@ from rest_framework import status
 
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsCustomer
+from customers.models import Customer
+from payments.models import GAME_ORDER_CONSOLE_TYPE
 from storage.models import Game, Product, ProductCategory
 from storage.serializers import GameSerializer, ProductSerializer, ProductCategorySerializer
 from .serializers import CartSerializer, UpdateBlogPostSerializer, \
     CreateBlogPostSerializer, AboutUsSerializer, ContactUsSerializer, ContactSubmissionSerializer, \
     BlogPostDetailSerializer, BlogPostListSerializer, CourseRetrieveSerializer, \
     CourseListCreateSerializer, CourseUpdateSerializer, VideoSerializer, VideoCreateSerializer, VideoUpdateSerializer, \
-    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer
+    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer, GameCartChoicesSerializer
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Course, \
-    Video, HomeBanner, GameCart
+    Video, HomeBanner, GameCart, GameCartItem
 
 
 # trending games
@@ -215,6 +217,17 @@ class RemoveFromCartAPIView(generics.DestroyAPIView):
 
 
 # game cart
+class GameCartTypeChoices(generics.GenericAPIView):
+    serializer_class = GameCartChoicesSerializer
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        data = [{'key': k, 'value': v} for k, v in GAME_ORDER_CONSOLE_TYPE]
+        serializer = self.get_serializer(data, many=True)
+        return Response(serializer.data)
+
+
 class GameCartRetrieveCreateView(generics.RetrieveAPIView):
     serializer_class = GameCartSerializer
     permission_classes = [IsCustomer]
@@ -244,26 +257,32 @@ class AddGameToCartView(generics.UpdateAPIView):
 
     def get_object(self):
         customer = self.request.user.customer
-        cart, created = GameCart.objects.get_or_create(user=customer)
+        cart, _ = GameCart.objects.get_or_create(user=customer)
         return cart
 
     def update(self, request, *args, **kwargs):
-        game_id = kwargs.get('game_id')  # گرفتن از URL
+        game_id = kwargs.get('game_id')
 
         if not game_id:
             return Response({'detail': 'شناسه بازی نامعتبر است.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            game = Game.objects.get(id=game_id)
+            game = Game.objects.get(id=game_id, is_deleted=False)
         except Game.DoesNotExist:
-            return Response({'detail': 'بازی یافت نشد'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'detail': 'بازی یافت نشد.'}, status=status.HTTP_404_NOT_FOUND)
 
         cart = self.get_object()
-        if game in cart.games.all():
-            return Response({'detail': 'بازی قبلاً در سبد خرید موجود است.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        cart.games.add(game)
-        cart.save()
+        # بررسی تکراری نبودن آیتم
+        if GameCartItem.objects.filter(game_cart=cart, game=game).exists():
+            return Response({'detail': 'بازی قبلاً به سبد خرید اضافه شده است.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # افزودن آیتم به کارت
+        GameCartItem.objects.create(
+            game_cart=cart,
+            game=game,
+        )
+
         serializer = self.get_serializer(cart)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -289,8 +308,10 @@ class RemoveGameFromCartView(generics.DestroyAPIView):
         except Game.DoesNotExist:
             return Response({"detail": "بازی مورد نظر وجود ندارد."}, status=status.HTTP_404_NOT_FOUND)
 
-        if game in cart.games.all():
-            cart.games.remove(game)
+        # حذف رکورد از جدول میانی (GameCartItem)
+        cart_item = GameCartItem.objects.filter(game_cart=cart, game=game).first()
+        if cart_item:
+            cart_item.delete()
             return Response({"detail": "بازی با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
         else:
             return Response({"detail": "این بازی در سبد خرید وجود ندارد."}, status=status.HTTP_400_BAD_REQUEST)

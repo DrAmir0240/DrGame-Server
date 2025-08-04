@@ -45,17 +45,18 @@ class CartItem(models.Model):
         return f'{self.product.title} : {self.quantity} for {self.cart}'
 
 
+GAME_CART_TYPE = (
+    ('online_ps4', 'online_ps4'),
+    ('online_ps5', 'online_ps5'),
+    ('offline_ps4', 'offline_ps4'),
+    ('offline_ps5', 'offline_ps5'),
+    ('data_ps4', 'data_ps4'),
+    ('data_ps5', 'data_ps5'),
+    ('xbox', 'xbox'),
+    ('nintendo', 'nintendo'),
+)
+
 class GameCart(models.Model):
-    GAME_CART_TYPE = (
-        ('online_ps4', 'online_ps4'),
-        ('online_ps5', 'online_ps5'),
-        ('offline_ps4', 'offline_ps4'),
-        ('offline_ps5', 'offline_ps5'),
-        ('data_ps4', 'data_ps4'),
-        ('data_ps5', 'data_ps5'),
-        ('xbox', 'xbox'),
-        ('nintendo', 'nintendo'),
-    )
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
     type = models.CharField(max_length=500, choices=GAME_CART_TYPE, default='online_ps4')
     price = models.PositiveIntegerField(null=True, blank=True)

@@ -212,27 +212,29 @@ class DeliveryMan(models.Model):
         return self.full_name + ' ' + self.phone_number
 
 
+GAME_ORDER_CONSOLE_TYPE = (
+    ('online_ps4', 'online_ps4'),
+    ('online_ps5', 'online_ps5'),
+    ('offline_ps4', 'offline_ps4'),
+    ('offline_ps5', 'offline_ps5'),
+    ('data_ps4', 'data_ps4'),
+    ('data_ps5', 'data_ps5'),
+    ('xbox', 'xbox'),
+    ('nintendo', 'nintendo'),
+)
+GAME_ORDER_STATUS = (
+    ('waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
+    ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
+    ('account_setting_queue', 'در لیست انتظار'),
+    ('account_setting_in_progress', 'در حال ست شدن اکانت'),
+    ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
+    ('error_on_accounts', 'مشکل در اکانت ها'),
+    ('done', 'انجام شده و در انتظار پیک'),
+    ('delivered_to_customer', 'تحویل شده به مشتری'),
+)
+
+
 class GameOrder(models.Model):
-    GAME_ORDER_CONSOLE_TYPE = (
-        ('online_ps4', 'online_ps4'),
-        ('online_ps5', 'online_ps5'),
-        ('offline_ps4', 'offline_ps4'),
-        ('offline_ps5', 'offline_ps5'),
-        ('data_ps4', 'data_ps4'),
-        ('data_ps5', 'data_ps5'),
-        ('xbox', 'xbox'),
-        ('nintendo', 'nintendo'),
-    )
-    GAME_ORDER_STATUS = (
-        ('paid_and_waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
-        ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
-        ('account_setting_queue', 'در لیست انتظار'),
-        ('account_setting_in_progress', 'در حال ست شدن اکانت'),
-        ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
-        ('error_on_accounts', 'مشکل در اکانت ها'),
-        ('done', 'انجام شده و در انتظار پیک'),
-        ('delivered_to_customer', 'تحویل شده به مشتری'),
-    )
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
                                        related_name='account_setter')

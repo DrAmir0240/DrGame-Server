@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from home.models import CartItem, Cart
+from home.models import CartItem, Cart, GAME_CART_TYPE
 from payments.models import Order, Transaction, Product, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder, \
-    GameOrderItem
+    GameOrderItem, GAME_ORDER_CONSOLE_TYPE
 from storage.serializers import GameSerializer
 
 
@@ -78,6 +78,11 @@ class GameOrderSerializer(serializers.ModelSerializer):
             'customer', 'games', 'amount', 'status', 'order_type', 'delivery_to_drgame',
             'is_deleted', 'created_at', 'updated_at'
         ]
+
+
+class GameOrderCreateSerializer(serializers.Serializer):
+    console = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    type = serializers.ChoiceField(choices=GAME_CART_TYPE)
 
 
 class RepairOrderSerializer(serializers.ModelSerializer):

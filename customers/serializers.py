@@ -1,7 +1,8 @@
 # customers/serializers.py
 from rest_framework import serializers
 
-from storage.serializers import ProductSerializer
+from payments.serializers import OrderItemSerializer
+from storage.serializers import ProductSerializer, GameSerializer
 from customers.models import Customer
 from payments.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder
 
@@ -53,8 +54,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
 
 class OrderSerializer(serializers.ModelSerializer):
-    product = serializers.SlugRelatedField(slug_field='title', read_only=True, many=True)
-
+    order_items = OrderItemSerializer(many=True, read_only=True)
     class Meta:
         model = Order
         fields = "__all__"
@@ -62,11 +62,11 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class GameOrderSerializer(serializers.ModelSerializer):
     order_type = serializers.StringRelatedField()
-    product = serializers.StringRelatedField()
+    games = GameSerializer(many=True, read_only=True)
 
     class Meta:
         model = GameOrder
-        fields = ['id', 'order_type', 'amount', 'product', 'games_count', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'games', 'created_at']
         read_only_fields = fields
 
 

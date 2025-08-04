@@ -3,6 +3,7 @@ from slugify import slugify
 
 from employees.serializers import EmployeeGameSerializer
 from payments.models import CourseOrder
+from storage.serializers import GameSerializer
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Video, \
     Course, HomeBanner, GameCart, GameCartItem
 from storage.models import Product, ProductColor, Game
@@ -91,22 +92,30 @@ class CartSerializer(serializers.ModelSerializer):
     def get_total_price(self, obj):
         return obj.total_price
 
+
+class GameCartChoicesSerializer(serializers.Serializer):
+    key = serializers.CharField()
+    value = serializers.CharField()
+
+
 class GameCartItemSerializer(serializers.ModelSerializer):
+    game = GameSerializer(read_only=True)
+
+    # game = serializers.SlugRelatedField(read_only=True, slug_field='title')
+
     class Meta:
         model = GameCartItem
         fields = "__all__"
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+
 class GameCartSerializer(serializers.ModelSerializer):
-    games = EmployeeGameSerializer(many=True)
-    total_price = serializers.SerializerMethodField()
+    games = GameCartItemSerializer(many=True)
 
     class Meta:
         model = GameCart
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
-
-    def get_total_price(self, obj):
-        return obj.total_price()
 
 
 ######################################
