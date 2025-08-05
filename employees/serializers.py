@@ -419,7 +419,7 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
 
 
 class EmployeeGameOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    games = serializers.SlugRelatedField(slug_field='title', many=True, queryset=Game.objects.filter(is_deleted=False))
+    games = serializers.SlugRelatedField(slug_field='game.title', many=True, queryset=Game.objects.filter(is_deleted=False))
 
     class Meta:
         model = GameOrder
@@ -435,6 +435,13 @@ class EmployeeStatusChoicesSerializer(serializers.Serializer):
 class EmployeeRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = RepairOrder
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeePaymentMethodSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = PaymentMethod
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 

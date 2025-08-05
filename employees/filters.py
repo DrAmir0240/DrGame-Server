@@ -1,10 +1,9 @@
-# your_app/filters.py
 import django_filters
 
 from employees.models import EmployeeTask
 from django_filters import rest_framework as filters
 
-from payments.models import Transaction
+from payments.models import Transaction, GameOrder
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -17,6 +16,17 @@ class EmployeeTaskFilter(filters.FilterSet):
     class Meta:
         model = EmployeeTask
         fields = ['type', 'status', 'deadline__gte', 'deadline__lte', 'title']
+
+
+class GameOrderFilter(django_filters.FilterSet):
+    order_type = django_filters.CharFilter(field_name='order_type', lookup_expr='exact')
+    order_console_type = django_filters.CharFilter(field_name='order_console_type', lookup_expr='exact')
+    status = django_filters.CharFilter(field_name='status', lookup_expr='exact')
+    payment_status = django_filters.CharFilter(field_name='payment_status', lookup_expr='exact')
+
+    class Meta:
+        model = GameOrder
+        fields = ['order_type', 'order_console_type', 'status', 'payment_status']
 
 
 class TransactionFilter(filters.FilterSet):

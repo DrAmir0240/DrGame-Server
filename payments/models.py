@@ -8,6 +8,27 @@ from accounts.models import CustomUser
 from customers.models import Customer
 from django.conf import settings
 
+GAME_ORDER_CONSOLE_TYPE = (
+    ('online_ps4', 'online_ps4'),
+    ('online_ps5', 'online_ps5'),
+    ('offline_ps4', 'offline_ps4'),
+    ('offline_ps5', 'offline_ps5'),
+    ('data_ps4', 'data_ps4'),
+    ('data_ps5', 'data_ps5'),
+    ('xbox', 'xbox'),
+    ('nintendo', 'nintendo'),
+)
+GAME_ORDER_STATUS = (
+    ('waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
+    ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
+    ('account_setting_queue', 'در لیست انتظار'),
+    ('account_setting_in_progress', 'در حال ست شدن اکانت'),
+    ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
+    ('error_on_accounts', 'مشکل در اکانت ها'),
+    ('done', 'انجام شده و در انتظار پیک'),
+    ('delivered_to_customer', 'تحویل شده به مشتری'),
+)
+
 
 # Create your models here.
 class PaymentMethod(models.Model):
@@ -212,28 +233,6 @@ class DeliveryMan(models.Model):
         return self.full_name + ' ' + self.phone_number
 
 
-GAME_ORDER_CONSOLE_TYPE = (
-    ('online_ps4', 'online_ps4'),
-    ('online_ps5', 'online_ps5'),
-    ('offline_ps4', 'offline_ps4'),
-    ('offline_ps5', 'offline_ps5'),
-    ('data_ps4', 'data_ps4'),
-    ('data_ps5', 'data_ps5'),
-    ('xbox', 'xbox'),
-    ('nintendo', 'nintendo'),
-)
-GAME_ORDER_STATUS = (
-    ('waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
-    ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
-    ('account_setting_queue', 'در لیست انتظار'),
-    ('account_setting_in_progress', 'در حال ست شدن اکانت'),
-    ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
-    ('error_on_accounts', 'مشکل در اکانت ها'),
-    ('done', 'انجام شده و در انتظار پیک'),
-    ('delivered_to_customer', 'تحویل شده به مشتری'),
-)
-
-
 class GameOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
@@ -256,6 +255,7 @@ class GameOrder(models.Model):
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                               related_name='delivery_console_to_drgame')
+    dead_line = models.DateField(null=True, blank=True)
     delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                                 related_name='delivery_console_to_customer')
     is_deleted = models.BooleanField(default=False)

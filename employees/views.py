@@ -10,7 +10,7 @@ from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager
 from customers.models import Customer
 from employees.apps import EmployeesConfig
-from employees.filters import EmployeeTaskFilter, TransactionFilter
+from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter
 from employees.models import EmployeeTask, Employee, EmployeeFile
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
@@ -19,7 +19,8 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
-    EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer
+    EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
+    EmployeePaymentMethodSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -327,6 +328,10 @@ class EmployeePanelGameOrderList(generics.ListCreateAPIView):
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = GameOrderFilter
+    search_fields = ['order_type', 'order_console_type', 'status', 'payment_status']
+    ordering_fields = ['created_at', 'amount']
 
 
 @restrict_access('has_access_to_game_order')
@@ -342,7 +347,7 @@ class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
             employee = user.employee
             return GameOrder.objects.filter(
                 Q(account_setter=employee) | Q(data_uploader=employee)
-            ).select_related('customer', 'order_type').prefetch_related('games')
+            ).select_related('customer').prefetch_related('games')
         except AttributeError:
             return Response(status=400)
 
@@ -350,11 +355,15 @@ class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
 @restrict_access('has_access_to_game_order')
 class EmployeePanelGameOrderChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
-        customers = Customer.objects.all()
-        employees = Employee.objects.all()
-        games = Game.objects.all()
-        sony_accounts = SonyAccount.objects.all()
+        customers = Customer.objects.filter(is_deleted=False)
+        employees = Employee.objects.filter(is_deleted=False)
+        games = Game.objects.filter(is_deleted=False)
+        sony_accounts = SonyAccount.objects.filter(is_deleted=False)
+        payment_methods = PaymentMethod.objects.filter(is_online=False, is_deleted=False)
 
+        payment_status_choices = [
+            {'value': value, 'label': label} for value, label in GameOrder._meta.get_field('payment_status').choices
+        ]
         status_choices = [
             {'value': value, 'label': label} for value, label in GameOrder._meta.get_field('status').choices
         ]
@@ -365,9 +374,20 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
             'games': EmployeeGameSerializer(games, many=True).data,
             'sony_accounts': EmployeeSonyAccountSerializer(sony_accounts, many=True).data,
             'status_choices': EmployeeStatusChoicesSerializer(status_choices, many=True).data,
+            'payment_status_choices': EmployeeStatusChoicesSerializer(payment_status_choices, many=True).data,
+            'payment_methods': EmployeePaymentMethodSerializer(payment_methods, many=True).data,
         }
 
         return Response(response_data)
+
+
+class EmployeePanelGameOrderAdd(generics.CreateAPIView):
+    serializer_class = EmployeeGameOrderSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def perform_create(self, serializer):
+        pass
 
 
 # ==================== RepairOrders Views ====================
