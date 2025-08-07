@@ -20,8 +20,7 @@ GAME_ORDER_CONSOLE_TYPE = (
 )
 GAME_ORDER_STATUS = (
     ('waiting_for_delivery', 'پرداخت شده و در انتظار پیک'),
-    ('delivered_to_drgame', 'تحویل شده به دکتر گیم'),
-    ('account_setting_queue', 'در لیست انتظار'),
+    ('delivered_to_drgame_and_in_waiting_queue', 'تحویل شده به دکتر گیم و در لیست انتظار'),
     ('account_setting_in_progress', 'در حال ست شدن اکانت'),
     ('data_uploading_in_progress', 'در حال ریخته شدن داده'),
     ('error_on_accounts', 'مشکل در اکانت ها'),
