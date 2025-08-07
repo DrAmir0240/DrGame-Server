@@ -323,7 +323,7 @@ class EmployeePanelProductOrderChoices(generics.ListAPIView):
 
 # ==================== GameOrders Views ====================
 @restrict_access('has_access_to_game_order')
-class EmployeePanelGameOrderList(generics.ListCreateAPIView):
+class EmployeePanelGameOrder(generics.ListCreateAPIView):
     queryset = GameOrder.objects.filter(is_deleted=False)
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]

@@ -43,7 +43,7 @@ urlpatterns = [
     path('product-orders/add/', views.EmployeePanelAddOrder.as_view(), name='product-order-add'),
     path('product-orders/choices/', views.EmployeePanelProductOrderChoices.as_view(), name='product-order-choices'),
     # ==================== GameOrders Views ====================
-    path('game-orders/', views.EmployeePanelGameOrderList.as_view(), name='accepted-game-order-list'),
+    path('game-orders/', views.EmployeePanelGameOrder.as_view(), name='accepted-game-order-list'),
     path('game-orders/<int:pk>/', views.EmployeePanelGameOrderDetail.as_view(), name='game-order-detail'),
     path('game-orders/choices/', views.EmployeePanelGameOrderChoices.as_view(), name='product-order-choices'),
 

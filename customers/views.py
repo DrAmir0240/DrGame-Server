@@ -70,8 +70,7 @@ class CustomerGameOrderListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return GameOrder.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                            is_deleted=False)
+        return GameOrder.objects.filter(customer=customer, is_deleted=False)
 
 
 class CustomerGameOrderRetrieveAPIView(generics.RetrieveAPIView):

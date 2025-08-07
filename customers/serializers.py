@@ -61,7 +61,6 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class GameOrderSerializer(serializers.ModelSerializer):
-    order_type = serializers.StringRelatedField()
     games = GameSerializer(many=True, read_only=True)
 
     class Meta:
