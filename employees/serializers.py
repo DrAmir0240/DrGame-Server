@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework import serializers
 
@@ -5,7 +6,7 @@ from accounts.models import CustomUser, MainManager
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document
 
@@ -418,13 +419,146 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
         return obj.customer.full_name if obj.customer else None
 
 
-class EmployeeGameOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    games = serializers.SlugRelatedField(slug_field='game.title', many=True, queryset=Game.objects.filter(is_deleted=False))
+class EmployeeGameOrderItemSerializer(serializers.ModelSerializer):
+    game = serializers.CharField(source='game.title')
+    account_setter = serializers.SerializerMethodField()
+    data_uploader = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GameOrderItem
+        fields = ['game', 'account', 'data', 'amount', 'account_setter', 'data_uploader']
+
+    def get_account_setter(self, obj):
+        if obj.account_setter:
+            return f"{obj.account_setter.first_name} {obj.account_setter.last_name}"
+        return None
+
+    def get_data_uploader(self, obj):
+        if obj.data_uploader:
+            return f"{obj.data_uploader.first_name} {obj.data_uploader.last_name}"
+        return None
+
+
+class EmployeeGameOrderItemWriteSerializer(serializers.Serializer):
+    game = serializers.SlugRelatedField(slug_field='title', queryset=Game.objects.filter(is_deleted=False))
+    account = serializers.BooleanField(required=False)
+    data = serializers.BooleanField(required=False)
+    account_setter = serializers.BooleanField(required=False)
+    data_uploader = serializers.BooleanField(required=False)
+
+
+class EmployeeGameOrderSerializer(serializers.ModelSerializer):
+    customer = serializers.SlugRelatedField(slug_field='full_name',
+                                            queryset=CustomUser.objects.filter(is_deleted=False))
+    recipient = serializers.SerializerMethodField()
 
     class Meta:
         model = GameOrder
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = [
+            'id', 'customer', 'order_console_type', 'status', 'payment_status', 'console', 'dead_line', 'games',
+            'amount', 'recipient'
+        ]
+
+    def get_recipient(self, obj):
+        if obj.recipient:
+            return f"{obj.recipient.first_name} {obj.recipient.last_name}"
+        return None
+
+    def get_game_price(self, game, order_console_type):
+        field_map = {
+            'online_ps4': game.online_ps4_price,
+            'online_ps5': game.online_ps5_price,
+            'offline_ps4': game.offline_ps4_price,
+            'offline_ps5': game.offline_ps5_price,
+            'data_ps4': game.data_ps4_price,
+            'data_ps5': game.data_ps5_price,
+            'xbox': game.xbox_price,
+            'nintendo': game.nintendo_price,
+        }
+
+        price = field_map.get(order_console_type)
+        if price is None:
+            raise ValidationError(f"قیمت بازی '{game.title}' برای '{order_console_type}' تنظیم نشده است.")
+        return price
+
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get('request', None)
+        if request and request.method in ['POST', 'PATCH', 'PUT']:
+            fields['games'] = EmployeeGameOrderItemWriteSerializer(many=True)
+        else:
+            fields['games'] = EmployeeGameOrderItemSerializer(many=True)
+        return fields
+
+    def create(self, validated_data):
+        games_data = validated_data.pop('games')
+        order_console_type = validated_data['order_console_type']
+        customer = validated_data['customer']
+        console = validated_data['console']
+        dead_line = validated_data['dead_line']
+        total_amount = 0
+        game_order_items = []
+
+        for game_item in games_data:
+            game = game_item['game']
+            price = self.get_game_price(game, order_console_type)
+            total_amount += price
+            game_order_items.append((game, price))
+
+        game_order = GameOrder.objects.create(
+            customer=customer,
+            order_type='employee',
+            order_console_type=order_console_type,
+            status='delivered_to_drgame',
+            console=console,
+            dead_line=dead_line,
+            amount=total_amount,
+            recipient=self.context['request'].user.employee
+        )
+
+        for game, price in game_order_items:
+            GameOrderItem.objects.create(
+                game_order=game_order,
+                game=game,
+                amount=price,
+            )
+
+        customer.balance -= total_amount
+        customer.save()
+        return game_order
+
+    def update(self, instance, validated_data):
+        games_data = validated_data.pop('games', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if games_data:
+            for item_data in games_data:
+                game = item_data['game']
+                game_item_qs = GameOrderItem.objects.filter(game_order=instance, game=game, is_deleted=False)
+                if not game_item_qs.exists():
+                    raise serializers.ValidationError(f"آیتم مربوط به بازی '{game.title}' در این سفارش وجود ندارد.")
+                game_item = game_item_qs.first()
+
+                if 'data' in item_data:
+                    game_item.data = item_data['data']
+                    self.context['request'].user.employee.balance += game_item.amount
+                    self.context['request'].user.employee.save()
+                if 'account' in item_data:
+                    game_item.account = item_data['account']
+                    self.context['request'].user.employee.balance += game_item.amount
+                    self.context['request'].user.employee.save()
+                if 'account_setter' in item_data and item_data['account_setter'] is True:
+                    game_item.account_setter = self.context['request'].user.employee
+
+                if 'data_uploader' in item_data and item_data['data_uploader'] is True:
+                    game_item.data_uploader = self.context['request'].user.employee
+
+                game_item.save()
+
+        return instance
 
 
 class EmployeeStatusChoicesSerializer(serializers.Serializer):

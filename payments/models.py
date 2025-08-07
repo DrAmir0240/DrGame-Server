@@ -234,11 +234,11 @@ class DeliveryMan(models.Model):
 
 
 class GameOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
-    account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                       related_name='account_setter')
-    data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                      related_name='data_uploader')
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
+    recipient = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
+                                  related_name='recipient')
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
+                                 related_name='current_employee')
     amount = models.IntegerField(null=True, blank=True)
     order_type = models.CharField(max_length=30, choices=(
         ('customer', 'سفارش از طریق مشتری'),
@@ -269,9 +269,13 @@ class GameOrder(models.Model):
 class GameOrderItem(models.Model):
     game_order = models.ForeignKey(GameOrder, on_delete=models.CASCADE, related_name='games')
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
+    account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
+                                       related_name='account_setter')
+    data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
+                                      related_name='data_uploader')
     amount = models.IntegerField(null=True, blank=True)
-    is_done = models.BooleanField(default=False)
+    account = models.BooleanField(default=False)
+    data = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

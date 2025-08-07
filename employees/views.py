@@ -324,7 +324,7 @@ class EmployeePanelProductOrderChoices(generics.ListAPIView):
 # ==================== GameOrders Views ====================
 @restrict_access('has_access_to_game_order')
 class EmployeePanelGameOrder(generics.ListCreateAPIView):
-    queryset = GameOrder.objects.filter(is_deleted=False)
+    queryset = GameOrder.objects.filter(is_deleted=False).order_by('-created_at')
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -333,23 +333,18 @@ class EmployeePanelGameOrder(generics.ListCreateAPIView):
     search_fields = ['order_type', 'order_console_type', 'status', 'payment_status']
     ordering_fields = ['created_at', 'amount']
 
+    def perform_create(self, serializer):
+        serializer.save()
+
 
 @restrict_access('has_access_to_game_order')
 class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = GameOrder.objects.filter(is_deleted=False).order_by('-created_at').select_related(
+        'customer').prefetch_related('games')
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'pk'
-
-    def get_queryset(self):
-        user = self.request.user
-        try:
-            employee = user.employee
-            return GameOrder.objects.filter(
-                Q(account_setter=employee) | Q(data_uploader=employee)
-            ).select_related('customer').prefetch_related('games')
-        except AttributeError:
-            return Response(status=400)
 
 
 @restrict_access('has_access_to_game_order')
