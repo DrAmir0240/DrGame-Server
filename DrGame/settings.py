@@ -49,7 +49,6 @@ INSTALLED_APPS = [
     'django_ratelimit', 'corsheaders',
     'drf_spectacular', 'django_redis',
     'storages', 'django_filters',
-    'debug_toolbar',  # for debug
 ]
 
 MIDDLEWARE = [
@@ -61,9 +60,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    # debug config
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 ROOT_URLCONF = 'DrGame.urls'
 
@@ -241,5 +237,4 @@ STORAGES = {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
     },
 }
-INTERNAL_IPS = [
-    "127.0.0.1", ]
+
