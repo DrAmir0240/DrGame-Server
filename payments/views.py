@@ -238,6 +238,9 @@ class RequestPaymentForGameOrder(generics.RetrieveAPIView):
 
 
 class AssignDeliveryToDrGameForGameOrder(APIView):
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
     def post(self, request, order_id):
         try:
             game_order = GameOrder.objects.get(pk=order_id)
@@ -299,9 +302,12 @@ class RepairOrderDetail(generics.RetrieveAPIView):
 
 
 class AssignDeliveryToDrGameForRepairOrder(APIView):
-    def post(self, request, game_order_id):
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, order_id):
         try:
-            repair_order = RepairOrder.objects.get(pk=game_order_id)
+            repair_order = RepairOrder.objects.get(pk=order_id)
         except GameOrder.DoesNotExist:
             return Response({"error": "سفارش پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
         serializer = DeliveryManSerializer(data=request.data)
