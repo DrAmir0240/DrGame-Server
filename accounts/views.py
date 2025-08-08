@@ -270,7 +270,8 @@ class LogoutView(APIView):
 
 
 class UserStatusView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request):
         if not request.user.is_authenticated:
