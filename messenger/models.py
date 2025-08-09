@@ -38,4 +38,4 @@ class Message(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['created_at']
+        ordering = ['-created_at']
