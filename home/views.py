@@ -468,7 +468,7 @@ class ContactSubmissionCreateAPIView(generics.CreateAPIView):
 
 class CourseListAPIView(generics.ListAPIView):
     serializer_class = CourseListCreateSerializer
-    queryset = Course.objects.filter(status='published').prefetch_related('videos').all()
+    queryset = Course.objects.filter(status='published').prefetch_related('videos').first()
     permission_classes = [AllowAny]
 
 
@@ -495,7 +495,6 @@ class CourseUpdateAPIView(generics.UpdateAPIView):
     permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
-
 
 
 class CourseDeleteAPIView(generics.DestroyAPIView):
@@ -544,6 +543,8 @@ class VideoRetrieveAPIView(generics.RetrieveAPIView):
             if not customer.has_access_to_course:
                 return queryset.filter(priority=1)
         return queryset
+
+
 class VideoCreateAPIView(generics.CreateAPIView):
     serializer_class = VideoCreateSerializer
     permission_classes = [IsEmployee, IsMainManager]
