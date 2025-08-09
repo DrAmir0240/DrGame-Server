@@ -11,7 +11,7 @@ from accounts.permissions import IsEmployee, restrict_access, IsMainManager
 from customers.models import Customer
 from employees.apps import EmployeesConfig
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter
-from employees.models import EmployeeTask, Employee, EmployeeFile
+from employees.models import EmployeeTask, Employee, EmployeeFile, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -20,7 +20,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
-    EmployeePaymentMethodSerializer
+    EmployeePaymentMethodSerializer, RepairmanSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -575,3 +575,21 @@ class EmployeePanelDocCategory(generics.ListCreateAPIView):
     serializer_class = EmployeeDocCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+# ==================== RepairMan Views ====================
+class RepairManList(generics.ListCreateAPIView):
+    queryset = Repairman.objects.filter(is_deleted=False)
+    serializer_class = RepairmanSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Repairman.objects.filter(is_deleted=False)
+    serializer_class = RepairmanSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lockup_field = 'id'
+
+
+

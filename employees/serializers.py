@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from accounts.models import CustomUser, MainManager
 from customers.models import Customer
-from employees.models import EmployeeTask, Employee
+from employees.models import EmployeeTask, Employee, Repairman
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
@@ -599,3 +599,14 @@ class EmployeeDocCategorySerializer(SoftDeleteSerializerMixin, serializers.Model
         model = DocCategory
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class RepairmanSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(
+        slug_field='phone',
+        queryset=CustomUser.objects.all()
+    )
+
+    class Meta:
+        model = Repairman
+        fields = "__all__"

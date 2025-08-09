@@ -1,7 +1,7 @@
 import requests
 from django.core.exceptions import ValidationError
 from django.db import models
-from employees.models import Employee
+from employees.models import Employee, Repairman
 from home.models import Course
 from storage.models import Product, Game, SonyAccount
 from accounts.models import CustomUser
@@ -296,19 +296,19 @@ class RepairOrderType(models.Model):
 
 
 class RepairOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, null=True)
+    repair_man = models.ForeignKey(Repairman, on_delete=models.SET_NULL, null=True)
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
     console = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=50, choices=(
-        ('registered', 'ثبت شده'),
         ('waiting_for_delivery_to_drgame', 'در انتظار تحویل به دکترگیم'),
+        ('in_accepting_queue', 'در انتظار قبول شدن توسط تغمیرکار'),
         ('waiting_for_amount', 'در انتظار تعیین مبلغ'),
         ('in_progress', 'در حال پردازش'),
         ('done', 'در انتظار تحویل به مشتری'),
         ('delivered_to_customer', 'تحویل شده به مشتری'),
-
-    ), default='registered')
+    ), default='waiting_for_delivery_to_drgame')
     payment_status = models.CharField(max_length=30, choices=(
         ('پرداخت شده', 'paid'),
         ('پرداخت نشده', 'unpaid')
