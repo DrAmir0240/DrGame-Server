@@ -449,7 +449,7 @@ class EmployeeGameOrderItemWriteSerializer(serializers.Serializer):
 
 class EmployeeGameOrderSerializer(serializers.ModelSerializer):
     customer = serializers.SlugRelatedField(slug_field='full_name',
-                                            queryset=CustomUser.objects.filter(is_deleted=False))
+                                            queryset=Customer.objects.filter(is_deleted=False))
     recipient = serializers.SerializerMethodField()
 
     class Meta:

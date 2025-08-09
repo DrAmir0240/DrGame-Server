@@ -362,27 +362,21 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
         status_choices = [
             {'value': value, 'label': label} for value, label in GameOrder._meta.get_field('status').choices
         ]
-
+        order_console_type = [
+            {'value': value, 'label': label} for value, label in GameOrder._meta.get_field('order_console_type').choices
+        ]
         response_data = {
             'customers': EmployeeCustomerSerializer(customers, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
             'games': EmployeeGameSerializer(games, many=True).data,
             'sony_accounts': EmployeeSonyAccountSerializer(sony_accounts, many=True).data,
             'status_choices': EmployeeStatusChoicesSerializer(status_choices, many=True).data,
+            'order_console_type': EmployeeStatusChoicesSerializer(order_console_type, many=True).data,
             'payment_status_choices': EmployeeStatusChoicesSerializer(payment_status_choices, many=True).data,
             'payment_methods': EmployeePaymentMethodSerializer(payment_methods, many=True).data,
         }
 
         return Response(response_data)
-
-
-class EmployeePanelGameOrderAdd(generics.CreateAPIView):
-    serializer_class = EmployeeGameOrderSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def perform_create(self, serializer):
-        pass
 
 
 # ==================== RepairOrders Views ====================

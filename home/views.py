@@ -199,10 +199,11 @@ class RemoveFromCartAPIView(generics.DestroyAPIView):
             if cart_item.quantity > 1:
                 cart_item.quantity -= 1
                 cart_item.save()
+                return Response({"detail": "محصول با موفقیت از سبد خرید کم شد."}, status=status.HTTP_204_NO_CONTENT)
+
             else:
                 cart_item.delete()
-
-            return Response({"detail": "محصول با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
+                return Response({"detail": "محصول با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
 
         except CartItem.DoesNotExist:
             return Response(
