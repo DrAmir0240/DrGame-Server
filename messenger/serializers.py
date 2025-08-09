@@ -67,16 +67,16 @@ class ChatRoomSerializer(serializers.ModelSerializer):
             # فرض کنیم فقط یک عضو دیگه هست (چون pv)
             other_user = members.first()
 
-            if hasattr(other_user, 'mainmanager'):
-                return f"{other_user.mainmanager.first_name} {other_user.mainmanager.last_name}"
+            if hasattr(other_user, 'main_manager'):
+                return f"{other_user.main_manager.name}"
             elif hasattr(other_user, 'employee'):
                 return f"{other_user.employee.first_name} {other_user.employee.last_name}"
             else:
                 return other_user.username
         else:
             # اگر فقط مالک هست، اسم خود مالک رو برگردون
-            if hasattr(current_user, 'mainmanager'):
-                return f"{current_user.mainmanager.first_name} {current_user.mainmanager.last_name}"
+            if hasattr(current_user, 'main_manager'):
+                return f"{current_user.main_manager.name}"
             elif hasattr(current_user, 'employee'):
                 return f"{current_user.employee.first_name} {current_user.employee.last_name}"
             else:
@@ -131,6 +131,7 @@ class ChatRoomCreateSerializer(serializers.ModelSerializer):
 
         return chat_room
 
+
 class ChatRoomUpdateSerializer(serializers.ModelSerializer):
     member_ids = serializers.ListField(
         child=serializers.IntegerField(),
@@ -157,9 +158,8 @@ class ChatRoomUpdateSerializer(serializers.ModelSerializer):
             chat_type = instance.type.lower()
 
             for emp in employees:
-                if emp.user.type and emp.user.type.lower() != 'none':
-                    is_muted_flag = True if chat_type == 'channel' else False
-                    Membership.objects.create(user=emp.user, chat_room=instance, is_muted=is_muted_flag)
+                is_muted_flag = True if chat_type == 'channel' else False
+                Membership.objects.create(user=emp.user, chat_room=instance, is_muted=is_muted_flag)
 
             # چک حداقل یک عضو غیر owner
             member_count = instance.users.exclude(id=instance.owner.id).count()

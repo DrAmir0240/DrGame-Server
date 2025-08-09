@@ -20,7 +20,7 @@ class ChatRoomListView(generics.ListAPIView):
     لیست چت‌هایی که کاربر فعلی عضو آن است
     """
     serializer_class = ChatRoomSerializer
-    permission_classes = [IsEmployee, IsMainManager]
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
