@@ -20,7 +20,7 @@ class ChatRoomListView(generics.ListAPIView):
     لیست چت‌هایی که کاربر فعلی عضو آن است
     """
     serializer_class = ChatRoomSerializer
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -69,7 +69,7 @@ class ChatMessagesListView(generics.ListAPIView):
     اگر پیام وجود نداشت پیام اطلاع‌رسانی می‌دهد
     """
     serializer_class = MessageSerializer
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
@@ -96,7 +96,7 @@ class ChatMessagesListView(generics.ListAPIView):
 class ChatRoomUpdateView(generics.UpdateAPIView):
     queryset = ChatRoom.objects.all()
     serializer_class = ChatRoomUpdateSerializer
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
 
@@ -142,7 +142,7 @@ class AddMember(generics.CreateAPIView):
 # remove Member From Chat
 # --------------------
 class RemoveMember(generics.DestroyAPIView):
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def delete(self, request, *args, **kwargs):
@@ -182,7 +182,7 @@ class SendMessageView(generics.CreateAPIView):
     ارسال پیام به یک چت (فقط اعضای چت)
     """
     serializer_class = MessageSerializer
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def perform_create(self, serializer):
@@ -201,7 +201,7 @@ class DeleteMessageView(generics.UpdateAPIView):
     """
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def perform_update(self, serializer):
@@ -222,7 +222,7 @@ class EditMessageView(generics.UpdateAPIView):
     """
     serializer_class = MessageEditSerializer
     queryset = Message.objects.all()
-    permission_classes = [IsMainManager, IsEmployee]
+    permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def perform_update(self, serializer):

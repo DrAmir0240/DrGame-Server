@@ -45,7 +45,7 @@ class ChatRoomSerializer(serializers.ModelSerializer):
     def get_owner_full_name(self, obj):
         user = obj.owner
         if hasattr(user, 'main_manager'):
-            return f"{user.mainmanager.name}"
+            return f"{user.main_manager.name}"
         elif hasattr(user, 'employee'):
             return f"{user.employee.first_name} {user.employee.last_name}"
         return user.username
