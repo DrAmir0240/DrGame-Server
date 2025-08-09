@@ -50,7 +50,6 @@ urlpatterns = [
 
     # course
     path('courses/', views.CourseListAPIView.as_view(), name='course-list'),
-    # path('courses/orders/', views.CourseOrderListAPIView.as_view(), name='course-order-list'),
     path('courses/add/', views.CourseCreateAPIView.as_view(), name='course-create'),
 
     path('courses/<str:slug>/', views.CourseRetrieveAPIView.as_view(), name='course-detail'),
@@ -63,12 +62,6 @@ urlpatterns = [
     path('courses/<str:course_slug>/videos/<str:slug>/', views.VideoRetrieveAPIView.as_view(), name='video-detail'),
     path('courses/<str:course_slug>/videos/<str:slug>/update', views.VideoUpdateAPIView.as_view(), name='video-update'),
     path('courses/<str:course_slug>/videos/<str:slug>/delete', views.VideoDeleteAPIView.as_view(), name='video-delete'),
-
-    # Course Order
-    # path('courses/orders/add/', views.CourseOrderCreateAPIView.as_view(), name='course-order-create'),
-    # path('courses/orders/<int:pk>/', views.CourseOrderRetrieveAPIView.as_view(), name='course-order-detail'),
-    # path('courses/orders/<int:pk>/update/', views.CourseOrderUpdateAPIView.as_view(), name='course-order-update'),
-    # path('courses/orders/<int:pk>/delete/', views.CourseOrderDeleteAPIView.as_view(), name='course-order-delete'),
 
     # ==================== Game URLs ====================
 

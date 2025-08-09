@@ -29,8 +29,22 @@ class ZarinpalCallbackView(APIView):
         authority = request.GET.get("Authority")
 
         if status_param != "OK":
+            # اینجا باید موجودی کاربر برگشت بخوره و سفارشش حذف بشه و موحودیش برگرده به حالت اولیه
             return Response({"status": "error", "message": "پرداخت توسط کاربر لغو شد."})
         transaction = get_object_or_404(Transaction, authority=authority)
+        if transaction.order:
+            transaction.order.payment_status = 'paid'
+            transaction.order.save()
+        if transaction.game_order:
+            transaction.game_order.payment_status = 'paid'
+            transaction.game_order.save()
+        if transaction.repair:
+            transaction.repair.status = 'paid'
+            transaction.repair.save()
+        if transaction.course_order:
+            transaction.course_order.customer.has_access_to_course = True
+            transaction.course_order.customer.save()
+
         result = transaction.verify_payment()
         print(result)
         return redirect("https://gamedr.ir/customer/transactions")
@@ -96,10 +110,12 @@ class RequestPaymentForOrder(GenericAPIView):
             payer=request.user,
             receiver=manager.user,
             payment_method=payment_method,
-            order=order,
             amount=order.amount,
             description=order.description or "پرداخت سفارش"
         )
+        order.transaction = transaction
+        order.save()
+
         result = transaction.request_payment()
         return Response(result,
                         status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
@@ -228,10 +244,11 @@ class RequestPaymentForGameOrder(generics.RetrieveAPIView):
             payer=request.user,
             receiver=manager.user,
             payment_method=payment_method,
-            game_order=game_order,
             amount=game_order.amount,
             description=f'پرداخت شفارش {request.user.customer}'
         )
+        game_order.transaction = transaction
+        game_order.save()
         result = transaction.request_payment()
         return Response(result,
                         status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
@@ -334,9 +351,11 @@ class RequestPaymentForRepairOrder(generics.RetrieveAPIView):
             receiver=manager.user,
             payment_method=payment_method,
             amount=repair_order.amount,
-            repair_order=repair_order,
             description=f'پرداخت شفارش تعمیر {request.user.customer}'
         )
+        repair_order.transaction = transaction
+        repair_order.save()
+
         result = transaction.request_payment()
         return Response(result,
                         status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
@@ -392,9 +411,11 @@ class RequestPaymentForCourseOrder(generics.RetrieveAPIView):
             receiver=manager.user,
             payment_method=payment_method,
             amount=course_order.amount,
-            course_order=course_order,
             description=f'پرداخت شفارش دوره {request.user.customer}'
         )
+        course_order.transaction = transaction
+        course_order.save()
+
         result = transaction.request_payment()
         return Response(result,
                         status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)

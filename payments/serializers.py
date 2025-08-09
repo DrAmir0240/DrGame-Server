@@ -96,7 +96,7 @@ class CourseOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseOrder
         fields = '__all__'
-        read_only_fields = fields
+        read_only_fields = '__all__'
 
 
 class TransactionSerializer(serializers.ModelSerializer):

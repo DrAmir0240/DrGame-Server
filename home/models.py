@@ -219,7 +219,7 @@ class Video(models.Model):
         ('private', 'Private'),
     ]
     title = models.CharField(max_length=255, unique=True)
-    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True, )
+    slug = models.SlugField(max_length=255, unique=True, allow_unicode=True)
     description = models.TextField(blank=True)
     video_file = models.FileField(upload_to='videos/', )
     status = models.CharField(choices=STATUS_CHOICES, max_length=10)

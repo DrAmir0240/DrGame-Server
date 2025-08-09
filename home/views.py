@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from accounts.auth import CustomJWTAuthentication
-from accounts.permissions import IsCustomer
+from accounts.permissions import IsCustomer, IsEmployee, IsMainManager
 from customers.models import Customer
 from payments.models import GAME_ORDER_CONSOLE_TYPE
 from storage.models import Game, Product, ProductCategory
@@ -484,17 +484,24 @@ class CourseRetrieveAPIView(generics.RetrieveAPIView):
 class CourseCreateAPIView(generics.CreateAPIView):
     serializer_class = CourseListCreateSerializer
     queryset = Course.objects.all()
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
 
 class CourseUpdateAPIView(generics.UpdateAPIView):
     serializer_class = CourseUpdateSerializer
     queryset = Course.objects.all()
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
+
 
 
 class CourseDeleteAPIView(generics.DestroyAPIView):
     serializer_class = CourseListCreateSerializer
     queryset = Course.objects.all()
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
 
 
@@ -505,8 +512,18 @@ class VideoListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         course_slug = self.kwargs.get('course_slug')
-        return Video.objects.filter(course__slug=course_slug, status='published').select_related('course').order_by(
-            'priority').all()
+        queryset = Video.objects.filter(
+            course__slug=course_slug,
+            status='published'
+        ).select_related('course').order_by('priority')
+
+        user = self.request.user
+        # بررسی اگر کاربر لاگین کرده و Customer هست
+        if hasattr(user, 'customer'):
+            customer = user.customer
+            if not customer.has_access_to_course:
+                return queryset.filter(priority=1)
+        return queryset
 
 
 class VideoRetrieveAPIView(generics.RetrieveAPIView):
@@ -515,12 +532,21 @@ class VideoRetrieveAPIView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         course_slug = self.kwargs.get('course_slug')
-        return Video.objects.filter(course__slug=course_slug, status='published').select_related('course').order_by(
-            'priority').all()
+        queryset = Video.objects.filter(
+            course__slug=course_slug,
+            status='published'
+        ).select_related('course').order_by('priority')
 
-
+        user = self.request.user
+        if hasattr(user, 'customer'):
+            customer = user.customer
+            if not customer.has_access_to_course:
+                return queryset.filter(priority=1)
+        return queryset
 class VideoCreateAPIView(generics.CreateAPIView):
     serializer_class = VideoCreateSerializer
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
         course_slug = self.kwargs.get('course_slug')
@@ -533,6 +559,8 @@ class VideoCreateAPIView(generics.CreateAPIView):
 
 class VideoUpdateAPIView(generics.UpdateAPIView):
     serializer_class = VideoUpdateSerializer
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
 
     def get_queryset(self):
@@ -542,6 +570,8 @@ class VideoUpdateAPIView(generics.UpdateAPIView):
 
 class VideoDeleteAPIView(generics.DestroyAPIView):
     serializer_class = VideoSerializer
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'slug'
 
     def get_queryset(self):
