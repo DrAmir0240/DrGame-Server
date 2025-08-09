@@ -4,6 +4,7 @@ from rest_framework.response import Response
 
 from accounts.auth import CustomJWTAuthentication
 from employees.models import Employee
+from employees.serializers import EmployeeSerializer
 from messenger.models import ChatRoom, Message, Membership
 from messenger.serializers import (
     ChatRoomSerializer, ChatRoomCreateSerializer,
@@ -36,6 +37,16 @@ class ChatRoomCreateView(generics.CreateAPIView):
     """
     serializer_class = ChatRoomCreateSerializer
     permission_classes = [IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+# --------------------
+# New Chat
+# --------------------
+class EmployeeListView(generics.ListAPIView):
+    serializer_class = EmployeeSerializer
+    queryset = Employee.objects.filter(has_access_to_chat=True)
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
 

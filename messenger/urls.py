@@ -2,12 +2,13 @@ from django.urls import path
 from messenger.views import (
     ChatRoomListView, ChatRoomCreateView,
     ChatMessagesListView, SendMessageView,
-    DeleteMessageView, EditMessageView, ChatRoomDeleteView, RemoveMember, AddMember
+    DeleteMessageView, EditMessageView, ChatRoomDeleteView, RemoveMember, AddMember, EmployeeListView
 )
 
 urlpatterns = [
     # لیست چت‌های کاربر
     path('chats/', ChatRoomListView.as_view(), name='chat-list'),
+    path('employee-list/', EmployeeListView.as_view(), name='employee-list'),
 
     # ایجاد چت جدید (فقط MainManager)
     path('chats/new/', ChatRoomCreateView.as_view(), name='chat-create'),
