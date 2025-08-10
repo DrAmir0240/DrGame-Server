@@ -17,6 +17,11 @@ class IsEmployee(BasePermission):
         return request.user.is_authenticated and hasattr(request.user, 'employee')
 
 
+class IsRepairman(BasePermission):
+    def has_permission(self, request, view):
+        return request.user.is_authenticated and hasattr(request.user, 'repairman')
+
+
 class IsMainManager(BasePermission):
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'main_manager')
@@ -69,7 +74,6 @@ def restrict_access(*user_boolean_fields):
                         raise PermissionDenied(f"Access denied: {field} is not True.")
 
                 return original_initial(self, request, *args, **kwargs)
-
 
         view_class.initial = new_initial
         return view_class

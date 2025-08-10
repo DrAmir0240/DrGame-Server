@@ -81,4 +81,8 @@ urlpatterns = [
     path('docs/<int:pk>', views.EmployeePanelDetail.as_view(), name='docs-detail'),
     path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
 
+    # ==================== RepairMan Views ====================
+
+    # ==================== RepairManPanel Views ====================
+
 ]

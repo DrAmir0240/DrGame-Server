@@ -610,3 +610,15 @@ class RepairmanSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer
     class Meta:
         model = Repairman
         fields = "__all__"
+
+
+class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    customer = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    order_type = serializers.SlugRelatedField(slug_field='title', read_only=True)
+
+    class Meta:
+        model = RepairOrder
+        fields = "__all__"
+        read_only_fields = ['customer', 'repair_man', 'console',
+                            'payment_status', 'transaction', 'description',
+                            'is_deleted', 'created_at', 'updated_at']

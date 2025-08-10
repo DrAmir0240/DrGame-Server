@@ -1,13 +1,13 @@
 from django.db.models import Q, Count
 from django.dispatch import receiver
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, filters
-from rest_framework.exceptions import ValidationError
+from rest_framework import generics, status, filters, permissions
+from rest_framework.exceptions import ValidationError, PermissionDenied
 from rest_framework.response import Response
 from django.db import transaction as db_transaction, transaction
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager, CustomUser
-from accounts.permissions import IsEmployee, restrict_access, IsMainManager
+from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.apps import EmployeesConfig
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter
@@ -20,7 +20,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
-    EmployeePaymentMethodSerializer, RepairmanSerializer
+    EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -584,6 +584,7 @@ class RepairManList(generics.ListCreateAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
+
 class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Repairman.objects.filter(is_deleted=False)
     serializer_class = RepairmanSerializer
@@ -592,4 +593,19 @@ class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
     lockup_field = 'id'
 
 
+# ==================== RepairManPanel Views ====================
+class RepairManPanelRepairOrdersAccepting(generics.UpdateAPIView):
+    class RepairOrderCreateView(generics.CreateAPIView):
+        queryset = RepairOrder.objects.all()
+        serializer_class = RepairManRepairOrderSerializer
+        permission_classes = [IsRepairman]
 
+        def perform_update(self, serializer):
+            user = self.request.user
+
+            try:
+                repairman = user.repairman
+            except Repairman.DoesNotExist:
+                raise PermissionDenied("شما تعمیرکار نیستید و نمی‌توانید سفارش ثبت کنید.")
+
+            serializer.save(repair_man=repairman)
