@@ -30,6 +30,7 @@ urlpatterns = [
     path('messenger/', include('messenger.urls')),
 
     path('payments/', include('payments.urls')),
+    path('sonyaccount/', include('utils.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]

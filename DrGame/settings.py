@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+
+from celery.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 import dj_database_url
 
@@ -43,6 +45,7 @@ INSTALLED_APPS = [
     'employees', 'storage',
     'payments', 'home',
     'customers', 'messenger',
+    'utils',
     # third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -238,3 +241,6 @@ STORAGES = {
     },
 }
 
+FERNET_KEY = os.environ.get("FERNET_KEY")
+if not FERNET_KEY:
+    raise ImproperlyConfigured("FERNET_KEY is required for TOTP encryption.")

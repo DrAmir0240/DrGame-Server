@@ -3,6 +3,7 @@ from django.db import models
 
 from customers.models import Customer
 from employees.models import Employee
+from utils.crypto import encrypt_text, decrypt_text
 
 
 # Create your models here.
@@ -154,6 +155,26 @@ class SonyAccount(models.Model):
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    two_step_secret = models.TextField(null=True, blank=True)
+    two_step_enabled = models.BooleanField(default=False)
+
+    def set_totp_secret(self, secret):
+        from utils.crypto import encrypt_text
+        self.two_step_secret = encrypt_text(secret)
+        self.two_step_enabled = True
+        self.save()
+
+    def get_otp(self):
+        from utils.crypto import decrypt_text
+        import pyotp, time
+        if not self.two_step_secret:
+            return None
+        secret = decrypt_text(self.two_step_secret)
+        totp = pyotp.TOTP(secret)
+        return {
+            "code": totp.now(),
+            "remaining": totp.interval - (int(time.time()) % totp.interval)
+        }
 
     def __str__(self):
         return self.username
