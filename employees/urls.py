@@ -56,8 +56,10 @@ urlpatterns = [
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),
     path('transactions/in/add/', views.EmployeePanelAddIncomingTransactionView.as_view(), name='in-transaction-add'),
     path('transactions/out/add/', views.EmployeePanelAddOutGoingTransaction.as_view(), name='out-transaction-add'),
-    path('transactions/choices/users/', views.EmployeePanelTransactionPayerReceiverChoices.as_view(), name='user-choices'),
-    path('transaction/choices/<int:customer_id>/<str:order_type>/', views.EmployeePanelTransactionOrderChoices.as_view(), name='order-choices'),
+    path('transactions/choices/users/', views.EmployeePanelTransactionPayerReceiverChoices.as_view(),
+         name='user-choices'),
+    path('transaction/choices/<int:customer_id>/<str:order_type>/',
+         views.EmployeePanelTransactionOrderChoices.as_view(), name='order-choices'),
 
     # ==================== Employee Views ====================
     path('user/create/', views.UserCreat.as_view(), name='user-create'),
@@ -82,7 +84,15 @@ urlpatterns = [
     path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
 
     # ==================== RepairMan Views ====================
+    path('repairmans/', views.RepairManList.as_view(), name="repairman's-list-add"),
+    path('repairmans/<int:id>/', views.RepairmanDetail.as_view(), name="repairman's-detail"),
 
     # ==================== RepairManPanel Views ====================
-
+    path('repairman-panel/orders/', views.RepairManRepairOrderList.as_view(), name="repairman-panel-orders"),
+    path('repairman-panel/orders/<int:id>/', views.RepairManPanelRepairOrderDetail.as_view(), name="repairman-panel-order-detail"),
+    path('repairman-panel/status/', views.RepairManPanelStatusChoices.as_view(), name="repairman-panel-status-choices"),
+    path('repairman-panel/transactions/in/', views.RepairManPanelInTransactionList.as_view(),
+         name="repairman-panel-in-transaction-list"),
+    path('repairman-panel/transaction/out/', views.RepairManPanelOutTransactionList.as_view(),
+         name="repairman-panel-out-transaction-list"),
 ]

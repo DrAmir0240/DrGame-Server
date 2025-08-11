@@ -10,7 +10,7 @@ from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.apps import EmployeesConfig
-from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter
+from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter
 from employees.models import EmployeeTask, Employee, EmployeeFile, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
@@ -20,7 +20,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
-    EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer
+    EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, RepairManTransactionSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -413,7 +413,13 @@ class EmployeePanelTransactionList(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TransactionFilter
-    search_fields = ['description', 'payment_method', 'payer', 'receiver']
+    search_fields = [
+        'description',
+        'payment_method__title',
+        'payer__customer__full_name',
+        'receiver__employee__first_name',
+        'receiver__employee__last_name',
+    ]
     ordering_fields = ['created_at', 'amount']
 
 
@@ -594,18 +600,51 @@ class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 # ==================== RepairManPanel Views ====================
-class RepairManPanelRepairOrdersAccepting(generics.UpdateAPIView):
-    class RepairOrderCreateView(generics.CreateAPIView):
-        queryset = RepairOrder.objects.all()
-        serializer_class = RepairManRepairOrderSerializer
-        permission_classes = [IsRepairman]
+class RepairManRepairOrderList(generics.ListAPIView):
+    queryset = RepairOrder.objects.filter(is_deleted=False)
+    serializer_class = RepairManRepairOrderSerializer
+    permission_classes = [IsRepairman]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = RepairOrderFilter
+    search_fields = ['order_type', 'status']
+    ordering_fields = ['-created_at', 'amount']
 
-        def perform_update(self, serializer):
-            user = self.request.user
 
-            try:
-                repairman = user.repairman
-            except Repairman.DoesNotExist:
-                raise PermissionDenied("شما تعمیرکار نیستید و نمی‌توانید سفارش ثبت کنید.")
+class RepairManPanelRepairOrderDetail(generics.RetrieveUpdateAPIView):
+    queryset = RepairOrder.objects.all()
+    serializer_class = RepairManRepairOrderSerializer
+    permission_classes = [IsRepairman]
+    authentication_classes = [CustomJWTAuthentication]
 
-            serializer.save(repair_man=repairman)
+
+class RepairManPanelStatusChoices(generics.ListAPIView):
+    permission_classes = [IsRepairman]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def list(self, request, *args, **kwargs):
+        repair_order_status = [
+            {'value': value, 'label': label} for value, label in RepairOrder._meta.get_field('status').choices
+        ]
+        response_data = {
+            'status': EmployeeCustomerSerializer(repair_order_status, many=True).data,
+        }
+        return Response(response_data)
+
+
+class RepairManPanelInTransactionList(generics.ListAPIView):
+    serializer_class = RepairManRepairOrderSerializer
+    permission_classes = [IsRepairman]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        return RepairOrder.objects.filter(repair_man=self.request.user.repairman)
+
+
+class RepairManPanelOutTransactionList(generics.ListAPIView):
+    serializer_class = RepairManTransactionSerializer
+    permission_classes = [IsRepairman]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        return Transaction.objects.filter(receiver=self.request.user)

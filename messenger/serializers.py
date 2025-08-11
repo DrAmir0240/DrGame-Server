@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import ValidationError
 from employees.models import Employee
 from .models import ChatRoom, Membership, Message
-from accounts.models import MainManager
 from django.contrib.auth import get_user_model
 
 CustomUser = get_user_model()
@@ -11,10 +10,18 @@ CustomUser = get_user_model()
 class MembershipSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     member_type = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField()
 
     class Meta:
         model = Membership
-        fields = ['user', 'is_admin', 'is_muted', 'joined_at', 'member_type', 'full_name']
+        fields = ['user', 'is_admin', 'is_muted', 'joined_at', 'member_type', 'full_name', 'profile']
+
+    def get_profile(self, obj):
+        if hasattr(obj.sender, 'employee') and obj.sender.employee:
+            return obj.sender.employee.profile_picture
+        elif hasattr(obj.sender, 'main_manager') and obj.sender.main_manager:
+            return None
+        return None
 
     def get_member_type(self, obj):
         if hasattr(obj.user, 'main_manager'):
@@ -25,18 +32,19 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         user = obj.user
-        # اگر user مربوط به mainmanager بود
+        # اگر user مربوط به main_manager بود
         if hasattr(user, 'main_manager'):
             return f"{user.main_manager.name}"
         elif hasattr(user, 'employee'):
             return f"{user.employee.first_name} {user.employee.last_name}"
-        return user.username  # fallback به username یا هر چیز دیگه
+        return None
 
 
 class ChatRoomSerializer(serializers.ModelSerializer):
     members = MembershipSerializer(source='membership_set', many=True, read_only=True)
     owner_full_name = serializers.SerializerMethodField()
     display_name = serializers.SerializerMethodField()  # نام نمایشی چت
+    last_message = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatRoom
@@ -172,12 +180,13 @@ class ChatRoomUpdateSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.username', read_only=True)
+    sender_profile = serializers.SerializerMethodField()
     reply_to_id = serializers.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Message
         fields = [
-            'id', 'room', 'sender', 'sender_name', 'text',
+            'id', 'room', 'sender', 'sender_name', 'sender_profile', 'text',
             'reply_to_id', 'created_at', 'is_edited', 'is_deleted'
         ]
         read_only_fields = ['sender', 'created_at', 'is_edited', 'is_deleted']
@@ -186,6 +195,13 @@ class MessageSerializer(serializers.ModelSerializer):
         """ست کردن sender به کاربر لاگین شده"""
         validated_data['sender'] = self.context['request'].user
         return super().create(validated_data)
+
+    def get_sender_profile(self, obj):
+        if hasattr(obj.sender, 'employee') and obj.sender.employee:
+            return obj.sender.employee.profile_picture
+        elif hasattr(obj.sender, 'main_manager') and obj.sender.main_manager:
+            return None
+        return None
 
 
 class MessageEditSerializer(serializers.ModelSerializer):

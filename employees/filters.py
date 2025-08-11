@@ -3,7 +3,7 @@ import django_filters
 from employees.models import EmployeeTask
 from django_filters import rest_framework as filters
 
-from payments.models import Transaction, GameOrder
+from payments.models import Transaction, GameOrder, RepairOrder
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -27,6 +27,15 @@ class GameOrderFilter(django_filters.FilterSet):
     class Meta:
         model = GameOrder
         fields = ['order_type', 'order_console_type', 'status', 'payment_status']
+
+
+class RepairOrderFilter(django_filters.FilterSet):
+    order_type = django_filters.CharFilter(field_name='order_type', lookup_expr='exact')
+    status = django_filters.CharFilter(field_name='status', lookup_expr='exact')
+
+    class Meta:
+        model = RepairOrder
+        fields = ['order_type', 'status']
 
 
 class TransactionFilter(filters.FilterSet):

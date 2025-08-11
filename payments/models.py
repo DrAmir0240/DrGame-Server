@@ -300,11 +300,13 @@ class RepairOrder(models.Model):
     repair_man = models.ForeignKey(Repairman, on_delete=models.SET_NULL, null=True)
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
+    repairman_fee = models.IntegerField(null=True, blank=True)
     console = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=50, choices=(
         ('waiting_for_delivery_to_drgame', 'در انتظار تحویل به دکترگیم'),
-        ('in_accepting_queue', 'در انتظار قبول شدن توسط تغمیرکار'),
-        ('waiting_for_amount', 'در انتظار تعیین مبلغ'),
+        ('in_accepting_queue', 'در انتظار قبول شدن توسط تعمیرکار'),
+        ('waiting_for_repairman_fee', 'در انتظار تعیین مبلغ'),
+        ('waiting_for_amount', 'در انتظار تعیین مبلغ توسط دکتگیم'),
         ('in_progress', 'در حال پردازش'),
         ('done', 'در انتظار تحویل به مشتری'),
         ('delivered_to_customer', 'تحویل شده به مشتری'),

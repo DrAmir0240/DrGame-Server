@@ -41,12 +41,15 @@ class ChatRoomCreateView(generics.CreateAPIView):
 
 
 # --------------------
-# New Chat
+# Employee List
 # --------------------
 class EmployeeListView(generics.ListAPIView):
+    """
+        لیست کارکنان برای افزودن به چت ی ایجاد چت (فقط MainManager دسترسی دارد)
+        """
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.filter(has_access_to_chat=True)
-    permission_classes = [IsEmployee | IsMainManager]
+    permission_classes = [IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
 
