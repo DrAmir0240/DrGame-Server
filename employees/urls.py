@@ -73,6 +73,7 @@ urlpatterns = [
     # ==================== GameStore Views ====================
     path('game/list-add/', views.EmployeeGameListCreate.as_view(), name='game-list-add'),
     path('game/<int:pk>/', views.EmployeeGameDetail.as_view(), name='game-detail'),
+    path('game/bulk-price-update/', views.GameBulkPriceUpdateView.as_view(), name='game-bulk-price-update'),
 
     # ==================== Blog Views ====================
     path('blog/list-add/', views.EmployeeBlogListCreate.as_view(), name='blog-list-add'),

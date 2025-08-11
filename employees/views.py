@@ -20,7 +20,8 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
-    EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, RepairManTransactionSerializer
+    EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
+    RepairManTransactionSerializer, GameBulkPriceUpdateSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -540,6 +541,28 @@ class EmployeeGameDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Game.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class GameBulkPriceUpdateView(generics.GenericAPIView):
+    serializer_class = GameBulkPriceUpdateSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        price_type = serializer.validated_data['type']
+        price_value = serializer.validated_data['price']
+
+        # آپدیت مستقیم در دیتابیس
+        updated_count = Game.objects.update(**{price_type: price_value})
+
+        return Response({
+            "message": f"Updated {updated_count} games",
+            "type": price_type,
+            "price": price_value
+        }, status=status.HTTP_200_OK)
 
 
 # ==================== Blog Views ====================

@@ -48,7 +48,8 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatRoom
-        fields = ['id', 'name', 'display_name', 'type', 'owner', 'owner_full_name', 'created_at', 'members']
+        fields = ['id', 'name', 'display_name', 'type', 'owner', 'owner_full_name', 'created_at', 'members',
+                  'last_message']
 
     def get_owner_full_name(self, obj):
         user = obj.owner

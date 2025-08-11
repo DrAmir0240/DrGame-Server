@@ -62,6 +62,22 @@ class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
 
+class GameBulkPriceUpdateSerializer(serializers.Serializer):
+    TYPE_CHOICES = [
+        ('online_ps4_price', 'Online PS4'),
+        ('online_ps5_price', 'Online PS5'),
+        ('offline_ps4_price', 'Offline PS4'),
+        ('offline_ps5_price', 'Offline PS5'),
+        ('data_ps4_price', 'Data PS4'),
+        ('data_ps5_price', 'Data PS5'),
+        ('xbox_price', 'Xbox'),
+        ('nintendo_price', 'Nintendo'),
+    ]
+
+    type = serializers.ChoiceField(choices=TYPE_CHOICES)
+    price = serializers.IntegerField(min_value=0)
+
+
 class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = BlogPost
