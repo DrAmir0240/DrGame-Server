@@ -246,18 +246,20 @@ class GameOrder(models.Model):
     ), default='customer')
     order_console_type = models.CharField(max_length=30, choices=GAME_ORDER_CONSOLE_TYPE, null=True)
     console = models.CharField(max_length=100, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS, default="delivered_to_drgame_and_in_waiting_queue")
+    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS,
+                              default="delivered_to_drgame_and_in_waiting_queue")
     payment_status = models.CharField(max_length=30, choices=(
         ('paid', 'پرداخت شده'),
         ('unpaid', 'پرداخت نشده')
     ), default='unpaid')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='game_order')
+    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, blank=True,
+                                       related_name='game_order')
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                              related_name='delivery_console_to_drgame')
+                                              related_name='delivery_console_to_drgame', blank=True)
     dead_line = models.DateField(null=True, blank=True)
     delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                                related_name='delivery_console_to_customer')
+                                                related_name='delivery_console_to_customer', blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
