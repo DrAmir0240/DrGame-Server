@@ -246,7 +246,7 @@ class GameOrder(models.Model):
     ), default='customer')
     order_console_type = models.CharField(max_length=30, choices=GAME_ORDER_CONSOLE_TYPE, null=True)
     console = models.CharField(max_length=100, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS, default="waiting")
+    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS, default="delivered_to_drgame_and_in_waiting_queue")
     payment_status = models.CharField(max_length=30, choices=(
         ('paid', 'پرداخت شده'),
         ('unpaid', 'پرداخت نشده')
