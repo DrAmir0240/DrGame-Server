@@ -6,6 +6,7 @@ from django.contrib.auth import authenticate
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
@@ -286,11 +287,13 @@ class UserStatusView(APIView):
 
         user = request.user
         user_type = None
-
+        employee_role = None
         if MainManager.objects.filter(user=user).exists():
             user_type = "main_manager"
         elif Employee.objects.filter(user=user).exists():
             user_type = "employee"
+            employee = get_object_or_404(Employee, user=user)
+            employee_role = employee.role
         elif Repairman.objects.filter(user=user).exists():
             user_type = "repairman"
         elif Customer.objects.filter(user=user).exists():
@@ -302,6 +305,7 @@ class UserStatusView(APIView):
             {
                 "is_authenticated": True,
                 "user_type": user_type,
+                "employee_role": employee_role,
                 "user_id": user.id
             },
             status=200

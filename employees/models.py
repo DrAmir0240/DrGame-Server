@@ -7,6 +7,9 @@ from accounts.models import CustomUser
 class Employee(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='employee')
     profile_picture = models.ImageField(null=True, upload_to='profile_pictures/employees/')
+    role = models.CharField(max_length=14, choices=(
+        ('recipient', 'صندوق دار'), ('account_setter', 'اکانت ستر'), ('data_uploader', 'دیتا آپلودر')), null=True,
+                            blank=True)
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     national_code = models.CharField(max_length=10, null=True)
@@ -24,8 +27,6 @@ class Employee(models.Model):
     has_access_to_transactions = models.BooleanField(default=False)
     has_access_to_calls = models.BooleanField(default=False)
     has_access_to_chat = models.BooleanField(default=False)
-    is_account_setter = models.BooleanField(default=False)
-    is_data_uploader = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

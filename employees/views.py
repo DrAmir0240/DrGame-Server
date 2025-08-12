@@ -650,7 +650,7 @@ class RepairManPanelStatusChoices(generics.ListAPIView):
             {'value': value, 'label': label} for value, label in RepairOrder._meta.get_field('status').choices
         ]
         response_data = {
-            'status': EmployeeCustomerSerializer(repair_order_status, many=True).data,
+            'status': EmployeeStatusChoicesSerializer(repair_order_status, many=True).data,
         }
         return Response(response_data)
 
