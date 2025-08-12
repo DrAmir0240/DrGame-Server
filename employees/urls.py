@@ -17,15 +17,19 @@ urlpatterns = [
     path('personal/game-orders/owned/', views.EmployeePanelOwnedGameOrderList.as_view(), name='owned-game-order-list'),
 
     # -------------------- Tasks --------------------
-    path('personal/tasks/', views.EmployeePanelTaskList.as_view(), name='task-list'),
-    path('personal/tasks/<int:pk>/', views.EmployeePanelTaskDetail.as_view(), name='task-detail'),
-    path('personal/tasks/add/', views.EmployeePanelAddTask.as_view(), name='task-add'),
+    path('personal/tasks/', views.EmployeePanelTaskList.as_view(), name='personal-task-list'),
+    path('personal/tasks/<int:pk>/', views.EmployeePanelTaskDetail.as_view(), name='personal-task-detail'),
+    path('personal/tasks/add/', views.EmployeePanelAddTask.as_view(), name='personal-task-add'),
 
     # -------------------- Transactions --------------------
     path('personal/transactions/owned/', views.EmployeePanelOwnedTransactionList.as_view(),
          name='owned-transaction-list'),
     path('personal/transactions/owned/<int:pk>/', views.EmployeePanelOwnedTransactionDetail.as_view(),
          name='owned-transaction-detail'),
+    # ==================== TaskManager Views ====================
+    path('tasks/', views.EmployeePanelOrganizeTaskListCreateView.as_view(), name='task-list-add'),
+    path('tasks/<int:pk>/', views.EmployeePanelOrganizeTaskDetailView.as_view(), name='task-detail'),
+    path('tasks/employees/', views.EmployeePanelOrganizeTaskChoices.as_view(), name='task-employee-list'),
 
     # ==================== Product Views ====================
     path('products/', views.EmployeePanelProductList.as_view(), name='product-list'),
@@ -90,7 +94,8 @@ urlpatterns = [
 
     # ==================== RepairManPanel Views ====================
     path('repairman-panel/orders/', views.RepairManRepairOrderList.as_view(), name="repairman-panel-orders"),
-    path('repairman-panel/orders/<int:id>/', views.RepairManPanelRepairOrderDetail.as_view(), name="repairman-panel-order-detail"),
+    path('repairman-panel/orders/<int:id>/', views.RepairManPanelRepairOrderDetail.as_view(),
+         name="repairman-panel-order-detail"),
     path('repairman-panel/status/', views.RepairManPanelStatusChoices.as_view(), name="repairman-panel-status-choices"),
     path('repairman-panel/transactions/in/', views.RepairManPanelInTransactionList.as_view(),
          name="repairman-panel-in-transaction-list"),

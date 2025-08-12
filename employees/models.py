@@ -65,10 +65,11 @@ class EmployeeFile(models.Model):
 class EmployeeTask(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
     title = models.CharField(max_length=100, null=True, blank=True)
+    voice = models.FileField(upload_to='employee_files/tasks/voices', null=True, blank=True)
     type = models.CharField(max_length=20, choices=(
         ('Personal', 'شخصی'),
         ('Organize', 'سازمانی')
-    ), null=True, blank=True)
+    ), null=True, blank=True, default='Personal')
     description = models.TextField(max_length=5000, null=True, blank=True)
     status = models.CharField(max_length=20, choices=(
         ('planed', 'برنامه ریزی شده'),

@@ -1,10 +1,8 @@
 from django.db.models import Q, Count
-from django.dispatch import receiver
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, filters, permissions
-from rest_framework.exceptions import ValidationError, PermissionDenied
+from rest_framework import generics, status, filters
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from django.db import transaction as db_transaction, transaction
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
@@ -15,13 +13,13 @@ from employees.models import EmployeeTask, Employee, EmployeeFile, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
-    EmployeeTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
+    EmployeePersonalTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, \
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
-    RepairManTransactionSerializer, GameBulkPriceUpdateSerializer
+    RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
@@ -109,7 +107,7 @@ class EmployeePanelOwnedGameOrderList(generics.ListAPIView):
 
 # -------------------- tasks --------------------
 class EmployeePanelTaskList(generics.ListAPIView):
-    serializer_class = EmployeeTaskSerializer
+    serializer_class = EmployeePersonalTaskSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend]
@@ -127,7 +125,7 @@ class EmployeePanelTaskList(generics.ListAPIView):
 
 
 class EmployeePanelTaskDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeeTaskSerializer
+    serializer_class = EmployeePersonalTaskSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -141,7 +139,7 @@ class EmployeePanelTaskDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 class EmployeePanelAddTask(generics.CreateAPIView):
-    serializer_class = EmployeeTaskSerializer
+    serializer_class = EmployeePersonalTaskSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -179,6 +177,28 @@ class EmployeePanelOwnedTransactionDetail(generics.RetrieveAPIView):
             return Transaction.objects.filter(receiver=receiver, is_deleted=False)
         except AttributeError:
             return Response(status=404)
+
+
+# ==================== TaskManager Views ====================
+class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
+    queryset = EmployeeTask.objects.filter(type='Organize')
+    serializer_class = EmployeeOrganizeTaskSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelOrganizeTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = EmployeeTask.objects.filter(type='Organize')
+    serializer_class = EmployeeOrganizeTaskSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelOrganizeTaskChoices(generics.ListAPIView):
+    queryset = Employee.objects.filter(is_deleted=False)
+    serializer_class = EmployeeSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
 
 # ==================== Product Views ====================

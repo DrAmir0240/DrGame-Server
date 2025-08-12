@@ -279,8 +279,6 @@ class UserStatusView(APIView):
             return Response(
                 {
                     "is_authenticated": False,
-                    "user_type": None,
-                    "user_id": None
                 },
                 status=200
             )
@@ -288,16 +286,27 @@ class UserStatusView(APIView):
         user = request.user
         user_type = None
         employee_role = None
+        user_name = None
         if MainManager.objects.filter(user=user).exists():
+            main_manager = get_object_or_404(MainManager, user=user)
             user_type = "main_manager"
+            user_name = main_manager.name
+
         elif Employee.objects.filter(user=user).exists():
             user_type = "employee"
             employee = get_object_or_404(Employee, user=user)
             employee_role = employee.role
+            user_name = employee.first_name + ' ' + employee.last_name
+
         elif Repairman.objects.filter(user=user).exists():
             user_type = "repairman"
+            repairman = get_object_or_404(Repairman, user=user)
+            user_name = repairman.first_name + ' ' + repairman.last_name
+
         elif Customer.objects.filter(user=user).exists():
             user_type = "customer"
+            customer = get_object_or_404(Customer, user=user)
+            user_name = customer.full_name
         else:
             user_type = "none"
 
@@ -306,6 +315,7 @@ class UserStatusView(APIView):
                 "is_authenticated": True,
                 "user_type": user_type,
                 "employee_role": employee_role,
+                "user_name": user_name,
                 "user_id": user.id
             },
             status=200

@@ -400,16 +400,31 @@ class EmployeeProductSerializer(SoftDeleteSerializerMixin, serializers.ModelSeri
         read_only_fields = ['is_deleted', 'created_at', 'updated_at', 'units_sold']
 
 
-class EmployeeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeePersonalTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = EmployeeTask
-        fields = ['id', 'title', 'type', 'description', 'status', 'deadline', 'employee', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee', 'created_at',
+                  'updated_at']
         read_only_fields = ['employee', 'type', 'created_at', 'updated_at', 'is_deleted']
 
     def create(self, validated_data):
         employee = self.context['request'].user.employee
         validated_data['employee'] = employee
         validated_data['type'] = 'Personal'
+        return super().create(validated_data)
+
+
+class EmployeeOrganizeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeTask
+        fields = [
+            'id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['type', 'created_at', 'updated_at', 'is_deleted']
+
+    def create(self, validated_data):
+        validated_data['type'] = 'Organize'
         return super().create(validated_data)
 
 
