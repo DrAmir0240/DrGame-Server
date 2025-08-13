@@ -88,7 +88,7 @@ urlpatterns = [
     path('docs/<int:pk>', views.EmployeePanelDocumentDetail.as_view(), name='docs-detail'),
     path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
 
-    # ==================== Docs Views ====================
+    # ==================== RealAssets Views ====================
     path('real-assets/', views.EmployeePanelRealAssets.as_view(), name='real-assets-list-add'),
     path('real-assets/<int:pk>', views.EmployeePanelRealAssetsDetail.as_view(), name='real-assets-detail'),
     path('real-assets/category/', views.EmployeePanelRealAssetsCategory.as_view(),
@@ -100,7 +100,7 @@ urlpatterns = [
 
     # ==================== RepairManPanel Views ====================
     path('repairman-panel/orders/', views.RepairManRepairOrderList.as_view(), name="repairman-panel-orders"),
-    path('repairman-panel/orders/<int:id>/', views.RepairManPanelRepairOrderDetail.as_view(),
+    path('repairman-panel/orders/<int:pk>/', views.RepairManPanelRepairOrderDetail.as_view(),
          name="repairman-panel-order-detail"),
     path('repairman-panel/status/', views.RepairManPanelStatusChoices.as_view(), name="repairman-panel-status-choices"),
     path('repairman-panel/transactions/in/', views.RepairManPanelInTransactionList.as_view(),

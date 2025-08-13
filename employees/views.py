@@ -683,6 +683,7 @@ class RepairManPanelRepairOrderDetail(generics.RetrieveUpdateAPIView):
     serializer_class = RepairManRepairOrderSerializer
     permission_classes = [IsRepairman]
     authentication_classes = [CustomJWTAuthentication]
+    lockup_field = 'id'
 
 
 class RepairManPanelStatusChoices(generics.ListAPIView):
