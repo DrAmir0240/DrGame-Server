@@ -19,11 +19,12 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
-    RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer
+    RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer, \
+    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    Document, DocCategory
+    Document, DocCategory, RealAssets, RealAssetsCategory
 
 
 # Create your views here.
@@ -611,7 +612,7 @@ class EmployeePanelDocument(generics.ListCreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-class EmployeePanelDetail(generics.RetrieveUpdateDestroyAPIView):
+class EmployeePanelDocumentDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Document.objects.filter(is_deleted=False)
     serializer_class = EmployeeDocsSerializer
     permission_classes = [IsEmployee | IsMainManager]
@@ -622,6 +623,29 @@ class EmployeePanelDetail(generics.RetrieveUpdateDestroyAPIView):
 class EmployeePanelDocCategory(generics.ListCreateAPIView):
     queryset = DocCategory.objects.filter(is_deleted=False)
     serializer_class = EmployeeDocCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+# ==================== Real Assets Views ====================
+class EmployeePanelRealAssets(generics.ListCreateAPIView):
+    queryset = RealAssets.objects.filter(is_deleted=False)
+    serializer_class = EmployeeRealAssetsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelRealAssetsDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = RealAssets.objects.filter(is_deleted=False)
+    serializer_class = EmployeeRealAssetsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lockup_field = 'id'
+
+
+class EmployeePanelRealAssetsCategory(generics.ListCreateAPIView):
+    queryset = RealAssetsCategory.objects.filter(is_deleted=False)
+    serializer_class = EmployeeRealAssetsCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 

@@ -4,11 +4,11 @@ from rest_framework import serializers
 
 from accounts.models import CustomUser, MainManager
 from customers.models import Customer
-from employees.models import EmployeeTask, Employee, Repairman
+from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
-    GameImage, DocCategory, Document
+    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets
 
 
 class SoftDeleteSerializerMixin:
@@ -25,11 +25,18 @@ class CustomUserSerializer(SoftDeleteSerializerMixin, serializers.ModelSerialize
         read_only_fields = ['is_deleted', 'is_active', 'is_staff', 'is_superuser']
 
 
+class EmployeeFileSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeFile
+        fields = '__all__'
+
+
 class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='phone',
         queryset=CustomUser.objects.all()
     )
+    files = EmployeeFileSerializer(many=True, required=False)
 
     class Meta:
         model = Employee
@@ -628,6 +635,27 @@ class EmployeeDocCategorySerializer(SoftDeleteSerializerMixin, serializers.Model
 
     class Meta:
         model = DocCategory
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeRealAssetsSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        slug_field='title',
+        queryset=RealAssetsCategory.objects.all()
+    )
+
+    class Meta:
+        model = RealAssets
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeRealAssetsCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    real_assets = EmployeeRealAssetsSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = RealAssetsCategory
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 

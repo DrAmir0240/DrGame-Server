@@ -218,3 +218,26 @@ class Document(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class RealAssetsCategory(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class RealAssets(models.Model):
+    title = models.CharField(max_length=100)
+    image = models.FileField(upload_to='real_assets/photos/', blank=True, null=True)
+    category = models.ForeignKey(RealAssetsCategory, on_delete=models.SET_NULL, null=True, related_name='real_assets')
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title

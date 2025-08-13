@@ -54,7 +54,7 @@ class Repairman(models.Model):
 
 
 class EmployeeFile(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='files')
     title = models.CharField(max_length=100, null=True, blank=True)
     file = models.FileField(upload_to='employee_files/', null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

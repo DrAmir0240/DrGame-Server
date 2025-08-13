@@ -85,8 +85,14 @@ urlpatterns = [
 
     # ==================== Docs Views ====================
     path('docs/', views.EmployeePanelDocument.as_view(), name='docs-list-add'),
-    path('docs/<int:pk>', views.EmployeePanelDetail.as_view(), name='docs-detail'),
+    path('docs/<int:pk>', views.EmployeePanelDocumentDetail.as_view(), name='docs-detail'),
     path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
+
+    # ==================== Docs Views ====================
+    path('real-assets/', views.EmployeePanelRealAssets.as_view(), name='real-assets-list-add'),
+    path('real-assets/<int:pk>', views.EmployeePanelRealAssetsDetail.as_view(), name='real-assets-detail'),
+    path('real-assets/category/', views.EmployeePanelRealAssetsCategory.as_view(),
+         name='real-assets-category-list-add'),
 
     # ==================== RepairMan Views ====================
     path('repairmans/', views.RepairManList.as_view(), name="repairman's-list-add"),
