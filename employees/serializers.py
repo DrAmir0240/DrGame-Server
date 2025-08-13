@@ -563,7 +563,7 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
             customer=customer,
             order_type='employee',
             order_console_type=order_console_type,
-            status='delivered_to_drgame',
+            status='delivered_to_drgame_and_in_waiting_queue',
             console=console,
             dead_line=dead_line,
             amount=total_amount,
