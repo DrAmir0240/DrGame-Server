@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
@@ -90,20 +91,49 @@ class EmployeePanelSonyAccountByOrderGamesView(generics.ListAPIView):
 
 
 # -------------------- orders --------------------
-class EmployeePanelOwnedGameOrderList(generics.ListAPIView):
+class EmployeePanelOwnedGameOrderList(generics.ListCreateAPIView):
+    queryset = GameOrder.objects.filter(is_deleted=False).order_by('-created_at')
     serializer_class = EmployeeGameOrderSerializer
-    permission_classes = [IsEmployee]
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = GameOrderFilter
+    search_fields = ['order_type', 'order_console_type', 'status', 'payment_status']
+    ordering_fields = ['created_at', 'amount']
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+
+class EmployeePanelOwnedGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeGameOrderSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'pk'
+
+    def perform_update(self, serializer):
+        serializer.save()
 
     def get_queryset(self):
         user = self.request.user
         try:
             employee = user.employee
-            return GameOrder.objects.filter(
-                Q(account_setter=employee) | Q(data_uploader=employee)
-            ).select_related('customer', 'order_type').prefetch_related('games')
         except AttributeError:
-            return Response(status=404)
+            # اگر کاربر employee نداشت، دسترسی نداره
+            raise PermissionDenied("You don't have permission to view these orders.")
+
+        if employee.role == 'account_setter':
+            return GameOrder.objects.filter(
+                Q(status='delivered_to_drgame_and_in_waiting_queue') | Q(employee=employee)
+            ).order_by('-created_at').select_related('customer').prefetch_related('games')
+
+        elif employee.role == 'data_uploader':
+            return GameOrder.objects.filter(
+                Q(status='in_data_uploading_queue') | Q(employee=employee)
+            ).order_by('-created_at').select_related('customer').prefetch_related('games')
+
+        # اگر نقش دیگه‌ای داشت، هیچ چیزی برنگرده
+        return GameOrder.objects.none()
 
 
 # -------------------- tasks --------------------
@@ -367,6 +397,9 @@ class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'pk'
+
+    def perform_update(self, serializer):
+        serializer.save()
 
 
 @restrict_access('has_access_to_game_order')

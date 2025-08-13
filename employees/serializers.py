@@ -505,13 +505,20 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
     customer = serializers.SlugRelatedField(slug_field='full_name',
                                             queryset=Customer.objects.filter(is_deleted=False))
     recipient = serializers.SerializerMethodField()
+    employee = serializers.SerializerMethodField()
 
     class Meta:
         model = GameOrder
         fields = [
-            'id', 'customer', 'order_console_type', 'status', 'payment_status', 'console', 'dead_line', 'games',
+            'id', 'employee', 'customer', 'order_console_type', 'status', 'payment_status', 'console', 'dead_line',
+            'games',
             'amount', 'recipient'
         ]
+
+    def get_employee(self, obj):
+        if obj.recipient:
+            return f"{obj.recipient.first_name} {obj.recipient.last_name}"
+        return None
 
     def get_recipient(self, obj):
         if obj.recipient:
@@ -613,6 +620,22 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
                 game_item.save()
 
         return instance
+
+    def save(self, **kwargs):
+        """
+        این متد قبل از ذخیره سازی نهایی وضعیت employee رو بر اساس status تنظیم میکند
+        """
+        instance = getattr(self, 'instance', None)
+        new_status = self.validated_data.get('status', None)
+
+        if instance and new_status:
+            if new_status == 'done':
+                self.validated_data['employee'] = instance.recipient
+            else:
+                if hasattr(self.context['request'].user, 'employee'):
+                    self.validated_data['employee'] = self.context['request'].user.employee
+
+        return super().save(**kwargs)
 
 
 class EmployeeStatusChoicesSerializer(serializers.Serializer):

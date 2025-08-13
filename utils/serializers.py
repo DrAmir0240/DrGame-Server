@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
 
-class Set2FASecretSerializer(serializers.Serializer):
-    secret = serializers.CharField(max_length=100)
+class Set2FAURISerializer(serializers.Serializer):
+    uri = serializers.CharField()  # URI کامل otpauth:// که از سونی میاد
 
 
 class OTPSerializer(serializers.Serializer):

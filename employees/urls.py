@@ -15,6 +15,8 @@ urlpatterns = [
 
     # -------------------- Orders --------------------
     path('personal/game-orders/owned/', views.EmployeePanelOwnedGameOrderList.as_view(), name='owned-game-order-list'),
+    path('personal/game-orders/owned/<int:pk>/', views.EmployeePanelOwnedGameOrderDetail.as_view(),
+         name='owned-game-order-detail'),
 
     # -------------------- Tasks --------------------
     path('personal/tasks/', views.EmployeePanelTaskList.as_view(), name='personal-task-list'),
