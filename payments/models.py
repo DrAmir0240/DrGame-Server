@@ -335,6 +335,10 @@ class CourseOrder(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=2000000)
     transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='course_order')
+    payment_status = models.CharField(max_length=30, choices=(
+        ('پرداخت شده', 'paid'),
+        ('پرداخت نشده', 'unpaid')
+    ), default='unpaid')
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

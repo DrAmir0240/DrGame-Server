@@ -315,9 +315,8 @@ class CourseRetrieveSerializer(serializers.ModelSerializer):
             return True
         if user and user.is_authenticated:
             return CourseOrder.objects.filter(
-                course=obj,
                 user=user,
-                payment_status='completed'
+                payment_status='paid'
             ).exists()
         return False
 

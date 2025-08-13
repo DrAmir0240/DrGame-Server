@@ -468,7 +468,7 @@ class ContactSubmissionCreateAPIView(generics.CreateAPIView):
 
 class CourseListAPIView(generics.ListAPIView):
     serializer_class = CourseListCreateSerializer
-    queryset = Course.objects.filter(status='published').prefetch_related('videos').first()
+    queryset = Course.objects.filter(status='published').prefetch_related('videos')
     permission_classes = [AllowAny]
 
 
