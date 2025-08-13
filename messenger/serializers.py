@@ -1,3 +1,5 @@
+from logging import lastResort
+
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from employees.models import Employee
@@ -58,6 +60,14 @@ class ChatRoomSerializer(serializers.ModelSerializer):
         elif hasattr(user, 'employee'):
             return f"{user.employee.first_name} {user.employee.last_name}"
         return user.username
+
+    def get_last_message(self, obj):
+        chat_room_id = self.context.get('id')
+        chat_room = ChatRoom.objects.get(id=chat_room_id)
+        last_message = chat_room.messages.last()
+        if last_message:
+            return last_message
+        return 'این گفت و گو خالی است'
 
     def get_display_name(self, obj):
         request = self.context.get('request')
