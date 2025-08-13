@@ -68,6 +68,22 @@ class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
+    def update(self, instance, validated_data):
+        game_images_data = validated_data.pop('game_images', None)
+
+        # آپدیت خود Game
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if game_images_data is not None:
+            # پاک‌کردن یا آپدیت عکس‌های موجود
+            instance.game_images.all().delete()
+            for img_data in game_images_data:
+                GameImage.objects.create(game=instance, **img_data)
+
+        return instance
+
 
 class GameBulkPriceUpdateSerializer(serializers.Serializer):
     TYPE_CHOICES = [
