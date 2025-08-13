@@ -17,9 +17,9 @@ class MembershipSerializer(serializers.ModelSerializer):
         fields = ['user', 'is_admin', 'is_muted', 'joined_at', 'member_type', 'full_name', 'profile']
 
     def get_profile(self, obj):
-        if hasattr(obj.sender, 'employee') and obj.sender.employee:
-            return obj.sender.employee.profile_picture
-        elif hasattr(obj.sender, 'main_manager') and obj.sender.main_manager:
+        if hasattr(obj.user, 'employee') and obj.user.employee:
+            return obj.user.employee.profile_picture
+        elif hasattr(obj.user, 'main_manager') and obj.user.main_manager:
             return None
         return None
 
