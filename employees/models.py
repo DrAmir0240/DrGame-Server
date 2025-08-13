@@ -8,8 +8,11 @@ class Employee(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='employee')
     profile_picture = models.ImageField(null=True, upload_to='profile_pictures/employees/')
     role = models.CharField(max_length=14, choices=(
-        ('recipient', 'صندوق دار'), ('account_setter', 'اکانت ستر'), ('data_uploader', 'دیتا آپلودر')), null=True,
-                            blank=True)
+        ('recipient', 'صندوق دار'),
+        ('account_setter', 'اکانت ستر'),
+        ('data_uploader', 'دیتا آپلودر'),
+        ('manager', 'مدیر داخلی')
+    ), null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     national_code = models.CharField(max_length=10, null=True)
