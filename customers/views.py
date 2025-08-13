@@ -91,8 +91,8 @@ class CustomerRepairOrderListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                              is_deleted=False)
+        return RepairOrder.objects.select_related('order_type', 'customer').filter(customer=customer,
+                                                                                   is_deleted=False)
 
 
 class CustomerRepairOrderRetrieveAPIView(generics.RetrieveAPIView):
@@ -102,8 +102,8 @@ class CustomerRepairOrderRetrieveAPIView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                              is_deleted=False)
+        return RepairOrder.objects.select_related('order_type', 'customer').filter(customer=customer,
+                                                                                   is_deleted=False)
 
 
 class CustomerCourseOrderListAPIView(generics.ListAPIView):
@@ -113,8 +113,8 @@ class CustomerCourseOrderListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return CourseOrder.objects.select_related('course', 'customer').filter(customer=customer,
-                                                                               is_deleted=False).all()
+        return CourseOrder.objects.select_related('customer').filter(customer=customer,
+                                                                     is_deleted=False).all()
 
 
 class CustomerCourseOrderRetrieveAPIView(generics.RetrieveAPIView):
@@ -124,8 +124,8 @@ class CustomerCourseOrderRetrieveAPIView(generics.RetrieveAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return CourseOrder.objects.select_related('course', 'customer').filter(customer=customer,
-                                                                               is_deleted=False).all()
+        return CourseOrder.objects.select_related('customer').filter(customer=customer,
+                                                                     is_deleted=False).all()
 
 
 class CustomerTransactionListAPIView(generics.ListAPIView):
