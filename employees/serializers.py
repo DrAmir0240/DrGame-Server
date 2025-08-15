@@ -589,53 +589,53 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
         return game_order
 
     def update(self, instance, validated_data):
+        print(instance.employee)
+        request = self.context.get('request')
+        old_status = instance.status
+        new_status = validated_data.get('status', old_status)
+
+        # فقط وقتی status تغییر کرده
+        if old_status != new_status:
+            if new_status == 'done':
+                validated_data['employee'] = instance.recipient
+            else:
+                validated_data['employee'] = request.user.employee
+
+        # مدیریت games_data
         games_data = validated_data.pop('games', None)
 
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        instance.save()
+        # آپدیت instance با super تا DRF دیتابیس رو درست save کنه
+        instance = super().update(instance, validated_data)
+        print(instance.employee)
 
         if games_data:
             for item_data in games_data:
                 game = item_data['game']
-                game_item_qs = GameOrderItem.objects.filter(game_order=instance, game=game, is_deleted=False)
+                game_item_qs = GameOrderItem.objects.filter(
+                    game_order=instance, game=game, is_deleted=False
+                )
                 if not game_item_qs.exists():
-                    raise serializers.ValidationError(f"آیتم مربوط به بازی '{game.title}' در این سفارش وجود ندارد.")
+                    raise serializers.ValidationError(
+                        f"آیتم مربوط به بازی '{game.title}' در این سفارش وجود ندارد."
+                    )
                 game_item = game_item_qs.first()
 
                 if 'data' in item_data:
                     game_item.data = item_data['data']
-                    self.context['request'].user.employee.balance += game_item.amount
-                    self.context['request'].user.employee.save()
+                    request.user.employee.balance += game_item.amount
+                    request.user.employee.save()
                 if 'account' in item_data:
                     game_item.account = item_data['account']
-                    self.context['request'].user.employee.balance += game_item.amount
-                    self.context['request'].user.employee.save()
+                    request.user.employee.balance += game_item.amount
+                    request.user.employee.save()
                 if 'account_setter' in item_data and item_data['account_setter'] is True:
-                    game_item.account_setter = self.context['request'].user.employee
-
+                    game_item.account_setter = request.user.employee
                 if 'data_uploader' in item_data and item_data['data_uploader'] is True:
-                    game_item.data_uploader = self.context['request'].user.employee
+                    game_item.data_uploader = request.user.employee
 
                 game_item.save()
 
         return instance
-
-    def save(self, **kwargs):
-        """
-        این متد قبل از ذخیره سازی نهایی وضعیت employee رو بر اساس status تنظیم میکند
-        """
-        instance = getattr(self, 'instance', None)
-        new_status = self.validated_data.get('status', None)
-
-        if instance and new_status:
-            if new_status == 'done':
-                self.validated_data['employee'] = instance.recipient
-            else:
-                if hasattr(self.context['request'].user, 'employee'):
-                    self.validated_data['employee'] = self.context['request'].user.employee
-
-        return super().save(**kwargs)
 
 
 class EmployeeStatusChoicesSerializer(serializers.Serializer):
