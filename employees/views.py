@@ -8,7 +8,6 @@ from accounts.auth import CustomJWTAuthentication
 from accounts.models import MainManager, CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
-from employees.apps import EmployeesConfig
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter
 from employees.models import EmployeeTask, Employee, EmployeeFile, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
@@ -21,9 +20,10 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
     RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer, \
-    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer
+    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, EmployeeGameOrderItemSerializer, \
+    EmployeePersonalGameOrderItemSerializer
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     Document, DocCategory, RealAssets, RealAssetsCategory
 
@@ -200,7 +200,7 @@ class EmployeePanelAddTask(generics.CreateAPIView):
 
 
 # -------------------- transactions --------------------
-class EmployeePanelOwnedTransactionList(generics.ListAPIView):
+class EmployeePanelOwnedOutTransactionList(generics.ListAPIView):
     serializer_class = EmployeeTransactionSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
@@ -213,7 +213,7 @@ class EmployeePanelOwnedTransactionList(generics.ListAPIView):
             return Response(status=404)
 
 
-class EmployeePanelOwnedTransactionDetail(generics.RetrieveAPIView):
+class EmployeePanelOwnedOutTransactionDetail(generics.RetrieveAPIView):
     serializer_class = EmployeeTransactionSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
@@ -224,6 +224,38 @@ class EmployeePanelOwnedTransactionDetail(generics.RetrieveAPIView):
             return Transaction.objects.filter(receiver=receiver, is_deleted=False)
         except AttributeError:
             return Response(status=404)
+
+
+class EmployeePanelOwnedInTransactionList(generics.GenericAPIView):
+    serializer_class = EmployeePersonalGameOrderItemSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        employee = request.user.employee
+        game_order_items = GameOrderItem.objects.filter(
+            Q(account_setter=employee) | Q(data_uploader=employee),
+            is_deleted=False
+        )
+
+        serializer = self.get_serializer(game_order_items, many=True)
+        return Response(serializer.data)
+
+
+class EmployeePanelOwnedInTransactionDetail(generics.RetrieveAPIView):
+
+    queryset = GameOrderItem.objects.filter(is_deleted=False)
+    serializer_class = EmployeePersonalGameOrderItemSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        employee = self.request.user.employee
+        return GameOrderItem.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(account_setter=employee) | Q(data_uploader=employee)
+        )
 
 
 # ==================== TaskManager Views ====================

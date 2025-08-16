@@ -24,9 +24,13 @@ urlpatterns = [
     path('personal/tasks/add/', views.EmployeePanelAddTask.as_view(), name='personal-task-add'),
 
     # -------------------- Transactions --------------------
-    path('personal/transactions/owned/', views.EmployeePanelOwnedTransactionList.as_view(),
+    path('personal/transactions/owned/out/', views.EmployeePanelOwnedOutTransactionList.as_view(),
          name='owned-transaction-list'),
-    path('personal/transactions/owned/<int:pk>/', views.EmployeePanelOwnedTransactionDetail.as_view(),
+    path('personal/transactions/owned/out/<int:pk>/', views.EmployeePanelOwnedOutTransactionDetail.as_view(),
+         name='owned-transaction-detail'),
+    path('personal/transactions/owned/in/', views.EmployeePanelOwnedInTransactionList.as_view(),
+         name='owned-transaction-list'),
+    path('personal/transactions/owned/in/<int:pk>/', views.EmployeePanelOwnedInTransactionDetail.as_view(),
          name='owned-transaction-detail'),
     # ==================== TaskManager Views ====================
     path('tasks/', views.EmployeePanelOrganizeTaskListCreateView.as_view(), name='task-list-add'),

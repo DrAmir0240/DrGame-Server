@@ -117,7 +117,6 @@ class GameBulkPriceUpdateSerializer(serializers.Serializer):
         return type_map[self.validated_data['type']]
 
 
-
 class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = BlogPost
@@ -216,6 +215,30 @@ class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.Model
                 'payment_method': payment_method.title
             }
         return None
+
+
+class EmployeePersonalGameOrderItemSerializer(serializers.ModelSerializer):
+    account_setter = serializers.SerializerMethodField()
+    data_uploader = serializers.SerializerMethodField()
+    game_order_customer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GameOrderItem
+        fields = ["id", "game_order", "game_order_customer", "game", "account_setter", "data_uploader", "amount",
+                  "created_at"]
+
+    def get_account_setter(self, obj):
+        if obj.account_setter:
+            return obj.account_setter.first_name + " " + obj.account_setter.last_name
+        return None
+
+    def get_data_uploader(self, obj):
+        if obj.data_uploader:
+            return obj.data_uploader.first_name + " " + obj.data_uploader.last_name
+        return None
+
+    def get_game_order_customer(self, obj):
+        return obj.game_order.customer.full_name
 
 
 class EmployeeIncomingTransactionSerializer(serializers.ModelSerializer):
