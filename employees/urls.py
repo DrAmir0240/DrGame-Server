@@ -61,6 +61,10 @@ urlpatterns = [
     path('repair-orders/', views.EmployeePanelRepairOrderList.as_view(), name='repair-order-list-add'),
     path('repair-orders/<int:pk>/', views.EmployeePanelRepairOrderDetail.as_view(), name='repair-order-detail'),
 
+    # ==================== CourseOrders Views ====================
+    path('course-orders/', views.EmployeePanelCourseOrdersList.as_view(), name='course-order-list'),
+    path('course-orders/<int:pk>/', views.EmployeePanelCourseOrdersDetail.as_view(), name='course-order-detail'),
+
     # ==================== Transactions Views ====================
     path('transactions/', views.EmployeePanelTransactionList.as_view(), name='transaction-list'),
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),

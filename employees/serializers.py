@@ -6,7 +6,8 @@ from accounts.models import CustomUser, MainManager
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
+    CourseOrder
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document, RealAssetsCategory, RealAssets
 
@@ -737,6 +738,18 @@ class EmployeeRealAssetsCategorySerializer(SoftDeleteSerializerMixin, serializer
         model = RealAssetsCategory
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+class EmployeeCourseOrderSerializer(serializers.ModelSerializer):
+    customer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourseOrder
+        fields = "__all__"
+        read_only_fields = "__all__"
+
+    def get_customer(self, obj):
+        return obj.customer.full_name
 
 
 class RepairmanSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

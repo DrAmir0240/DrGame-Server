@@ -21,9 +21,9 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
     RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer, \
     EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, EmployeeGameOrderItemSerializer, \
-    EmployeePersonalGameOrderItemSerializer
+    EmployeePersonalGameOrderItemSerializer, EmployeeCourseOrderSerializer
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     Document, DocCategory, RealAssets, RealAssetsCategory
 
@@ -498,12 +498,20 @@ class EmployeePanelRepairOrderDetail(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_orders')
-class EmployeePanelAddRepairOrder(generics.CreateAPIView):
-    serializer_class = RepairManRepairOrderSerializer
-    queryset = Order.objects.filter(is_deleted=False)
+# ==================== CourseOrders Views ====================
+class EmployeePanelCourseOrdersList(generics.ListAPIView):
+    queryset = CourseOrder.objects.filter(is_deleted=False, payment_status="paid")
+    serializer_class = EmployeeCourseOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelCourseOrdersDetail(generics.RetrieveAPIView):
+    queryset = CourseOrder.objects.filter(is_deleted=False, payment_status="paid")
+    serializer_class = EmployeeCourseOrderSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'pk'
 
 
 # ==================== Transactions Views ====================
