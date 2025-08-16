@@ -58,7 +58,7 @@ urlpatterns = [
     path('game-orders/choices/', views.EmployeePanelGameOrderChoices.as_view(), name='product-order-choices'),
 
     # ==================== RepairOrders Views ====================
-    path('repair-orders/', views.EmployeePanelRepairOrderList.as_view(), name='repair-order-list'),
+    path('repair-orders/', views.EmployeePanelRepairOrderList.as_view(), name='repair-order-list-add'),
     path('repair-orders/<int:pk>/', views.EmployeePanelRepairOrderDetail.as_view(), name='repair-order-detail'),
 
     # ==================== Transactions Views ====================

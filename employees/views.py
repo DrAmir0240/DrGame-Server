@@ -243,7 +243,6 @@ class EmployeePanelOwnedInTransactionList(generics.GenericAPIView):
 
 
 class EmployeePanelOwnedInTransactionDetail(generics.RetrieveAPIView):
-
     queryset = GameOrderItem.objects.filter(is_deleted=False)
     serializer_class = EmployeePersonalGameOrderItemSerializer
     permission_classes = [IsEmployee]
@@ -484,8 +483,8 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
 
 # ==================== RepairOrders Views ====================
 @restrict_access('has_access_to_orders')
-class EmployeePanelRepairOrderList(generics.ListAPIView):
-    serializer_class = EmployeeRepairOrderSerializer
+class EmployeePanelRepairOrderList(generics.ListCreateAPIView):
+    serializer_class = RepairManRepairOrderSerializer
     queryset = Order.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -493,7 +492,7 @@ class EmployeePanelRepairOrderList(generics.ListAPIView):
 
 @restrict_access('has_access_to_orders')
 class EmployeePanelRepairOrderDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeeRepairOrderSerializer
+    serializer_class = RepairManRepairOrderSerializer
     queryset = Order.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -501,7 +500,7 @@ class EmployeePanelRepairOrderDetail(generics.RetrieveUpdateDestroyAPIView):
 
 @restrict_access('has_access_to_orders')
 class EmployeePanelAddRepairOrder(generics.CreateAPIView):
-    serializer_class = EmployeeRepairOrderSerializer
+    serializer_class = RepairManRepairOrderSerializer
     queryset = Order.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
