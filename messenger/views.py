@@ -25,7 +25,9 @@ class ChatRoomListView(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        return ChatRoom.objects.filter(users=self.request.user)
+        if ChatRoom.objects.filter(membership__user=self.request.user).exists():
+            return ChatRoom.objects.filter(membership__user=self.request.user)
+        return Response({"message": "user hasn't any chats"}, status=404)
 
 
 # --------------------

@@ -14,7 +14,6 @@ class ChatRoom(models.Model):
     type = models.CharField(max_length=10, choices=CHAT_TYPES)
     owner = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='owned_rooms')
     created_at = models.DateTimeField(auto_now_add=True)
-    users = models.ManyToManyField(CustomUser, related_name='chat_rooms', through='Membership')
 
 
 class Membership(models.Model):
