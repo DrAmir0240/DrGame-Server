@@ -1,14 +1,18 @@
+from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsMainManager, IsEmployee
 from storage.models import SonyAccount
-from utils.serializers import Set2FAURISerializer, OTPSerializer
+from utils.serializers import Set2FAURISerializer, OTPSerializer, SonyAccountSerializer
 from utils.crypto import encrypt_text, decrypt_text
 import urllib.parse
 import pyotp, time
+
+from utils.services import fetch_account_with_games, build_account_message
+from utils.telegram import send_telegram_message, TelegramError
 
 
 class Set2FASecretView(APIView):
@@ -72,3 +76,44 @@ class GetOTPView(APIView):
         serializer = OTPSerializer(data=otp_data)
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
+
+
+class SonyAccountViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet نمونه برای SonyAccount.
+    - list/retrieve به صورت پیش‌فرض
+    - اکشن سفارشی: POST /sony-accounts/{id}/send-to-telegram/
+    """
+    queryset = SonyAccount.objects.filter(is_deleted=False)
+    serializer_class = SonyAccountSerializer  # اگر نداری، موقت یک Serializer مینیمال بنویس
+    permission_classes = [IsEmployee | IsMainManager]  # این را با پرمیشن‌های خودت (مثلاً IsEmployee) جایگزین کن
+
+    @action(detail=True, methods=["post"], url_path="send-to-telegram")
+    def send_to_telegram(self, request, pk=None):
+        """
+        اکانت را بارگذاری → پیام را بساز → به تلگرام بفرست.
+        بدنهٔ درخواست نمی‌خواهد چیزی بفرستد.
+        """
+        # 1) کشیدن اکانت
+        try:
+            account = fetch_account_with_games(pk)
+        except SonyAccount.DoesNotExist:
+            return Response({"detail": "اکانت پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+
+        # 2) ساخت پیام
+        message = build_account_message(account)
+
+        # 3) ارسال به تلگرام
+        try:
+            resp = send_telegram_message(message)
+        except TelegramError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
+
+        # 4) پاسخ موفق
+        return Response(
+            {
+                "detail": "پیام با موفقیت ارسال شد.",
+                "telegram_response": resp,  # شامل message_id و ...
+            },
+            status=status.HTTP_200_OK,
+        )
