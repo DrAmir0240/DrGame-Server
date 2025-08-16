@@ -20,86 +20,86 @@ class MembershipSerializer(serializers.ModelSerializer):
 
     def get_profile(self, obj):
         if hasattr(obj.user, 'employee') and obj.user.employee:
-            return obj.user.employee.profile_picture
-        elif hasattr(obj.user, 'main_manager') and obj.user.main_manager:
-            return None
+            return obj.user.employee.profile_picture.url if obj.user.employee.profile_picture else None
         return None
 
     def get_member_type(self, obj):
-        if hasattr(obj.user, 'main_manager'):
+        if hasattr(obj.user, 'main_manager') and obj.user.main_manager:
             return "main_manager"
-        elif hasattr(obj.user, 'employee'):
+        elif hasattr(obj.user, 'employee') and obj.user.employee:
             return "employee"
         return "unknown"
 
     def get_full_name(self, obj):
         user = obj.user
-        # اگر user مربوط به main_manager بود
-        if hasattr(user, 'main_manager'):
-            return f"{user.main_manager.name}"
-        elif hasattr(user, 'employee'):
+        if hasattr(user, 'main_manager') and user.main_manager:
+            return user.main_manager.name
+        elif hasattr(user, 'employee') and user.employee:
             return f"{user.employee.first_name} {user.employee.last_name}"
-        return None
-
+        return "نامشخص"
 
 class ChatRoomSerializer(serializers.ModelSerializer):
     members = MembershipSerializer(source='membership_set', many=True, read_only=True)
     owner_full_name = serializers.SerializerMethodField()
-    display_name = serializers.SerializerMethodField()  # نام نمایشی چت
+    display_name = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatRoom
-        fields = ['id', 'name', 'display_name', 'type', 'owner', 'owner_full_name', 'created_at', 'members',
-                  'last_message']
+        fields = [
+            'id', 'name', 'display_name', 'type', 'owner',
+            'owner_full_name', 'created_at', 'members', 'last_message'
+        ]
 
     def get_owner_full_name(self, obj):
-        user = obj.owner
-        if hasattr(user, 'main_manager'):
-            return f"{user.main_manager.name}"
-        elif hasattr(user, 'employee'):
-            return f"{user.employee.first_name} {user.employee.last_name}"
-        return user.username
+        owner = obj.owner
+        if hasattr(owner, 'main_manager') and owner.main_manager:
+            return owner.main_manager.name
+        elif hasattr(owner, 'employee') and owner.employee:
+            return f"{owner.employee.first_name} {owner.employee.last_name}"
+        return "نامشخص"
 
     def get_last_message(self, obj):
-        chat_room_id = self.context.get('id')
-        chat_room = ChatRoom.objects.get(id=chat_room_id)
-        last_message = chat_room.messages.last()
+        last_message = obj.messages.last()
         if last_message:
-            return last_message
-        return 'این گفت و گو خالی است'
+            return {
+                "id": last_message.id,
+                "sender": self.get_user_display_name(last_message.sender),
+                "text": last_message.text[:20],
+                "created_at": last_message.created_at
+            }
+        return None
 
     def get_display_name(self, obj):
         request = self.context.get('request')
         if not request:
-            return obj.name  # fallback
+            return obj.name
 
         current_user = request.user
 
+        # اگر گروه یا کانال است، نام اصلی را برگردان
         if obj.type.lower() != 'pv':
-            # اگر پیوی نیست، همون نام اصلی رو برگردون
             return obj.name
 
-        # اگر پیوی هست، اسم بر اساس مالک یا عضو مقابل تعیین میشه
-        members = obj.users.exclude(id=current_user.id)
-        if members.exists():
-            # فرض کنیم فقط یک عضو دیگه هست (چون pv)
-            other_user = members.first()
+        # اگر پیوی است، نام عضو مقابل را برگردان
+        other_members = CustomUser.objects.filter(
+            memberships__chat_room=obj
+        ).exclude(id=current_user.id)
 
-            if hasattr(other_user, 'main_manager'):
-                return f"{other_user.main_manager.name}"
-            elif hasattr(other_user, 'employee'):
-                return f"{other_user.employee.first_name} {other_user.employee.last_name}"
-            else:
-                return other_user.username
+        if other_members.exists():
+            return self.get_user_display_name(other_members.first())
         else:
-            # اگر فقط مالک هست، اسم خود مالک رو برگردون
-            if hasattr(current_user, 'main_manager'):
-                return f"{current_user.main_manager.name}"
-            elif hasattr(current_user, 'employee'):
-                return f"{current_user.employee.first_name} {current_user.employee.last_name}"
-            else:
-                return current_user.username
+            # فقط مالک در چت هست → نام خودش
+            return self.get_user_display_name(current_user)
+
+    def get_user_display_name(self, user):
+        if not user:
+            return "نامشخص"
+        if hasattr(user, 'main_manager') and user.main_manager:
+            return user.main_manager.name
+        elif hasattr(user, 'employee') and user.employee:
+            return f"{user.employee.first_name} {user.employee.last_name}"
+        return "نامشخص"
 
 
 class ChatRoomCreateSerializer(serializers.ModelSerializer):
