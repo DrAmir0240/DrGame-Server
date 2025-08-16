@@ -87,18 +87,35 @@ class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
 
 class GameBulkPriceUpdateSerializer(serializers.Serializer):
     TYPE_CHOICES = [
-        ('online_ps4_price', 'Online PS4'),
-        ('online_ps5_price', 'Online PS5'),
-        ('offline_ps4_price', 'Offline PS4'),
-        ('offline_ps5_price', 'Offline PS5'),
-        ('data_ps4_price', 'Data PS4'),
-        ('data_ps5_price', 'Data PS5'),
-        ('xbox_price', 'Xbox'),
-        ('nintendo_price', 'Nintendo'),
+        ('online_ps4', 'Online PS4'),
+        ('online_ps5', 'Online PS5'),
+        ('offline_ps4', 'Offline PS4'),
+        ('offline_ps5', 'Offline PS5'),
+        ('data_ps4', 'Data PS4'),
+        ('data_ps5', 'Data PS5'),
+        ('xbox', 'Xbox'),
+        ('nintendo', 'Nintendo'),
     ]
 
     type = serializers.ChoiceField(choices=TYPE_CHOICES)
     price = serializers.IntegerField(min_value=0)
+
+    def get_db_field(self):
+        """
+        تبدیل ورودی کاربر به اسم واقعی فیلد دیتابیس
+        """
+        type_map = {
+            'online_ps4': 'online_ps4_price',
+            'online_ps5': 'online_ps5_price',
+            'offline_ps4': 'offline_ps4_price',
+            'offline_ps5': 'offline_ps5_price',
+            'data_ps4': 'data_ps4_price',
+            'data_ps5': 'data_ps5_price',
+            'xbox': 'xbox_price',
+            'nintendo': 'nintendo_price',
+        }
+        return type_map[self.validated_data['type']]
+
 
 
 class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

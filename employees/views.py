@@ -622,15 +622,14 @@ class GameBulkPriceUpdateView(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        price_type = serializer.validated_data['type']
+        price_type = serializer.get_db_field()  # تبدیل خودکار
         price_value = serializer.validated_data['price']
 
-        # آپدیت مستقیم در دیتابیس
         updated_count = Game.objects.update(**{price_type: price_value})
 
         return Response({
             "message": f"Updated {updated_count} games",
-            "type": price_type,
+            "type": serializer.validated_data['type'],  # همون چیزی که کاربر فرستاده
             "price": price_value
         }, status=status.HTTP_200_OK)
 
