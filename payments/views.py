@@ -232,7 +232,7 @@ class GameOrderDetail(generics.RetrieveAPIView):
         return self.queryset.filter(customer=self.request.user.customer)
 
 
-class RequestPaymentForGameOrder(generics.RetrieveAPIView):
+class RequestPaymentForGameOrder(generics.GenericAPIView):
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -338,12 +338,12 @@ class AssignDeliveryToDrGameForRepairOrder(APIView):
             return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
 
 
-class RequestPaymentForRepairOrder(generics.RetrieveAPIView):
+class RequestPaymentForRepairOrder(generics.GenericAPIView):
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
-    def post(self, request, repair_id):
-        repair_order = get_object_or_404(RepairOrder, id=repair_id)
+    def post(self, request, repair_order_id):
+        repair_order = get_object_or_404(RepairOrder, id=repair_order_id)
         manager = get_object_or_404(MainManager, id=1)
         payment_method = PaymentMethod.objects.filter(is_online=True).first()
         transaction = Transaction.objects.create(

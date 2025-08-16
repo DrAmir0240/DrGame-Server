@@ -61,7 +61,7 @@ class ProductSerializer(serializers.ModelSerializer):
         customer = getattr(request.user, 'customer', None)
         if customer and customer.discount > 0:
             discount_percent = customer.discount
-            discounted_price = obj.price * (1 - discount_percent / 100)
+            discounted_price = int(obj.price) * (1 - discount_percent / 100)
             return int(discounted_price)
         return None
 

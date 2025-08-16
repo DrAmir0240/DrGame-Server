@@ -27,7 +27,7 @@ urlpatterns = [
     path('repair-orders/<int:id>/', views.RepairOrderDetail.as_view(), name='repair-order-detail'),
     path('reapir-orders/<int:order_id>/assign-drgame-delivery/', views.AssignDeliveryToDrGameForRepairOrder.as_view(),
          name='assign-repair-order-delivery_to_drgame'),
-    path('repair-orders/request-payment/<int:game_order_id>/', views.RequestPaymentForRepairOrder.as_view(),
+    path('repair-orders/request-payment/<int:repair_order_id>/', views.RequestPaymentForRepairOrder.as_view(),
          name='repair-order-request-payment'),
     path('repair-orders/<int:order_id>/delivered-to-customer/', views.DeliveredRepairOrderToCustomer.as_view(),
          name='delivered-repair-order-to-customer'),
