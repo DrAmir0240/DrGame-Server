@@ -746,7 +746,8 @@ class EmployeeCourseOrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseOrder
         fields = "__all__"
-        read_only_fields = "__all__"
+        read_only_fields = ['customer', 'amount', 'transaction', 'payment_status', 'is_deleted', 'created_at',
+                            'updated_at']
 
     def get_customer(self, obj):
         return obj.customer.full_name
