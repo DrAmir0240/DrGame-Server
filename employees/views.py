@@ -4,6 +4,7 @@ from django.utils.dateparse import parse_date
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import CustomUser
@@ -36,6 +37,9 @@ from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, 
 
 
 # Create your views here.
+class EmployeeOrganizeTaskPagination(LimitOffsetPagination):
+    default_limit = 3  # تعداد آیتم‌ها در هر صفحه
+
 
 # ==================== Personal Views ====================
 # -------------------- sony-accounts --------------------
@@ -164,6 +168,7 @@ class EmployeePanelTaskList(generics.ListAPIView):
     serializer_class = EmployeePersonalTaskSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = EmployeeOrganizeTaskPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = EmployeeTaskFilter
     ordering_fields = ['deadline', 'created_at']
@@ -270,6 +275,7 @@ class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
     serializer_class = EmployeeOrganizeTaskSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = EmployeeOrganizeTaskPagination
 
 
 class EmployeePanelOrganizeTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
