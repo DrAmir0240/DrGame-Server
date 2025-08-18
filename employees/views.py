@@ -5,11 +5,11 @@ from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from accounts.auth import CustomJWTAuthentication
-from accounts.models import MainManager, CustomUser
+from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter
-from employees.models import EmployeeTask, Employee, EmployeeFile, Repairman
+from employees.models import EmployeeTask, Employee, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountMatchedSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -20,8 +20,9 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
     RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer, \
-    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, EmployeeGameOrderItemSerializer, \
-    EmployeePersonalGameOrderItemSerializer, EmployeeCourseOrderSerializer
+    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, \
+    EmployeePersonalGameOrderItemSerializer, EmployeeCourseOrderSerializer, \
+    CreateTransactionGenericSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan
@@ -451,7 +452,6 @@ class EmployeePanelGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
         serializer.save()
 
 
-@restrict_access('has_access_to_game_order')
 class EmployeePanelGameOrderChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         customers = Customer.objects.filter(is_deleted=False)
@@ -633,6 +633,45 @@ class EmployeePanelTransactionOrderChoices(generics.ListAPIView):
 
         raise ValidationError(
             {"order_type": "نوع سفارش نامعتبر است. باید یکی از [order, game_order, repair_order] باشد."})
+
+
+class EmployeePanelCreateRepairOrderTransactionView(generics.CreateAPIView):
+    serializer_class = CreateTransactionGenericSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({
+            "model_class": RepairOrder,
+            "object_id": self.kwargs["repair_order_id"],
+            "amount_field": "amount"
+        })
+        return context
+
+
+class EmployeePanelCreateGameOrderTransactionView(generics.CreateAPIView):
+    serializer_class = CreateTransactionGenericSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({
+            "model_class": GameOrder,
+            "object_id": self.kwargs["game_order_id"],
+            "amount_field": "amount"
+        })
+        return context
+
+
+class EmployeePanelCreateOrderTransactionView(generics.CreateAPIView):
+    serializer_class = CreateTransactionGenericSerializer
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({
+            "model_class": Order,
+            "object_id": self.kwargs["order_id"],
+            "amount_field": "amount"
+        })
+        return context
 
 
 # ==================== Employees Views ====================

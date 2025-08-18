@@ -1,8 +1,8 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from rest_framework import serializers
-
-from accounts.models import CustomUser, MainManager
+from django.db import transaction as db_transaction
+from accounts.models import CustomUser
 from customers.models import Customer
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
 from home.models import BlogPost
@@ -437,6 +437,70 @@ class EmployeesOutgoingTransactionSerializer(serializers.ModelSerializer):
         elif obj.receiver_str:
             return {"receiver_str": obj.receiver_str}
         return None
+
+
+class CreateTransactionGenericSerializer(serializers.Serializer):
+    payment_method = serializers.PrimaryKeyRelatedField(
+        queryset=PaymentMethod.objects.filter(is_deleted=False),
+        help_text="ID متود پرداخت"
+    )
+    description = serializers.CharField(
+        required=False, allow_blank=True, help_text="توضیحات تراکنش"
+    )
+
+    def create(self, validated_data):
+        model_class = self.context["model_class"]  # Order, GameOrder, RepairOrder
+        object_id = self.context["object_id"]  # id سفارش
+        object_field = self.context.get("amount_field", "amount")  # اسم فیلد مبلغ
+
+        obj = model_class.objects.get(id=object_id, is_deleted=False)
+
+        with db_transaction.atomic():
+            # ساخت تراکنش
+            transaction = Transaction.objects.create(
+                payer=obj.customer.user if getattr(obj, "customer", None) else None,
+                receiver_str="DrGame",
+                payment_method=validated_data["payment_method"],
+                amount=int(getattr(obj, object_field)),
+                description=validated_data.get("description", ""),
+                in_out=True,
+                status="pending"
+            )
+
+            # وصل کردن تراکنش به سفارش
+            obj.transaction = transaction
+            obj.save(update_fields=["transaction"])
+
+            # آپدیت بالانس متود پرداخت
+            payment_method = validated_data["payment_method"]
+            payment_method.balance += transaction.amount
+            payment_method.save(update_fields=["balance"])
+
+            # آپدیت بالانس مشتری
+            if getattr(obj, "customer", None):
+                customer = obj.customer
+                if hasattr(customer, "balance"):  # مطمئن بشیم Customer فیلد balance داره
+                    customer.balance += transaction.amount
+                    customer.save(update_fields=["balance"])
+
+        return transaction
+
+    def to_representation(self, instance):
+        return {
+            "transaction_id": instance.id,
+            "amount": instance.amount,
+            "payment_method": instance.payment_method.title if instance.payment_method else None,
+            "payment_method_balance": instance.payment_method.balance if instance.payment_method else None,
+            "customer_balance": instance.repair.customer.balance if hasattr(instance,
+                                                                            "repair") and instance.repair.customer else (
+                instance.order.customer.balance if hasattr(instance, "order") and instance.order.customer else (
+                    instance.game_order.customer.balance if hasattr(instance,
+                                                                    "game_order") and instance.game_order.customer else None
+                )
+            ),
+            "description": instance.description,
+            "status": instance.status,
+        }
 
 
 class EmployeeProductColorSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
