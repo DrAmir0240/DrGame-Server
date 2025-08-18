@@ -38,6 +38,7 @@ class MembershipSerializer(serializers.ModelSerializer):
             return f"{user.employee.first_name} {user.employee.last_name}"
         return "نامشخص"
 
+
 class ChatRoomSerializer(serializers.ModelSerializer):
     members = MembershipSerializer(source='membership_set', many=True, read_only=True)
     owner_full_name = serializers.SerializerMethodField()
@@ -143,7 +144,7 @@ class ChatRoomCreateSerializer(serializers.ModelSerializer):
             Membership.objects.create(user=emp.user, chat_room=chat_room, is_muted=is_muted_flag)
 
         # قانون 3: بعد از ساخت، چک کن تعداد اعضا به غیر از owner حداقل یک باشه
-        member_count = chat_room.users.exclude(id=owner.id).count()
+        member_count = Membership.objects.filter(chat_room=chat_room).count()
         if member_count == 0:
             chat_room.delete()
             raise ValidationError("Chat room must have at least one member besides the owner.")
