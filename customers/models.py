@@ -11,7 +11,7 @@ class Customer(models.Model):
     address = models.TextField(null=True, blank=True)
     postal_code = models.CharField(max_length=10, null=True, blank=True)
     profile_pic = models.ImageField(null=True, blank=True, upload_to='profile_pics/customers/')
-    balance = models.DecimalField(max_digits=50, decimal_places=2, default=0)
+    balance = models.IntegerField(default=0)
     is_business = models.BooleanField(default=False)
     discount = models.PositiveIntegerField(default=0)
     has_access_to_course = models.BooleanField(default=False)

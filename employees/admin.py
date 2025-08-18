@@ -29,3 +29,10 @@ class EmployeeTaskAdmin(admin.ModelAdmin):
     class Meta:
         fields = '__all__'
         search_fields = '__all__'
+
+
+@admin.register(models.EmployeeRequest)
+class EmployeeRequestAdmin(admin.ModelAdmin):
+    class Meta:
+        fields = '__all__'
+        search_fields = '__all__'

@@ -1,5 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Sum
+from django.utils.dateparse import parse_date
 from rest_framework import serializers
 from django.db import transaction as db_transaction
 from accounts.models import CustomUser
@@ -8,6 +10,7 @@ from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
     CourseOrder
+from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document, RealAssetsCategory, RealAssets
 
@@ -832,6 +835,8 @@ class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
     customer = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
     order_type = serializers.SlugRelatedField(slug_field='title', read_only=True)
     repairman_fee = serializers.SerializerMethodField()
+    delivery_to_drgame = DeliveryManSerializer(read_only=True)
+    delivery_to_customer = DeliveryManSerializer(read_only=True)
 
     class Meta:
         model = RepairOrder
@@ -849,3 +854,185 @@ class RepairManTransactionSerializer(SoftDeleteSerializerMixin, serializers.Mode
         model = Transaction
         fields = ['amount', 'created_at', 'description']
         read_only_fields = fields
+
+
+class EmployeeTaskStatsSerializer(serializers.Serializer):
+    planed = serializers.IntegerField(read_only=True)
+    in_progress = serializers.IntegerField(read_only=True)
+    done = serializers.IntegerField(read_only=True)
+    all = serializers.IntegerField(read_only=True)
+
+
+class GameAndRepairOrderStatsSerializer(serializers.Serializer):
+    by_order_type = serializers.DictField(child=serializers.IntegerField(), read_only=True)
+    unpaid = serializers.IntegerField(read_only=True)
+    delivered_to_customer = serializers.IntegerField(read_only=True)
+    in_progress = serializers.IntegerField(read_only=True)
+
+
+class OrderStatsSerializer(serializers.Serializer):
+    employee = serializers.CharField(read_only=True)
+    in_progress_orders = serializers.IntegerField(read_only=True, help_text="تعداد سفارشات در حال انجام")
+    set_up_accounts = serializers.IntegerField(read_only=True, help_text="تعداد آیتم‌هایی که account_setter بوده")
+    uploaded_data = serializers.IntegerField(read_only=True, help_text="تعداد آیتم‌هایی که data_uploader بوده")
+    as_receptionist = serializers.IntegerField(read_only=True, help_text="تعداد سفارشاتی که رسپشن بوده")
+
+
+class ProductOrderStatsSerializer(serializers.Serializer):
+    by_order_type = serializers.DictField(child=serializers.IntegerField(), read_only=True)
+    unpaid = serializers.IntegerField(read_only=True)
+    paid = serializers.IntegerField(read_only=True)
+
+
+class FinanceSummarySerializer(serializers.Serializer):
+    total_employee_debt = serializers.IntegerField(help_text='بستانکاری از کارمندان')
+    total_employee_credit = serializers.IntegerField(help_text='بدهکاری به کارمندان')
+    total_customer_debt = serializers.IntegerField(help_text='بستانکاری از مشتریان')
+    total_customer_credit = serializers.IntegerField(help_text='بدهکاری به مشتریان')
+    total_payment_method_balance = serializers.IntegerField(help_text='مجموع موجودی')
+    net_balance = serializers.IntegerField(help_text='تراز مالی خالص')
+
+
+class EmployeeStatsSerializer(serializers.Serializer):
+    account_setters = serializers.IntegerField()
+    data_uploaders = serializers.IntegerField()
+    recipients = serializers.IntegerField()
+    mangers = serializers.IntegerField()
+    all_employees = serializers.IntegerField()
+
+
+class CustomerStatsSerializer(serializers.Serializer):
+    business_customers = serializers.IntegerField()
+    user_customers = serializers.IntegerField()
+    customers = serializers.IntegerField()
+
+
+class SellReportSerializer(serializers.Serializer):
+    game_income = serializers.IntegerField()
+    game_count = serializers.IntegerField()
+    repair_income = serializers.IntegerField()
+    repair_count = serializers.IntegerField()
+    product_income = serializers.IntegerField()
+    product_count = serializers.IntegerField()
+    course_income = serializers.IntegerField()
+    course_count = serializers.IntegerField()
+    telegram_income = serializers.IntegerField()
+    telegram_count = serializers.IntegerField()
+
+
+class FinanceReportSerializer(serializers.Serializer):
+    income_amount = serializers.IntegerField()
+    outcome_amount = serializers.IntegerField()
+    net_balance = serializers.IntegerField()
+    balance = serializers.IntegerField()
+
+
+class PerformanceReportSerializer(serializers.ModelSerializer):
+    game_order_item_count_account = serializers.SerializerMethodField()
+    game_order_item_count_data = serializers.SerializerMethodField()
+    game_order_item_amount_sum = serializers.SerializerMethodField()
+    employee_income_amount = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employee
+        fields = [
+            'full_name',
+            'game_order_item_count_account',
+            'game_order_item_count_data',
+            'game_order_item_amount_sum',
+            'employee_income_amount'
+        ]
+        read_only_fields = fields
+
+    def get_date_filters(self):
+        """متد کمکی برای دریافت start-date و end-date از context"""
+        request = self.context.get('request')
+        start_date_str = request.GET.get('start-date')
+        end_date_str = request.GET.get('end-date')
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
+        filters = {}
+        if start_date:
+            filters['created_at__date__gte'] = start_date
+        if end_date:
+            filters['created_at__date__lte'] = end_date
+        return filters
+
+    def get_game_order_item_count_account(self, obj):
+        filters = self.get_date_filters()
+        return GameOrderItem.objects.filter(account_setter=obj, **filters).count()
+
+    def get_game_order_item_count_data(self, obj):
+        filters = self.get_date_filters()
+        return GameOrderItem.objects.filter(data_uploader=obj, **filters).count()
+
+    def get_game_order_item_amount_sum(self, obj):
+        filters = self.get_date_filters()
+        return GameOrderItem.objects.filter(account_setter=obj, **filters).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+
+    def get_employee_income_amount(self, obj):
+        filters = self.get_date_filters()
+        return Transaction.objects.filter(receiver=obj.user, in_out=False, **filters).aggregate(
+            total=Sum('amount')
+        )['total'] or 0
+
+    def get_full_name(self, obj):
+        return str(obj)
+
+
+class CustomerReportSerializer(serializers.ModelSerializer):
+    game_order_count = serializers.SerializerMethodField()
+    product_order_count = serializers.SerializerMethodField()
+    repair_order_count = serializers.SerializerMethodField()
+    customer_profit = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customer
+        fields = [
+            'full_name',
+            'game_order_count',
+            'product_order_count',
+            'repair_order_count',
+            'customer_profit'
+        ]
+
+    def get_date_filters(self):
+        """کمک‌کننده برای فیلتر بر اساس start-date و end-date"""
+        request = self.context.get('request')
+        start_date_str = request.GET.get('start-date')
+        end_date_str = request.GET.get('end-date')
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
+        filters = {}
+        if start_date:
+            filters['created_at__date__gte'] = start_date
+        if end_date:
+            filters['created_at__date__lte'] = end_date
+        return filters
+
+    def get_game_order_count(self, obj):
+        filters = self.get_date_filters()
+        return GameOrder.objects.filter(
+            customer=obj, is_deleted=False, payment_status='paid', **filters
+        ).count()
+
+    def get_product_order_count(self, obj):
+        filters = self.get_date_filters()
+        return Order.objects.filter(
+            customer=obj, is_deleted=False, payment_status='paid', **filters
+        ).count()
+
+    def get_repair_order_count(self, obj):
+        filters = self.get_date_filters()
+        return RepairOrder.objects.filter(
+            customer=obj, is_deleted=False, payment_status='paid', **filters
+        ).count()
+
+    def get_customer_profit(self, obj):
+        filters = self.get_date_filters()
+        return Transaction.objects.filter(
+            payer=obj.user, in_out=True, is_deleted=False, status='paid', **filters
+        ).aggregate(total=Sum('amount'))['total'] or 0

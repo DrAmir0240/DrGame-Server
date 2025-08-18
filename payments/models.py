@@ -12,7 +12,7 @@ from django.conf import settings
 # Create your models here.
 class PaymentMethod(models.Model):
     title = models.CharField(max_length=100)
-    balance = models.DecimalField(max_digits=10, decimal_places=2)
+    balance = models.IntegerField(default=0)
     description = models.TextField(null=True, blank=True)
     is_online = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
@@ -348,3 +348,15 @@ class CourseOrder(models.Model):
 
     def __str__(self):
         return f'Order #{self.id} - {self.customer}'
+
+
+class TelegramOrder(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
+    sony_account = models.ForeignKey(SonyAccount, on_delete=models.PROTECT)
+    amount = models.IntegerField()
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Telegram Order #{self.id} - {self.employee}'

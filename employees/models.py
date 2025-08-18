@@ -17,7 +17,7 @@ class Employee(models.Model):
     last_name = models.CharField(max_length=100, null=True)
     national_code = models.CharField(max_length=10, null=True)
     employee_id = models.CharField(max_length=11, null=True)
-    balance = models.FloatField(null=True)
+    balance = models.IntegerField(default=0)
     has_commission = models.BooleanField(default=False)
     commission_amount = models.IntegerField(default=0)
     has_access_to_orders = models.BooleanField(default=False)
@@ -44,7 +44,7 @@ class Repairman(models.Model):
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     national_code = models.CharField(max_length=10, null=True)
-    balance = models.FloatField(null=True)
+    balance = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -80,6 +80,23 @@ class EmployeeTask(models.Model):
         ('done', 'انجام شده')
     ))
     deadline = models.DateTimeField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.employee}: {self.title}'
+
+
+class EmployeeRequest(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    request_type = models.CharField(max_length=20, choices=(
+        ('leave', 'مرخصی'),
+        ('favorable', 'مساعده'),
+        ('miscellaneous', 'متفرقه')
+    ))
+    description = models.TextField(max_length=5000)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
