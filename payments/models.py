@@ -258,7 +258,7 @@ class GameOrder(models.Model):
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
     delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                               related_name='delivery_console_to_drgame', blank=True)
-    dead_line = models.DateField(null=True, blank=True)
+    dead_line = models.DateTimeField(null=True, blank=True)
     delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
                                                 related_name='delivery_console_to_customer', blank=True)
     is_deleted = models.BooleanField(default=False)
@@ -304,12 +304,14 @@ class RepairOrder(models.Model):
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
     repairman_fee = models.IntegerField(null=True, blank=True)
+    dead_line = models.DateTimeField(null=True, blank=True)
     console = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=50, choices=(
         ('waiting_for_delivery_to_drgame', 'در انتظار تحویل به دکترگیم'),
         ('in_accepting_queue', 'در انتظار قبول شدن توسط تعمیرکار'),
         ('waiting_for_repairman_fee', 'در انتظار تعیین مبلغ'),
-        ('waiting_for_amount', 'در انتظار تعیین مبلغ توسط دکتگیم'),
+        ('waiting_for_amount', 'در انتظار تعیین مبلغ توسط دکتر گیم'),
+        ('waiting_for_customer_to_accept', 'در انتظار تایید توسط مشتری'),
         ('in_progress', 'در حال پردازش'),
         ('done', 'در انتظار تحویل به مشتری'),
         ('delivered_to_customer', 'تحویل شده به مشتری'),

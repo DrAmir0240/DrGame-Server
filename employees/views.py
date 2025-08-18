@@ -23,7 +23,9 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, EmployeeGameOrderItemSerializer, \
     EmployeePersonalGameOrderItemSerializer, EmployeeCourseOrderSerializer
 from home.models import BlogPost
-from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder
+from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
+    DeliveryMan
+from payments.serializers import DeliveryManSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     Document, DocCategory, RealAssets, RealAssetsCategory
 
@@ -481,6 +483,26 @@ class EmployeePanelGameOrderChoices(generics.ListAPIView):
         return Response(response_data)
 
 
+class AssignDeliveryToCustomerForGamedOrder(generics.GenericAPIView):
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, order_id):
+        try:
+            repair_order = RepairOrder.objects.get(pk=order_id)
+        except GameOrder.DoesNotExist:
+            return Response({"error": "سفارش پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DeliveryManSerializer(data=request.data)
+        if serializer.is_valid():
+            deliveryman, created = DeliveryMan.objects.get_or_create(
+                full_name=serializer.validated_data['full_name'],
+                phone_number=serializer.validated_data['phone_number']
+            )
+            repair_order.delivery_to_customer = deliveryman
+            repair_order.save()
+            return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
+
+
 # ==================== RepairOrders Views ====================
 @restrict_access('has_access_to_orders')
 class EmployeePanelRepairOrderList(generics.ListCreateAPIView):
@@ -496,6 +518,26 @@ class EmployeePanelRepairOrderDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = RepairOrder.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class AssignDeliveryToCustomerForRepairOrder(generics.GenericAPIView):
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, order_id):
+        try:
+            repair_order = RepairOrder.objects.get(pk=order_id)
+        except GameOrder.DoesNotExist:
+            return Response({"error": "سفارش پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DeliveryManSerializer(data=request.data)
+        if serializer.is_valid():
+            deliveryman, created = DeliveryMan.objects.get_or_create(
+                full_name=serializer.validated_data['full_name'],
+                phone_number=serializer.validated_data['phone_number']
+            )
+            repair_order.delivery_to_customer = deliveryman
+            repair_order.save()
+            return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
 
 
 # ==================== CourseOrders Views ====================

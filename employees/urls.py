@@ -55,11 +55,16 @@ urlpatterns = [
     # ==================== GameOrders Views ====================
     path('game-orders/', views.EmployeePanelGameOrder.as_view(), name='accepted-game-order-list'),
     path('game-orders/<int:pk>/', views.EmployeePanelGameOrderDetail.as_view(), name='game-order-detail'),
+    path('game-orders/<int:order_id>/assign-delivery-to-customer/', views.AssignDeliveryToCustomerForGamedOrder.as_view(),
+         name='assign-delivery-to-customer-for-game-orders'),
+
     path('game-orders/choices/', views.EmployeePanelGameOrderChoices.as_view(), name='product-order-choices'),
 
     # ==================== RepairOrders Views ====================
     path('repair-orders/', views.EmployeePanelRepairOrderList.as_view(), name='repair-order-list-add'),
     path('repair-orders/<int:pk>/', views.EmployeePanelRepairOrderDetail.as_view(), name='repair-order-detail'),
+    path('repair-orders/<int:order_id>/assign-delivery-to-customer/', views.AssignDeliveryToCustomerForGamedOrder.as_view(),
+         name='assign-delivery-to-customer-for-repair-orders'),
 
     # ==================== CourseOrders Views ====================
     path('course-orders/', views.EmployeePanelCourseOrdersList.as_view(), name='course-order-list'),
