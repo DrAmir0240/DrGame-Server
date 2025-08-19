@@ -26,11 +26,11 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     CreateTransactionGenericSerializer, EmployeeTaskStatsSerializer, GameAndRepairOrderStatsSerializer, \
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
-    CustomerReportSerializer
+    CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder
-from payments.serializers import DeliveryManSerializer
+from payments.serializers import DeliveryManSerializer, TransactionSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     Document, DocCategory, RealAssets, RealAssetsCategory
 
@@ -68,8 +68,6 @@ class EmployeePanelSonyAccountDetail(generics.RetrieveUpdateAPIView):
             return SonyAccount.objects.filter(employee=employee)
         except AttributeError:
             return Response(status=404)
-
-
 
 
 # -------------------- orders --------------------
@@ -664,7 +662,6 @@ class UserCreat(generics.CreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_employees')
 class EmployeeListAdd(generics.ListCreateAPIView):
     queryset = Employee.objects.filter(is_deleted=False)
     serializer_class = EmployeeSerializer
@@ -672,12 +669,54 @@ class EmployeeListAdd(generics.ListCreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-@restrict_access('has_access_to_employees')
 class EmployeeDetail(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeeDeposit(generics.GenericAPIView):
+    """
+    ایدیدر یو ار ال ایدی کارمند است
+    """
+    serializer_class = EmployeeDepositSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        employee_id = self.kwargs.get('pk')
+        payment_method_id = serializer.validated_data['payment_method_id']
+        amount = serializer.validated_data['amount']
+        description = serializer.validated_data.get('description', '')
+
+        try:
+            payment_method = PaymentMethod.objects.get(id=payment_method_id)
+            employee = Employee.objects.get(id=employee_id)
+        except PaymentMethod.DoesNotExist:
+            return Response({"error": "Payment method not found."}, status=404)
+        except Employee.DoesNotExist:
+            return Response({"error": "Employee not found."}, status=404)
+
+        transaction = Transaction.objects.create(
+            payer_str='دکترگیم',
+            receiver=employee.user,
+            amount=amount,
+            payment_method=payment_method,
+            in_order=False,
+            descriptions=description
+        )
+
+        employee.balance -= amount
+        employee.save()
+        payment_method.balance -= amount
+        payment_method.save()
+
+        transaction_serializer = TransactionSerializer(transaction)
+        return Response(transaction_serializer.data, status=201)
 
 
 # ==================== Customer Views ====================
@@ -695,6 +734,52 @@ class CustomerDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = Customer.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class CustomerDeposit(generics.GenericAPIView):
+    """
+    ایدی در یو ار ال ایدی کاستومر است
+    """
+    serializer_class = CustomerDepositSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        customer_id = self.kwargs.get('pk')
+        payment_method_id = serializer.validated_data['payment_method_id']
+        amount = serializer.validated_data['amount']
+        description = serializer.validated_data.get('description', '')
+
+        try:
+            payment_method = PaymentMethod.objects.get(id=payment_method_id)
+            customer = Customer.objects.get(id=customer_id)
+        except PaymentMethod.DoesNotExist:
+            return Response({"error": "Payment method not found."}, status=404)
+        except Customer.DoesNotExist:
+            return Response({"error": "Customer not found."}, status=404)
+
+        # ایجاد تراکنش
+        transaction = Transaction.objects.create(
+            payer=customer.user,
+            receiver_str='دکترگیم',
+            amount=amount,
+            payment_method=payment_method,
+            in_order=True,
+            descriptions=description
+        )
+
+        # بروزرسانی موجودی‌ها
+        customer.balance += amount
+        customer.save()
+        payment_method.balance += amount
+        payment_method.save()
+
+        # بازگرداندن تراکنش
+        transaction_serializer = TransactionSerializer(transaction)
+        return Response(transaction_serializer.data, status=201)
 
 
 # ==================== GameStore Views ====================

@@ -43,3 +43,9 @@ class GameOrderMatchedSerializer(serializers.ModelSerializer):
             "created_at",
             "matching_games_count",
         ]
+
+
+class SonyAccountCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccount
+        fields = ['username', 'password']

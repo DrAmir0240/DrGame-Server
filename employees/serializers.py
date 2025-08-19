@@ -47,6 +47,12 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
         fields = "__all__"
 
 
+class EmployeeDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
+    payment_method_id = serializers.IntegerField()
+    amount = serializers.IntegerField()
+    description = serializers.CharField()
+
+
 class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='phone',
@@ -56,6 +62,12 @@ class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSer
     class Meta:
         model = Customer
         fields = "__all__"
+
+
+class CustomerDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
+    payment_method_id = serializers.IntegerField()
+    amount = serializers.IntegerField()
+    description = serializers.CharField(required=False, allow_blank=True)
 
 
 class EmployeeGameImageSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

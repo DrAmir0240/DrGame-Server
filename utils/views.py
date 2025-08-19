@@ -185,3 +185,10 @@ class GameOrdersBySonyAccountView(generics.ListAPIView):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class SonyAccountAdd(generics.CreateAPIView):
+    queryset = SonyAccount.objects.all()
+    serializer_class = SonyAccountSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]

@@ -11,7 +11,6 @@ urlpatterns = [
     path('personal/sony-accounts/choices', views.EmployeePanelSonyAccountChoices.as_view(),
          name='sony-accounts-choices'),
 
-
     # -------------------- Orders --------------------
     path('personal/game-orders/owned/', views.EmployeePanelOwnedGameOrderList.as_view(), name='owned-game-order-list'),
     path('personal/game-orders/owned/<int:pk>/', views.EmployeePanelOwnedGameOrderDetail.as_view(),
@@ -94,10 +93,12 @@ urlpatterns = [
     path('user/create/', views.UserCreat.as_view(), name='user-create'),
     path('', views.EmployeeListAdd.as_view(), name='list-add'),
     path('<int:pk>/', views.EmployeeDetail.as_view(), name='employee-detail'),
+    path('<int:pk>/deposit/', views.EmployeeDeposit.as_view(), name='employee-deposit'),
 
     # ==================== Customer Views ====================
     path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),
     path('customer/<int:pk>/', views.CustomerDetail.as_view(), name='customer-detail'),
+    path('customer/<int:pk>/deposit/', views.CustomerDeposit.as_view(), name='customer-deposit'),
 
     # ==================== GameStore Views ====================
     path('game/list-add/', views.EmployeeGameListCreate.as_view(), name='game-list-add'),
