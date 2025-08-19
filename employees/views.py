@@ -1,3 +1,4 @@
+import requests
 from django.core.exceptions import PermissionDenied
 from django.db.models import Q, Count, Sum
 from django.utils.dateparse import parse_date
@@ -6,6 +7,8 @@ from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
+
+from DrGame import settings
 from accounts.auth import CustomJWTAuthentication
 from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
@@ -26,7 +29,8 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     CreateTransactionGenericSerializer, EmployeeTaskStatsSerializer, GameAndRepairOrderStatsSerializer, \
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
-    CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer
+    CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
+    SendSmsToEmployeeSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder
@@ -719,6 +723,56 @@ class EmployeeDeposit(generics.GenericAPIView):
         return Response(transaction_serializer.data, status=201)
 
 
+class EmployeeSendSmsService(generics.GenericAPIView):
+    serializer_class = SendSmsToEmployeeSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        message = data['message']
+        employee_ids = data['employee_ids']
+        send_time = data.get('send_time')
+
+        # گرفتن شماره‌ها از امپلویی‌ها
+        recipients = []
+        employees = Employee.objects.filter(id__in=employee_ids).select_related('user')
+        for employee in employees:
+            if employee.user and employee.user.phone:
+                recipients.append(employee.user.phone)
+
+        if not recipients:
+            return Response({"detail": "هیچ شماره‌ای برای ارسال یافت نشد."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # ساخت بادی برای IPPanel
+        body = {
+            "sending_type": "webservice",
+            "from_number": "+983000505",  # شماره فرستنده
+            "message": message,
+            "params": {
+                "recipients": recipients
+            }
+        }
+        if send_time:
+            body["send_time"] = send_time.strftime("%Y-%m-%d %H:%M:%S")
+
+        # ارسال درخواست به IPPanel
+        headers = {
+            "Authorization": f"Bearer {settings.FARAZ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post("https://edge.ippanel.com/v1/api/send",
+                                 json=body, headers=headers)
+
+        if response.status_code == 200:
+            return Response(response.json(), status=status.HTTP_200_OK)
+        return Response({"detail": "خطا در ارسال پیامک", "response": response.text},
+                        status=response.status_code)
+
+
 # ==================== Customer Views ====================
 @restrict_access('has_access_to_customers')
 class CustomerListCreate(generics.ListCreateAPIView):
@@ -780,6 +834,56 @@ class CustomerDeposit(generics.GenericAPIView):
         # بازگرداندن تراکنش
         transaction_serializer = TransactionSerializer(transaction)
         return Response(transaction_serializer.data, status=201)
+
+
+class CustomerSendSmsService(generics.GenericAPIView):
+    serializer_class = SendSmsSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        message = data['message']
+        customer_ids = data['customer_ids']
+        send_time = data.get('send_time')
+
+        # گرفتن شماره‌ها از مشتریان
+        recipients = []
+        customers = Customer.objects.filter(id__in=customer_ids).select_related('user')
+        for customer in customers:
+            if customer.user and customer.user.phone:
+                recipients.append(customer.user.phone)
+
+        if not recipients:
+            return Response({"detail": "هیچ شماره‌ای برای ارسال یافت نشد."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        # ساخت بادی برای IPPanel
+        body = {
+            "sending_type": "webservice",
+            "from_number": "+983000505",  # شماره فرستنده
+            "message": message,
+            "params": {
+                "recipients": recipients
+            }
+        }
+        if send_time:
+            body["send_time"] = send_time.strftime("%Y-%m-%d %H:%M:%S")
+
+        # ارسال درخواست به IPPanel
+        headers = {
+            "Authorization": f"Bearer {settings.FARAZ_API_KEY}",
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post("https://edge.ippanel.com/v1/api/send",
+                                 json=body, headers=headers)
+
+        if response.status_code == 200:
+            return Response(response.json(), status=status.HTTP_200_OK)
+        return Response({"detail": "خطا در ارسال پیامک", "response": response.text},
+                        status=response.status_code)
 
 
 # ==================== GameStore Views ====================

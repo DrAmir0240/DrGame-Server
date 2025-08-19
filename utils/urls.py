@@ -9,6 +9,7 @@ send_to_tel_view = views.SonyAccountViewSet.as_view({
 })
 urlpatterns = [
     path('add-new/', views.SonyAccountAdd.as_view(), name='add-new-sony-account'),
+    path('add-new/file', views.SonyAccountAddFromFile.as_view(), name='add-new-sony-account-from-file'),
     path('<int:pk>/set-2fa-secret/', views.Set2FASecretView.as_view(), name='set-2fa-secret'),
     path('<int:pk>/otp/', views.GetOTPView.as_view(), name='get-otp'),
     path('accounts-matched-with-order/<int:order_id>/', views.SonyAccountByGameOrderView.as_view(),

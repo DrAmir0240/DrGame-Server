@@ -7,7 +7,7 @@ from rest_framework import status, viewsets, generics
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsMainManager, IsEmployee
 from payments.models import GameOrder
-from utils.serializers import SonyAccountMatchedSerializer, GameOrderMatchedSerializer
+from utils.serializers import SonyAccountMatchedSerializer, GameOrderMatchedSerializer, SonyAccountAddFromFileSerializer
 from storage.models import SonyAccount
 from utils.serializers import Set2FAURISerializer, OTPSerializer, SonyAccountSerializer
 from utils.crypto import encrypt_text, decrypt_text
@@ -192,3 +192,8 @@ class SonyAccountAdd(generics.CreateAPIView):
     serializer_class = SonyAccountSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+
+class SonyAccountAddFromFile(generics.CreateAPIView):
+    serializer_class = SonyAccountAddFromFileSerializer
+

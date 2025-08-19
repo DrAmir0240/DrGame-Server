@@ -53,6 +53,22 @@ class EmployeeDepositSerializer(SoftDeleteSerializerMixin, serializers.Serialize
     description = serializers.CharField()
 
 
+class SendSmsToEmployeeSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    employee_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=False
+    )
+    send_time = serializers.DateTimeField(required=False)
+
+
+class SendSmsSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    customer_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=False
+    )
+    send_time = serializers.DateTimeField(required=False)
+
+
 class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     user = serializers.SlugRelatedField(
         slug_field='phone',

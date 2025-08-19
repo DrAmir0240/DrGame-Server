@@ -94,11 +94,13 @@ urlpatterns = [
     path('', views.EmployeeListAdd.as_view(), name='list-add'),
     path('<int:pk>/', views.EmployeeDetail.as_view(), name='employee-detail'),
     path('<int:pk>/deposit/', views.EmployeeDeposit.as_view(), name='employee-deposit'),
+    path('send-sms-service/', views.EmployeeSendSmsService.as_view(), name='employee-send-sms-service'),
 
     # ==================== Customer Views ====================
     path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),
     path('customer/<int:pk>/', views.CustomerDetail.as_view(), name='customer-detail'),
     path('customer/<int:pk>/deposit/', views.CustomerDeposit.as_view(), name='customer-deposit'),
+    path('customer/send-sms-service/', views.CustomerSendSmsService.as_view(), name='customer-send-sms-service'),
 
     # ==================== GameStore Views ====================
     path('game/list-add/', views.EmployeeGameListCreate.as_view(), name='game-list-add'),
