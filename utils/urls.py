@@ -9,9 +9,9 @@ router.register(r"send-to-tel", views.SonyAccountViewSet, basename="send-to-tel"
 urlpatterns = [
     path('<int:pk>/set-2fa-secret/', views.Set2FASecretView.as_view(), name='set-2fa-secret'),
     path('<int:pk>/otp/', views.GetOTPView.as_view(), name='get-otp'),
-    path('matched-with-order/<int:order_id>/', views.SonyAccountByGameOrderView.as_view(),
+    path('accounts-matched-with-order/<int:order_id>/', views.SonyAccountByGameOrderView.as_view(),
          name='sony-account-by-order-games'),
-    path('matched-with-sony-accounts/<int:sony_account_id>/', views.GameOrdersBySonyAccountView.as_view(),
+    path('orders-matched-with-sony-accounts/<int:sony_account_id>/', views.GameOrdersBySonyAccountView.as_view(),
          name='sony-account-by-order-games'),
     path('', include(router.urls)),
 

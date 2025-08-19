@@ -129,24 +129,20 @@ class SonyAccountByGameOrderView(generics.ListAPIView):
 
     def get_queryset(self):
         order_id = self.kwargs['order_id']
+        employee = self.request.user.employee
 
         try:
-            order = GameOrder.objects.get(id=order_id, is_deleted=False)
+            order = GameOrder.objects.get(id=order_id, is_deleted=False, employee=employee)
         except GameOrder.DoesNotExist:
             return SonyAccount.objects.none()
 
-        # گرفتن لیست بازی‌ها از روی GameOrderItem
-        selected_games = order.games.values_list('game', flat=True)
+        selected_games = order.games.all()
 
         queryset = SonyAccount.objects.filter(
-            is_deleted=False,
+            is_deleted=False, employee=employee,
             games__in=selected_games
         ).annotate(
-            matching_games_count=Count(
-                'games',
-                filter=Q(games__in=selected_games),
-                distinct=True
-            )
+            matching_games_count=Count('games')
         ).order_by('-matching_games_count')
 
         return queryset
@@ -164,16 +160,16 @@ class GameOrdersBySonyAccountView(generics.ListAPIView):
 
     def get_queryset(self):
         sony_account_id = self.kwargs['sony_account_id']
-
+        employee = self.request.user.employee
         try:
-            sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False)
+            sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False, employee=employee)
         except SonyAccount.DoesNotExist:
             return GameOrder.objects.none()
 
         selected_games = sony_account.games.all()
 
         queryset = GameOrder.objects.filter(
-            is_deleted=False,
+            is_deleted=False, employee=employee,
             games__game__in=selected_games  # 👈 اصلاح شد
         ).annotate(
             matching_games_count=Count(
