@@ -13,7 +13,6 @@ from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter
 from employees.models import EmployeeTask, Employee, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
-    EmployeeSonyAccountMatchedSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
     EmployeePersonalTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
@@ -71,34 +70,6 @@ class EmployeePanelSonyAccountDetail(generics.RetrieveUpdateAPIView):
             return Response(status=404)
 
 
-class EmployeePanelSonyAccountByOrderGamesView(generics.ListAPIView):
-    serializer_class = EmployeeSonyAccountMatchedSerializer
-    permission_classes = [IsEmployee]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        order_id = self.kwargs['order_id']
-
-        try:
-            order = GameOrder.objects.get(id=order_id, is_deleted=False)
-        except GameOrder.DoesNotExist:
-            return SonyAccount.objects.none()
-
-        selected_games = order.games.all()
-
-        queryset = SonyAccount.objects.filter(
-            is_deleted=False,
-            games__in=selected_games
-        ).annotate(
-            matching_games_count=Count('games')
-        ).order_by('-matching_games_count')
-
-        return queryset
-
-    def get(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
 
 # -------------------- orders --------------------

@@ -1,10 +1,13 @@
+from django.db.models import Count, Q
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, viewsets
+from rest_framework import status, viewsets, generics
 
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsMainManager, IsEmployee
+from payments.models import GameOrder
+from utils.serializers import SonyAccountMatchedSerializer, GameOrderMatchedSerializer
 from storage.models import SonyAccount
 from utils.serializers import Set2FAURISerializer, OTPSerializer, SonyAccountSerializer
 from utils.crypto import encrypt_text, decrypt_text
@@ -117,3 +120,72 @@ class SonyAccountViewSet(viewsets.ReadOnlyModelViewSet):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class SonyAccountByGameOrderView(generics.ListAPIView):
+    serializer_class = SonyAccountMatchedSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        order_id = self.kwargs['order_id']
+
+        try:
+            order = GameOrder.objects.get(id=order_id, is_deleted=False)
+        except GameOrder.DoesNotExist:
+            return SonyAccount.objects.none()
+
+        # گرفتن لیست بازی‌ها از روی GameOrderItem
+        selected_games = order.games.values_list('game', flat=True)
+
+        queryset = SonyAccount.objects.filter(
+            is_deleted=False,
+            games__in=selected_games
+        ).annotate(
+            matching_games_count=Count(
+                'games',
+                filter=Q(games__in=selected_games),
+                distinct=True
+            )
+        ).order_by('-matching_games_count')
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class GameOrdersBySonyAccountView(generics.ListAPIView):
+    serializer_class = GameOrderMatchedSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        sony_account_id = self.kwargs['sony_account_id']
+
+        try:
+            sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False)
+        except SonyAccount.DoesNotExist:
+            return GameOrder.objects.none()
+
+        selected_games = sony_account.games.all()
+
+        queryset = GameOrder.objects.filter(
+            is_deleted=False,
+            games__game__in=selected_games  # 👈 اصلاح شد
+        ).annotate(
+            matching_games_count=Count(
+                'games',
+                filter=Q(games__game__in=selected_games),
+                distinct=True
+            )
+        ).order_by('-matching_games_count')
+
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

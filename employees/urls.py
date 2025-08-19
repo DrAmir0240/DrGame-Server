@@ -10,8 +10,7 @@ urlpatterns = [
          name='sony-account-detail'),
     path('personal/sony-accounts/choices', views.EmployeePanelSonyAccountChoices.as_view(),
          name='sony-accounts-choices'),
-    path('personal/sony-accounts/order/<int:order_id>/', views.EmployeePanelSonyAccountByOrderGamesView.as_view(),
-         name='sony-account-by-order-games'),
+
 
     # -------------------- Orders --------------------
     path('personal/game-orders/owned/', views.EmployeePanelOwnedGameOrderList.as_view(), name='owned-game-order-list'),

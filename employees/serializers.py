@@ -128,16 +128,6 @@ class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         read_only_fields = ['created_at', 'updated_at']
 
 
-class EmployeeSonyAccountMatchedSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
-    matching_games_count = serializers.IntegerField(read_only=True)
-
-    class Meta:
-        model = SonyAccount
-        fields = ['id', 'username', 'games', 'matching_games_count', 'region', 'created_at', 'updated_at']
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
-
-
 class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     employee = serializers.SerializerMethodField()
     games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
@@ -451,56 +441,87 @@ class CreateTransactionGenericSerializer(serializers.Serializer):
         required=False, allow_blank=True, help_text="توضیحات تراکنش"
     )
 
-    def create(self, validated_data):
+    # 1) تمام چک‌ها بیاد داخل validate
+    def validate(self, attrs):
         model_class = self.context["model_class"]  # Order, GameOrder, RepairOrder
         object_id = self.context["object_id"]  # id سفارش
-        object_field = self.context.get("amount_field", "amount")  # اسم فیلد مبلغ
+        object_field = self.context.get("amount_field", "amount")
 
-        obj = model_class.objects.get(id=object_id, is_deleted=False)
+        obj = model_class.objects.filter(id=object_id, is_deleted=False).first()
+        if not obj:
+            raise serializers.ValidationError({"error": "سفارش مورد نظر یافت نشد."})
+
+        # اگر فیلد مبلغ وجود نداشته باشد یا مقدارش None باشد
+        if not hasattr(obj, object_field):
+            raise serializers.ValidationError({"error": f"فیلد مبلغ '{object_field}' در سفارش وجود ندارد."})
+
+        amount = getattr(obj, object_field)
+        if amount is None:
+            raise serializers.ValidationError({"error": "سفارش مورد نظر هنوز تعیین قیمت نشده است."})
+
+        # برای استفاده در create
+        attrs["__obj"] = obj
+        attrs["__amount"] = amount
+        return attrs
+
+    # 2) create فقط کار ساخت را انجام می‌دهد
+    def create(self, validated_data):
+        obj = validated_data.pop("__obj")
+        amount = validated_data.pop("__amount")
 
         with db_transaction.atomic():
-            # ساخت تراکنش
             transaction = Transaction.objects.create(
                 payer=obj.customer.user if getattr(obj, "customer", None) else None,
                 receiver_str="DrGame",
                 payment_method=validated_data["payment_method"],
-                amount=int(getattr(obj, object_field)),
+                amount=amount,
                 description=validated_data.get("description", ""),
                 in_out=True,
                 status="pending"
             )
 
-            # وصل کردن تراکنش به سفارش
             obj.transaction = transaction
             obj.save(update_fields=["transaction"])
 
-            # آپدیت بالانس متود پرداخت
-            payment_method = validated_data["payment_method"]
-            payment_method.balance += transaction.amount
-            payment_method.save(update_fields=["balance"])
+            pm = validated_data["payment_method"]
+            pm.balance = (pm.balance or 0) + transaction.amount
+            pm.save(update_fields=["balance"])
 
-            # آپدیت بالانس مشتری
-            if getattr(obj, "customer", None):
-                customer = obj.customer
-                if hasattr(customer, "balance"):  # مطمئن بشیم Customer فیلد balance داره
-                    customer.balance += transaction.amount
-                    customer.save(update_fields=["balance"])
+            if getattr(obj, "customer", None) and hasattr(obj.customer, "balance"):
+                obj.customer.balance = (obj.customer.balance or 0) + transaction.amount
+                obj.customer.save(update_fields=["balance"])
 
         return transaction
 
+    # 3) نمایش امن بدون خطای رابطه‌های ناموجود
     def to_representation(self, instance):
+        customer_balance = None
+        try:
+            # تلاش از مسیر سفارش‌های مرسوم
+            for rel in ("repair", "order", "game_order"):
+                related = getattr(instance, rel, None)  # اگر رابطه نباشد None
+                if related and getattr(related, "customer", None):
+                    customer_balance = getattr(related.customer, "balance", None)
+                    break
+        except ObjectDoesNotExist:
+            customer_balance = None
+
+        if customer_balance is None:
+            # تلاش از مسیر payer -> customer (اگر چنین OneToOneای داشته باشید)
+            try:
+                if getattr(instance, "payer", None):
+                    customer_obj = getattr(instance.payer, "customer", None)
+                    if customer_obj:
+                        customer_balance = getattr(customer_obj, "balance", None)
+            except ObjectDoesNotExist:
+                customer_balance = None
+
         return {
             "transaction_id": instance.id,
             "amount": instance.amount,
             "payment_method": instance.payment_method.title if instance.payment_method else None,
             "payment_method_balance": instance.payment_method.balance if instance.payment_method else None,
-            "customer_balance": instance.repair.customer.balance if hasattr(instance,
-                                                                            "repair") and instance.repair.customer else (
-                instance.order.customer.balance if hasattr(instance, "order") and instance.order.customer else (
-                    instance.game_order.customer.balance if hasattr(instance,
-                                                                    "game_order") and instance.game_order.customer else None
-                )
-            ),
+            "customer_balance": customer_balance,
             "description": instance.description,
             "status": instance.status,
         }
