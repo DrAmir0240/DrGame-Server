@@ -1304,30 +1304,42 @@ class SellReportsAPIView(generics.GenericAPIView):
 
 
 class FinanceReportsAPIView(generics.GenericAPIView):
-    """
-    با گذاشتن
-    ?start-date=2025-08-01&end-date=2025-08-15
-    در انتهای یو ار ال نتایج بر حس تاریخ فیلتر میشوند
-    """
     serializer_class = FinanceReportSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
+        # پارامترهای تاریخ از URL
+        start_date_str = request.GET.get('start-date')
+        end_date_str = request.GET.get('end-date')
+
+        start_date = parse_date(start_date_str) if start_date_str else None
+        end_date = parse_date(end_date_str) if end_date_str else None
+
+        # کوئری‌ست پایه
         qs = Transaction.objects.filter(is_deleted=False, status='paid')
+
+        # فیلتر بر اساس created_at
+        if start_date:
+            qs = qs.filter(created_at__date__gte=start_date)
+        if end_date:
+            qs = qs.filter(created_at__date__lte=end_date)
+
+        # محاسبه مقادیر
         income_amount = qs.filter(in_out=True).aggregate(total=Sum('amount'))['total'] or 0
         outcome_amount = qs.filter(in_out=False).aggregate(total=Sum('amount'))['total'] or 0
         net_balance = income_amount - outcome_amount
         balance = PaymentMethod.objects.filter(is_deleted=False).aggregate(total=Sum('balance'))['total'] or 0
+
         data = {
             "income_amount": income_amount,
             "outcome_amount": outcome_amount,
             "balance": balance,
             "net_balance": net_balance,
         }
+
         serializer = self.get_serializer(data)
         return Response(serializer.data)
-
 
 class PerFormanceReportAPIView(generics.ListAPIView):
     """
