@@ -129,18 +129,18 @@ class SonyAccountByGameOrderView(generics.ListAPIView):
 
     def get_queryset(self):
         order_id = self.kwargs['order_id']
-        employee = self.request.user.employee
 
         try:
-            order = GameOrder.objects.get(id=order_id, is_deleted=False, employee=employee)
+            order = GameOrder.objects.get(id=order_id, is_deleted=False)
         except GameOrder.DoesNotExist:
             return SonyAccount.objects.none()
 
-        selected_games = order.games.all()
+        # فقط ID بازی‌ها رو بگیر
+        selected_games = order.games.values_list('game', flat=True)
 
         queryset = SonyAccount.objects.filter(
-            is_deleted=False, employee=employee,
-            games__in=selected_games
+            is_deleted=False,
+            account_games__game__in=selected_games
         ).annotate(
             matching_games_count=Count('games')
         ).order_by('-matching_games_count')
@@ -160,16 +160,15 @@ class GameOrdersBySonyAccountView(generics.ListAPIView):
 
     def get_queryset(self):
         sony_account_id = self.kwargs['sony_account_id']
-        employee = self.request.user.employee
         try:
-            sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False, employee=employee)
+            sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False)
         except SonyAccount.DoesNotExist:
             return GameOrder.objects.none()
 
         selected_games = sony_account.games.all()
 
         queryset = GameOrder.objects.filter(
-            is_deleted=False, employee=employee,
+            is_deleted=False,
             games__game__in=selected_games  # 👈 اصلاح شد
         ).annotate(
             matching_games_count=Count(
@@ -196,4 +195,3 @@ class SonyAccountAdd(generics.CreateAPIView):
 
 class SonyAccountAddFromFile(generics.CreateAPIView):
     serializer_class = SonyAccountAddFromFileSerializer
-
