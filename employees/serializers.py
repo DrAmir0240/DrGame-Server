@@ -12,7 +12,7 @@ from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentM
     CourseOrder
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
-    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus
+    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank
 
 
 class SoftDeleteSerializerMixin:
@@ -158,6 +158,12 @@ class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         model = BlogPost
         fields = "__all__"
         read_only_fields = ['created_at', 'updated_at']
+
+
+class EmployeeSonyAccountBankSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountBank
+        fields = "__all__"
 
 
 class EmployeeSonyAccountStatusSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

@@ -75,10 +75,11 @@ class TransactionFilter(filters.FilterSet):
 class SonyAccountFilter(filters.FilterSet):
     employee = filters.NumberFilter(field_name='employee__id')
     status = filters.NumberFilter(field_name='status__id')
+    is_owned = filters.BooleanFilter(field_name='is_owned')
 
     class Meta:
         model = SonyAccount
-        fields = ['employee', 'status']
+        fields = ['employee', 'status', 'is_owned']
 
 
 class SonyAccountPersonalFilter(filters.FilterSet):

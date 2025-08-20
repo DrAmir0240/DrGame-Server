@@ -31,13 +31,13 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
-    SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer
+    SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder
 from payments.serializers import DeliveryManSerializer, TransactionSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus
+    Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus, SonyAccountBank
 
 
 # Create your views here.
@@ -373,10 +373,12 @@ class EmployeePanelSonyAccountChoices(generics.ListAPIView):
         games = Game.objects.all()
         statuses = SonyAccountStatus.objects.all()
         employees = Employee.objects.all()
+        bank_accounts = SonyAccountBank.objects.all()
         response_data = {
             'games': EmployeeGameSerializer(games, many=True).data,
             'statuses': EmployeeSonyAccountStatusSerializer(statuses, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
+            'banks': EmployeeSonyAccountBankSerializer(bank_accounts, many=True).data,
         }
         return Response(response_data)
 
