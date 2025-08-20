@@ -4,6 +4,7 @@ from employees.models import EmployeeTask
 from django_filters import rest_framework as filters
 
 from payments.models import Transaction, GameOrder, RepairOrder
+from storage.models import SonyAccount
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -69,3 +70,20 @@ class TransactionFilter(filters.FilterSet):
         elif value == 'normal':
             return queryset.filter(order__isnull=False)
         return queryset
+
+
+class SonyAccountFilter(filters.FilterSet):
+    employee = filters.NumberFilter(field_name='employee__id')
+    status = filters.NumberFilter(field_name='status__id')
+
+    class Meta:
+        model = SonyAccount
+        fields = ['employee', 'status']
+
+
+class SonyAccountPersonalFilter(filters.FilterSet):
+    status = filters.NumberFilter(field_name='status__id')
+
+    class Meta:
+        model = SonyAccount
+        fields = ['status']

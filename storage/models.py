@@ -72,6 +72,7 @@ class ProductImage(models.Model):
 class SonyAccountStatus(models.Model):
     title = models.CharField(max_length=100, unique=True, null=True)
     description = models.TextField(max_length=5000, null=True, blank=True)
+    is_available = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

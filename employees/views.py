@@ -13,7 +13,8 @@ from accounts.auth import CustomJWTAuthentication
 from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
-from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter
+from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
+    SonyAccountFilter, SonyAccountPersonalFilter
 from employees.models import EmployeeTask, Employee, Repairman
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -30,13 +31,13 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
-    SendSmsToEmployeeSerializer
+    SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder
 from payments.serializers import DeliveryManSerializer, TransactionSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    Document, DocCategory, RealAssets, RealAssetsCategory
+    Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus
 
 
 # Create your views here.
@@ -50,6 +51,9 @@ class EmployeePanelOwnedSonyAccountList(generics.ListAPIView):
     serializer_class = EmployeeSonyAccountSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filterset_class = SonyAccountPersonalFilter
+    search_fields = ['username', 'status__title']
 
     def get_queryset(self):
         user = self.request.user
@@ -308,62 +312,71 @@ class EmployeePanelProductChoices(generics.ListAPIView):
 
 # ==================== SonyAccounts Views ====================
 @restrict_access('has_access_to_accounts')
-class EmployeePanelGetNewSonyAccount(generics.RetrieveAPIView):
-    queryset = SonyAccount.objects.filter(is_owned=False, is_deleted=False)
+class EmployeePanelGetNewSonyAccount(generics.GenericAPIView):
     serializer_class = EmployeeSonyAccountSerializer
-    permission_classes = [IsEmployee | IsMainManager]
+    permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
-    def get_object(self):
-        try:
-            oldest_account = self.queryset.order_by('created_at').first()
-            if not oldest_account:
-                return Response(
-                    {"error": "هیچ حساب Sony با شرایط مورد نظر یافت نشد."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            if oldest_account.employee:
-                unchecked_games = SonyAccountGame.objects.filter(
-                    Q(account__employee=oldest_account.employee) & Q(is_checked=False)
-                )
-                if unchecked_games.exists():
-                    return Response(
-                        {"error": "شما حساب‌های بازی چک‌نشده دارید."},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+    def get(self, request, *args, **kwargs):
+        employee = request.user.employee
 
-            return oldest_account
-        except SonyAccount.DoesNotExist:
+        # مرحله اول: بررسی اکانت‌های فعلی کارمند
+        unchecked_account = SonyAccount.objects.filter(
+            employee=employee,
+            is_deleted=False,
+            games__isnull=True
+        ).filter(
+            Q(status__is_available=True) | Q(status__isnull=True)
+        ).first()
+
+        if unchecked_account:
             return Response(
-                {"error": "هیچ حساب Sony با شرایط مورد نظر یافت نشد."},
+                {"error": "شمااکانت چک‌نشده دارید، لطفاً اول همان اکانت را بررسی کنید."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # مرحله دوم: گرفتن قدیمی‌ترین اکانت بدون کارمند
+        oldest_account = SonyAccount.objects.filter(
+            employee__isnull=True,
+            is_deleted=False,
+            is_owned=False
+        ).order_by('created_at').first()
+
+        if not oldest_account:
+            return Response(
+                {"error": "هیچ اکانت آزادی برای اختصاص یافتن موجود نیست."},
                 status=status.HTTP_404_NOT_FOUND
             )
 
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        if isinstance(instance, Response):
-            return instance
-        serializer = self.get_serializer(instance)
-        return Response({
-            "username": serializer.data["username"],
-            "password": serializer.data["password"]
-        })
+        # اساین به کارمند
+        oldest_account.employee = employee
+        oldest_account.save()
+
+        serializer = self.get_serializer(oldest_account)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 @restrict_access('has_access_to_accounts')
-class EmployeePanelSonyAccountList(generics.ListCreateAPIView):
+class EmployeePanelSonyAccountList(generics.ListAPIView):
     queryset = SonyAccount.objects.filter(is_deleted=False)
     serializer_class = EmployeeSonyAccountSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = SonyAccountFilter
+    search_fields = ['employee__first_name', 'employee__last_name', 'status__title']
+    ordering_fields = ['created_at', 'amount']
 
 
-@restrict_access('has_access_to_accounts')
 class EmployeePanelSonyAccountChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         games = Game.objects.all()
+        statuses = SonyAccountStatus.objects.all()
+        employees = Employee.objects.all()
         response_data = {
             'games': EmployeeGameSerializer(games, many=True).data,
+            'statuses': EmployeeSonyAccountStatusSerializer(statuses, many=True).data,
+            'employees': EmployeeSerializer(employees, many=True).data,
         }
         return Response(response_data)
 

@@ -12,7 +12,7 @@ from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentM
     CourseOrder
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
-    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets
+    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus
 
 
 class SoftDeleteSerializerMixin:
@@ -41,10 +41,14 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
         queryset=CustomUser.objects.all()
     )
     files = EmployeeFileSerializer(many=True, required=False)
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Employee
         fields = "__all__"
+
+    def get_full_name(self, obj):
+        return obj.first_name + " " + obj.last_name
 
 
 class EmployeeDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
@@ -156,9 +160,16 @@ class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         read_only_fields = ['created_at', 'updated_at']
 
 
+class EmployeeSonyAccountStatusSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountStatus
+        fields = "__all__"
+
+
 class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     employee = serializers.SerializerMethodField()
     games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
+    status_title = serializers.SerializerMethodField()
 
     class Meta:
         model = SonyAccount
@@ -168,6 +179,11 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
     def get_employee(self, obj):
         if obj.employee:
             return f"{obj.employee.first_name} {obj.employee.last_name}"
+        return None
+
+    def get_status_title(self, obj):
+        if obj.status:
+            return obj.status.title
         return None
 
 

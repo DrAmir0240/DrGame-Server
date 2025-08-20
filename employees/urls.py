@@ -8,7 +8,7 @@ urlpatterns = [
     path('personal/sony-accounts/', views.EmployeePanelOwnedSonyAccountList.as_view(), name='owned-sony-account-list'),
     path('personal/sony-accounts/<int:pk>/', views.EmployeePanelSonyAccountDetail.as_view(),
          name='sony-account-detail'),
-    path('personal/sony-accounts/choices', views.EmployeePanelSonyAccountChoices.as_view(),
+    path('personal/sony-accounts/choices/', views.EmployeePanelSonyAccountChoices.as_view(),
          name='sony-accounts-choices'),
 
     # -------------------- Orders --------------------
