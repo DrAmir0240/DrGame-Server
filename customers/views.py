@@ -39,10 +39,6 @@ class CustomerProfileRetrieveAPIView(generics.RetrieveUpdateAPIView):
         return CustomerProfileSerializer
 
 
-class UpgradeToBusinessCustomerCreateAPIView(generics.CreateAPIView):
-    pass
-
-
 class CustomerOrderListAPIView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsCustomer]

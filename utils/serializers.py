@@ -17,7 +17,7 @@ class OTPSerializer(serializers.Serializer):
 class SonyAccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = SonyAccount
-        fields = ["id", "username", "region", "plus", "is_owned", "bank_account_status"]
+        fields = ["id", "username", "password"]
 
 
 class SonyAccountMatchedSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
