@@ -53,7 +53,7 @@ class CustomerOrderListAPIView(generics.ListAPIView):
         return Order.objects.filter(customer=customer, is_deleted=False)
 
 
-class CustomerOrderRetrieveAPIView(generics.RetrieveAPIView):
+class CustomerOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
@@ -73,15 +73,15 @@ class CustomerGameOrderListAPIView(generics.ListAPIView):
         return GameOrder.objects.filter(customer=customer, is_deleted=False)
 
 
-class CustomerGameOrderRetrieveAPIView(generics.RetrieveAPIView):
+class CustomerGameOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = GameOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return GameOrder.objects.select_related('product', 'order_type', 'customer').filter(customer=customer,
-                                                                                            is_deleted=False)
+        return GameOrder.objects.select_related('customer').filter(customer=customer,
+                                                                   is_deleted=False)
 
 
 class CustomerRepairOrderListAPIView(generics.ListAPIView):
@@ -91,19 +91,19 @@ class CustomerRepairOrderListAPIView(generics.ListAPIView):
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('order_type', 'customer').filter(customer=customer,
-                                                                                   is_deleted=False)
+        return RepairOrder.objects.select_related('customer').filter(customer=customer,
+                                                                     is_deleted=False)
 
 
-class CustomerRepairOrderRetrieveAPIView(generics.RetrieveAPIView):
+class CustomerRepairOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = RepairOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
         customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('order_type', 'customer').filter(customer=customer,
-                                                                                   is_deleted=False)
+        return RepairOrder.objects.select_related('customer').filter(customer=customer,
+                                                                     is_deleted=False)
 
 
 class CustomerCourseOrderListAPIView(generics.ListAPIView):
@@ -117,7 +117,7 @@ class CustomerCourseOrderListAPIView(generics.ListAPIView):
                                                                      is_deleted=False).all()
 
 
-class CustomerCourseOrderRetrieveAPIView(generics.RetrieveAPIView):
+class CustomerCourseOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = CourseOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
@@ -152,4 +152,4 @@ class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
         return Transaction.objects.filter(
             (Q(payer=self.request.user) | Q(receiver=self.request.user)),
             is_deleted=False
-        ).select_related('transaction_type', 'game_order', 'repair_order', 'order').distinct()
+        ).distinct()

@@ -12,7 +12,7 @@ class CustomerProfileCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['id', 'full_name', 'user', 'address', 'profile_pic', 'created_at']
+        fields = ['id', 'full_name', 'user', 'address', 'postal_code', 'profile_pic', 'created_at']
         read_only_fields = ['id', 'created_at', 'user']
 
     def validate(self, data):
@@ -41,7 +41,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Customer
-        fields = ['id', 'full_name', 'user', 'address', 'profile_pic', 'created_at']
+        fields = ['id', 'full_name', 'user', 'address', 'postal_code', 'profile_pic', 'created_at']
         read_only_fields = ['id', 'created_at', 'user']
 
     def validate(self, data):
@@ -55,6 +55,7 @@ class CustomerProfileSerializer(serializers.ModelSerializer):
 
 class OrderSerializer(serializers.ModelSerializer):
     order_items = OrderItemSerializer(many=True, read_only=True)
+
     class Meta:
         model = Order
         fields = "__all__"
@@ -65,7 +66,7 @@ class GameOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = GameOrder
-        fields = ['id', 'order_type', 'amount', 'games', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'games', 'created_at']
         read_only_fields = fields
 
 
@@ -75,7 +76,7 @@ class RepairOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = RepairOrder
-        fields = ['id', 'order_type', 'amount', 'product', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'product', 'created_at']
         read_only_fields = fields
 
 
@@ -84,17 +85,13 @@ class CourseOrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CourseOrder
-        fields = ['id', 'course', 'amount', 'created_at', 'updated_at', ]
+        fields = ['id', 'course', 'amount', 'payment_status', 'created_at', 'updated_at', ]
         read_only_fields = fields
 
 
 class TransactionSerializer(serializers.ModelSerializer):
-    transaction_type = serializers.StringRelatedField()
-    payer = serializers.StringRelatedField()
-    receiver = serializers.StringRelatedField()
-
     class Meta:
         model = Transaction
-        fields = ['id', 'transaction_type', 'amount',
-                  'description', 'payer', 'receiver', 'created_at']
+        fields = ['id', 'amount',
+                  'description', 'created_at']
         read_only_fields = fields
