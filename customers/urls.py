@@ -26,10 +26,4 @@ urlpatterns = [
     path('transactions/', views.CustomerTransactionListAPIView.as_view(), name='customer-transactions'),
     path('transactions/<int:pk>/', views.CustomerTransactionRetrieveAPIView.as_view(),
          name='customer-transactions-detail'),
-
-    #
-    # # Transactions
-    # path('transactions/', CustomerTransactionListAPIView.as_view(), name='customer-transactions'),
-    # # path('profile/update/', views.CustomerProfileUpdateAPIView.as_view(), name='profile-update'),
-
 ]
