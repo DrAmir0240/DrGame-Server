@@ -140,7 +140,7 @@ class CustomerTransactionListAPIView(generics.ListAPIView):
         return Transaction.objects.filter(
             (Q(payer=self.request.user) | Q(receiver=self.request.user)),
             is_deleted=False
-        ).select_related('transaction_type', 'game_order', 'repair_order', 'order').distinct()
+        ).distinct()
 
 
 class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
