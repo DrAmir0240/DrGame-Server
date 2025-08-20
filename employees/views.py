@@ -710,8 +710,8 @@ class EmployeeDeposit(generics.GenericAPIView):
             receiver=employee.user,
             amount=amount,
             payment_method=payment_method,
-            in_order=False,
-            descriptions=description
+            in_out=False,
+            description=description
         )
 
         employee.balance -= amount
@@ -760,7 +760,7 @@ class EmployeeSendSmsService(generics.GenericAPIView):
 
         # ارسال درخواست به IPPanel
         headers = {
-            "Authorization": f"Bearer {settings.FARAZ_API_KEY}",
+            "Authorization": f"{settings.FARAZ_API_KEY}",
             "Content-Type": "application/json"
         }
 
@@ -821,8 +821,8 @@ class CustomerDeposit(generics.GenericAPIView):
             receiver_str='دکترگیم',
             amount=amount,
             payment_method=payment_method,
-            in_order=True,
-            descriptions=description
+            in_out=True,
+            description=description
         )
 
         # بروزرسانی موجودی‌ها
@@ -873,7 +873,7 @@ class CustomerSendSmsService(generics.GenericAPIView):
 
         # ارسال درخواست به IPPanel
         headers = {
-            "Authorization": f"Bearer {settings.FARAZ_API_KEY}",
+            "Authorization": f"{settings.FARAZ_API_KEY}",
             "Content-Type": "application/json"
         }
 
@@ -1340,6 +1340,7 @@ class FinanceReportsAPIView(generics.GenericAPIView):
 
         serializer = self.get_serializer(data)
         return Response(serializer.data)
+
 
 class PerFormanceReportAPIView(generics.ListAPIView):
     """

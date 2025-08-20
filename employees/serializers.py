@@ -32,7 +32,7 @@ class CustomUserSerializer(SoftDeleteSerializerMixin, serializers.ModelSerialize
 class EmployeeFileSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = EmployeeFile
-        fields = '__all__'
+        exclude = ["employee"]
 
 
 class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
