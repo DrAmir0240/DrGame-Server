@@ -45,6 +45,10 @@ class EmployeeOrganizeTaskPagination(LimitOffsetPagination):
     default_limit = 3  # تعداد آیتم‌ها در هر صفحه
 
 
+class EmployeeGameOrderPagination(LimitOffsetPagination):
+    default_limit = 12  # تعداد آیتم‌ها در هر صفحه
+
+
 # ==================== Personal Views ====================
 # -------------------- sony-accounts --------------------
 class EmployeePanelOwnedSonyAccountList(generics.ListAPIView):
@@ -83,6 +87,7 @@ class EmployeePanelOwnedGameOrderList(generics.ListCreateAPIView):
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = EmployeeGameOrderPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = GameOrderFilter
     search_fields = ['order_type', 'order_console_type', 'status', 'payment_status']
@@ -356,9 +361,6 @@ class EmployeePanelGetNewSonyAccount(generics.GenericAPIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-
-
-
 @restrict_access('has_access_to_accounts')
 class EmployeePanelSonyAccountList(generics.ListAPIView):
     queryset = SonyAccount.objects.filter(is_deleted=False)
@@ -370,6 +372,7 @@ class EmployeePanelSonyAccountList(generics.ListAPIView):
     search_fields = ['employee__first_name', 'employee__last_name', 'status__title']
     ordering_fields = ['created_at', 'amount']
 
+
 @restrict_access('has_access_to_accounts')
 class EmployeePanelSonyAccountDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = SonyAccount.objects.filter(is_deleted=False)
@@ -377,6 +380,8 @@ class EmployeePanelSonyAccountDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'pk'
+
+
 class EmployeePanelSonyAccountChoices(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         games = Game.objects.all()
@@ -437,6 +442,7 @@ class EmployeePanelGameOrder(generics.ListCreateAPIView):
     serializer_class = EmployeeGameOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = EmployeeGameOrderPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = GameOrderFilter
     search_fields = ['order_type', 'order_console_type', 'status', 'payment_status']
