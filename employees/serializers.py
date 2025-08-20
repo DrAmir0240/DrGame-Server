@@ -12,7 +12,8 @@ from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentM
     CourseOrder
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
-    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank
+    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank, \
+    SonyAccountGame
 
 
 class SoftDeleteSerializerMixin:
@@ -176,6 +177,9 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
     employee = serializers.SerializerMethodField()
     games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
     status_title = serializers.SerializerMethodField()
+    game_ids = serializers.ListField(
+        child=serializers.IntegerField(), write_only=True, required=False
+    )
 
     class Meta:
         model = SonyAccount
@@ -191,6 +195,27 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
         if obj.status:
             return obj.status.title
         return None
+
+    def update(self, instance, validated_data):
+        game_ids = validated_data.pop("game_ids", None)
+
+        # آپدیت فیلدهای معمولی
+        instance = super().update(instance, validated_data)
+
+        if game_ids is not None:
+            from django.db import transaction
+            with transaction.atomic():
+                # همه‌ی بازی‌های قبلی این اکانت پاک میشن
+                SonyAccountGame.objects.filter(sony_account=instance).delete()
+
+                # بازی‌های جدید ست میشن
+                for game_id in game_ids:
+                    SonyAccountGame.objects.create(
+                        sony_account=instance,
+                        game_id=game_id
+                    )
+
+        return instance
 
 
 class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
