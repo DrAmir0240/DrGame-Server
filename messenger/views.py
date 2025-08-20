@@ -57,7 +57,7 @@ class EmployeeListView(generics.ListAPIView):
         لیست کارکنان برای افزودن به چت ی ایجاد چت (فقط MainManager دسترسی دارد)
         """
     serializer_class = EmployeeSerializer
-    queryset = Employee.objects.filter(has_access_to_chat=True)
+    queryset = Employee.objects.filter(has_access_to_messenger=True)
     permission_classes = [IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 

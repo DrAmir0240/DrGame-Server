@@ -277,9 +277,7 @@ class UserStatusView(APIView):
     def get(self, request):
         if not request.user.is_authenticated:
             return Response(
-                {
-                    "is_authenticated": False,
-                },
+                {"is_authenticated": False},
                 status=200
             )
 
@@ -287,6 +285,8 @@ class UserStatusView(APIView):
         user_type = None
         employee_role = None
         user_name = None
+        employee_permissions = {}
+
         if MainManager.objects.filter(user=user).exists():
             main_manager = get_object_or_404(MainManager, user=user)
             user_type = "main_manager"
@@ -296,12 +296,43 @@ class UserStatusView(APIView):
             user_type = "employee"
             employee = get_object_or_404(Employee, user=user)
             employee_role = employee.role
-            user_name = employee.first_name + ' ' + employee.last_name
+            user_name = f"{employee.first_name} {employee.last_name}"
+
+            # لیست همه فیلدهای پرمیشن کارمند
+            permission_fields = [
+                "has_access_to_organize_tasks",
+                "has_access_to_game_orders",
+                "has_access_to_product_order",
+                "has_access_to_repair_order",
+                "has_access_to_personal_account",
+                "has_access_to_all_accounts",
+                "has_access_to_add_accounts",
+                "has_access_to_transactions",
+                "has_access_to_customer_read",
+                "has_access_to_customer_write",
+                "has_access_to_employees_read",
+                "has_access_to_employees_write",
+                "has_access_to_repairmen_read",
+                "has_access_to_repairmen_write",
+                "has_access_to_docs_read",
+                "has_access_to_docs_write",
+                "has_access_to_assets_read",
+                "has_access_to_assets_write",
+                "has_access_to_products",
+                "has_access_to_game_store",
+                "has_access_to_blogs",
+                "has_access_to_messenger",
+                "has_access_to_reports",
+            ]
+
+            # پر کردن دیکشنری پرمیشن‌ها به صورت True/False
+            for field in permission_fields:
+                employee_permissions[field] = getattr(employee, field, False)
 
         elif Repairman.objects.filter(user=user).exists():
             user_type = "repairman"
             repairman = get_object_or_404(Repairman, user=user)
-            user_name = repairman.first_name + ' ' + repairman.last_name
+            user_name = f"{repairman.first_name} {repairman.last_name}"
 
         elif Customer.objects.filter(user=user).exists():
             user_type = "customer"
@@ -316,7 +347,8 @@ class UserStatusView(APIView):
                 "user_type": user_type,
                 "employee_role": employee_role,
                 "user_name": user_name,
-                "user_id": user.id
+                "user_id": user.id,
+                "employee_permissions": employee_permissions,
             },
             status=200
         )
