@@ -44,6 +44,7 @@ urlpatterns = [
     # ==================== SonyAccounts Views ====================
     path('sony-accounts/new/', views.EmployeePanelGetNewSonyAccount.as_view(), name='sony-account-new'),
     path('sony-accounts/', views.EmployeePanelSonyAccountList.as_view(), name='sony-account-list'),
+    path('sony-accounts/<int:pk>/', views.EmployeePanelSonyAccountDetail.as_view(), name='sony-account-detail'),
 
     # ==================== ProductOrders Views ====================
     path('product-orders/', views.EmployeePanelProductOrderList.as_view(), name='product-order-list'),
