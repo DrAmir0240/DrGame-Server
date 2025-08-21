@@ -31,10 +31,11 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
-    SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer
+    SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
+    RepairOrderTypeSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
-    DeliveryMan, TelegramOrder
+    DeliveryMan, TelegramOrder, RepairOrderType
 from payments.serializers import DeliveryManSerializer, TransactionSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
     Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus, SonyAccountBank
@@ -1034,11 +1035,13 @@ class RepairManPanelStatusChoices(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def list(self, request, *args, **kwargs):
+        repair_order_types = RepairOrderType.objects.all()
         repair_order_status = [
             {'value': value, 'label': label} for value, label in RepairOrder._meta.get_field('status').choices
         ]
         response_data = {
             'status': EmployeeStatusChoicesSerializer(repair_order_status, many=True).data,
+            'repair_order_types': RepairOrderTypeSerializer(repair_order_types, many=True).data,
         }
         return Response(response_data)
 

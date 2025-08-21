@@ -299,7 +299,7 @@ class RepairOrderType(models.Model):
 
 
 class RepairOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     repair_man = models.ForeignKey(Repairman, on_delete=models.SET_NULL, null=True)
     order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
     amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)

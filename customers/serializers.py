@@ -4,7 +4,7 @@ from rest_framework import serializers
 from payments.serializers import OrderItemSerializer
 from storage.serializers import ProductSerializer, GameSerializer
 from customers.models import Customer
-from payments.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder
+from payments.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder, GameOrderItem
 
 
 class CustomerProfileCreateSerializer(serializers.ModelSerializer):
@@ -61,23 +61,56 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
+class GameOrderItemSerializer(serializers.ModelSerializer):
+    game = serializers.SlugRelatedField(slug_field='title', read_only=True)
+
+    class Meta:
+        model = GameOrderItem
+        fields = ['id', 'game', 'amount']
+
+
 class GameOrderSerializer(serializers.ModelSerializer):
-    games = GameSerializer(many=True, read_only=True)
+    games = GameOrderItemSerializer(many=True, read_only=True)
+    delivery_to_drgame = serializers.SerializerMethodField()
+    delivery_to_customer = serializers.SerializerMethodField()
 
     class Meta:
         model = GameOrder
-        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'games', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'games', 'created_at', 'dead_line',
+                  'delivery_to_drgame', 'delivery_to_customer']
         read_only_fields = fields
+
+    def get_delivery_to_drgame(self, obj):
+        if obj.delivery_to_drgame:
+            return f'{obj.delivery_to_drgame.full_name} : {obj.delivery_to_drgame.phone_number}'
+        return None
+
+    def get_delivery_to_customer(self, obj):
+        if obj.delivery_to_customer:
+            return f'{obj.delivery_to_customer.full_name} : {obj.delivery_to_customer.phone_number}'
+        return None
 
 
 class RepairOrderSerializer(serializers.ModelSerializer):
     order_type = serializers.StringRelatedField()
-    product = serializers.StringRelatedField()
+    delivery_to_drgame = serializers.SerializerMethodField()
+    delivery_to_customer = serializers.SerializerMethodField()
 
     class Meta:
         model = RepairOrder
-        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'product', 'created_at']
+        fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'created_at', 'dead_line',
+                  'delivery_to_drgame', 'delivery_to_customer']
         read_only_fields = fields
+
+    def get_delivery_to_drgame(self, obj):
+        if obj.delivery_to_drgame:
+            return f'{obj.delivery_to_drgame.full_name} : {obj.delivery_to_drgame.phone_number}'
+        return None
+
+    def get_delivery_to_customer(self, obj):
+        if obj.delivery_to_customer:
+            return f'{obj.delivery_to_customer.full_name} : {obj.delivery_to_customer.phone_number}'
+        return None
 
 
 class CourseOrderSerializer(serializers.ModelSerializer):

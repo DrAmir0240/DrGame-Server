@@ -9,7 +9,7 @@ from customers.models import Customer
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
-    CourseOrder
+    CourseOrder, RepairOrderType
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank, \
@@ -927,22 +927,24 @@ class RepairmanSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer
         fields = "__all__"
 
 
+class RepairOrderTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrderType
+        fields = '__all__'
+
+
 class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     customer = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
     order_type = serializers.SlugRelatedField(slug_field='title', read_only=True)
-    repairman_fee = serializers.SerializerMethodField()
     delivery_to_drgame = DeliveryManSerializer(read_only=True)
     delivery_to_customer = DeliveryManSerializer(read_only=True)
 
     class Meta:
         model = RepairOrder
         fields = "__all__"
-        read_only_fields = ['customer', 'repair_man', 'console', 'repairman_fee',
+        read_only_fields = ['customer', 'repair_man', 'console',
                             'payment_status', 'transaction', 'description',
                             'is_deleted', 'created_at', 'updated_at']
-
-    def get_repairman_fee(self, obj):
-        return obj.repairman_fee
 
 
 class RepairManTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
