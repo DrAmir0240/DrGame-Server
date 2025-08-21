@@ -71,7 +71,7 @@ class GameOrderItemSerializer(serializers.ModelSerializer):
 
     def get_game_img(self, obj):
         if obj.game.main_img:
-            return obj.game.main_img
+            return obj.game.main_img.url
         return None
 
 
