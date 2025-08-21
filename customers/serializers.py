@@ -63,10 +63,16 @@ class OrderSerializer(serializers.ModelSerializer):
 
 class GameOrderItemSerializer(serializers.ModelSerializer):
     game = serializers.SlugRelatedField(slug_field='title', read_only=True)
+    game_img = serializers.SerializerMethodField()
 
     class Meta:
         model = GameOrderItem
-        fields = ['id', 'game', 'amount']
+        fields = ['id', 'game', 'amount', 'game_img']
+
+    def get_game_img(self, obj):
+        if obj.game.main_img:
+            return obj.game.main_img
+        return None
 
 
 class GameOrderSerializer(serializers.ModelSerializer):
