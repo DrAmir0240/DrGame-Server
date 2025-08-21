@@ -1018,11 +1018,18 @@ class SellReportSerializer(serializers.Serializer):
     telegram_count = serializers.IntegerField()
 
 
+class PaymentMethodReportSerializer(serializers.Serializer):
+    title = serializers.CharField()
+    balance = serializers.IntegerField()
+
+
 class FinanceReportSerializer(serializers.Serializer):
     income_amount = serializers.IntegerField()
     outcome_amount = serializers.IntegerField()
     net_balance = serializers.IntegerField()
     balance = serializers.IntegerField()
+    payment_methods = PaymentMethodReportSerializer(many=True)
+
 
 
 class PerformanceReportSerializer(serializers.ModelSerializer):

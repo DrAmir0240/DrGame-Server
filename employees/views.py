@@ -1341,12 +1341,15 @@ class FinanceReportsAPIView(generics.GenericAPIView):
         outcome_amount = qs.filter(in_out=False).aggregate(total=Sum('amount'))['total'] or 0
         net_balance = income_amount - outcome_amount
         balance = PaymentMethod.objects.filter(is_deleted=False).aggregate(total=Sum('balance'))['total'] or 0
-
+        payment_methods_qs = PaymentMethod.objects.filter(is_deleted=False).values('title', 'balance')
+        payment_methods = list(payment_methods_qs)
         data = {
             "income_amount": income_amount,
             "outcome_amount": outcome_amount,
             "balance": balance,
             "net_balance": net_balance,
+            "payment_methods": payment_methods,
+
         }
 
         serializer = self.get_serializer(data)
