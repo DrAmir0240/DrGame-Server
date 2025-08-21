@@ -259,6 +259,9 @@ class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     pagination_class = EmployeeOrganizeTaskPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = EmployeeTaskFilter
+    ordering_fields = ['created_at', 'dead_line']
 
 
 class EmployeePanelOrganizeTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
