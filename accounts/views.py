@@ -92,7 +92,8 @@ class RequestOTPView(APIView):
         if not user:
             user = CustomUser.objects.create(phone=phone, is_active=False)
         OTP.objects.filter(user=user).delete()
-        otp_code = str(secrets.randbelow(100000000)).zfill(8)
+        otp_code = str(secrets.randbelow(100000)).zfill(5)
+        print(otp_code)
         expires_at = timezone.now() + timedelta(minutes=2)
         otp = OTP.objects.create(user=user, code=otp_code, expires_at=expires_at)
         success, message = otp.send_otp(phone=phone, otp_code=otp_code)

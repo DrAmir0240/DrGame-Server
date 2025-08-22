@@ -43,7 +43,7 @@ class MainManager(models.Model):
 
 class OTP(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='otps')
-    code = models.CharField(max_length=8)  # برای OTP 8 رقمی
+    code = models.CharField(max_length=5)  # برای OTP 8 رقمی
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -51,19 +51,23 @@ class OTP(models.Model):
         return timezone.now() <= self.expires_at
 
     def send_otp(self, phone, otp_code):
-        url = settings.FARAZ_URL
+        url = "https://edge.ippanel.com/v1/api/send"
         api_key = settings.FARAZ_API_KEY
         phone = '+98' + phone[1:]  # فرمت شماره تلفن
         headers = {
-            "apikey": api_key,
+            "Authorization": api_key,
             "Content-Type": "application/json"
         }
+        print(phone)
+        print(otp_code)
+        message = f"به دکتر گیم خوش آمدید\ncode : {otp_code}\n\nبزرگترین مرجع نصب بازی‌های کنسول در ایران\nـــــــ"
+        print(message)
         payload = {
-            "code": "0li89sh8n64thu4",
-            "sender": "+983000505",
-            "recipient": phone,
-            "variable": {
-                "code": otp_code
+            "sending_type": "webservice",
+            "from_number": "+983000505",  # شماره فرستنده
+            "message": message,
+            "params": {
+                "recipients": [phone, ]
             }
         }
         try:
@@ -75,11 +79,16 @@ class OTP(models.Model):
             try:
                 response_json = response.json()
                 print(f"Response JSON: {response_json}")
-                if response_json.get('status') == 'OK' and response_json.get('code') == 200:
+
+                # گرفتن status از داخل meta
+                meta = response_json.get("meta", {})
+                status_ok = meta.get("status") is True
+
+                if status_ok:
                     print(f"OTP for {phone}: {otp_code}")
                     return True, "پیامک با موفقیت ارسال شد"
                 else:
-                    return False, f"خطا در ارسال پیامک: {response_json.get('error_message', 'نامشخص')}"
+                    return False, f"خطا در ارسال پیامک: {meta.get('message', 'نامشخص')}"
             except ValueError:
                 print("Response is not valid JSON")
                 return False, "خطا در ارسال پیامک: پاسخ API معتبر نیست"
