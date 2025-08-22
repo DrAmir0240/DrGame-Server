@@ -51,6 +51,37 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
     def get_full_name(self, obj):
         return obj.first_name + " " + obj.last_name
 
+    def create(self, validated_data):
+        files_data = validated_data.pop('files', [])
+        validated_data.pop('file_ids_to_delete', None)  # برای اطمینان
+
+        employee = Employee.objects.create(**validated_data)
+
+        for file_data in files_data:
+            EmployeeFile.objects.create(employee=employee, **file_data)
+
+        return employee
+
+    def update(self, instance, validated_data):
+        files_data = validated_data.pop('files', None)
+        file_ids_to_delete = validated_data.pop('file_ids_to_delete', [])
+
+        # آپدیت فیلدهای خود Employee
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # اضافه کردن فایل‌های جدید
+        if files_data:
+            for file_data in files_data:
+                EmployeeFile.objects.create(employee=instance, **file_data)
+
+        # حذف فایل‌ها
+        if file_ids_to_delete:
+            EmployeeFile.objects.filter(id__in=file_ids_to_delete, employee=instance).delete()
+
+        return instance
+
 
 class EmployeeDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
     payment_method_id = serializers.IntegerField()
@@ -1029,7 +1060,6 @@ class FinanceReportSerializer(serializers.Serializer):
     net_balance = serializers.IntegerField()
     balance = serializers.IntegerField()
     payment_methods = PaymentMethodReportSerializer(many=True)
-
 
 
 class PerformanceReportSerializer(serializers.ModelSerializer):
