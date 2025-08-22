@@ -695,17 +695,50 @@ class EmployeeOrderItemSerializer(SoftDeleteSerializerMixin, serializers.ModelSe
         read_only_fields = ['is_deleted', 'created_at']
 
 
+class EmployeeOrderItemWriteSerializer(serializers.Serializer):
+    product_id = serializers.IntegerField()
+    quantity = serializers.IntegerField(min_value=1)
+
+
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    customer = serializers.SerializerMethodField()
-    order_items = EmployeeOrderItemSerializer(read_only=True, many=True)
+    customer = serializers.PrimaryKeyRelatedField(
+        queryset=Customer.objects.filter(is_deleted=False)
+    )
+    order_items = EmployeeOrderItemWriteSerializer(many=True)
+    order_items_show = EmployeeOrderItemSerializer(read_only=True, many=True)
 
     class Meta:
         model = Order
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = ['customer', 'order_type', 'description', 'payment_status', 'order_items', 'order_items_show']
+        read_only_fields = ['amount', 'order_type', 'is_deleted', 'created_at', 'updated_at']
 
-    def get_customer(self, obj):
-        return obj.customer.full_name if obj.customer else None
+    def create(self, validated_data):
+        order_items_data = validated_data.pop('order_items')
+        total_amount = 0
+
+        # محاسبه مبلغ کل سفارش
+        for item in order_items_data:
+            product = Product.objects.get(pk=item['product_id'])
+            total_amount += product.price * item['quantity']
+
+        # ساخت خود Order (order_type همیشه employee ست میشه)
+        order = Order.objects.create(
+            amount=total_amount,
+            order_type="employee",  # مقدار پیش‌فرض
+            **validated_data
+        )
+
+        # ساخت OrderItemها
+        for item in order_items_data:
+            product = Product.objects.get(pk=item['product_id'])
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=item['quantity'],
+                price=product.price
+            )
+
+        return order
 
 
 class EmployeeGameOrderItemSerializer(serializers.ModelSerializer):
