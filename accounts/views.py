@@ -298,7 +298,6 @@ class UserStatusView(APIView):
             employee_role = employee.role
             user_name = f"{employee.first_name} {employee.last_name}"
 
-            # لیست همه فیلدهای پرمیشن کارمند
             permission_fields = [
                 "has_access_to_organize_tasks",
                 "has_access_to_game_orders",
@@ -323,6 +322,7 @@ class UserStatusView(APIView):
                 "has_access_to_blogs",
                 "has_access_to_messenger",
                 "has_access_to_reports",
+                "has_access_to_requests"
             ]
 
             # پر کردن دیکشنری پرمیشن‌ها به صورت True/False
