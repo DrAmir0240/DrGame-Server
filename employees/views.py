@@ -65,6 +65,9 @@ class EmployeePanelPersonalRequests(generics.ListCreateAPIView):
         employee = self.request.user.employee
         return EmployeeRequest.objects.filter(employee=employee)
 
+    def perform_create(self, serializer):
+        serializer.save(employee=self.request.user.employee)
+
 
 class EmployeePanelPersonalRequestsDetail(generics.RetrieveAPIView):
     serializer_class = EmployeeRequestSerializer
