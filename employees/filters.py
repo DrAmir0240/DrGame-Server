@@ -1,6 +1,6 @@
 import django_filters
 
-from employees.models import EmployeeTask
+from employees.models import EmployeeTask, EmployeeRequest
 from django_filters import rest_framework as filters
 
 from payments.models import Transaction, GameOrder, RepairOrder
@@ -18,6 +18,15 @@ class EmployeeTaskFilter(filters.FilterSet):
     class Meta:
         model = EmployeeTask
         fields = ['type', 'status', 'deadline', 'deadline__gte', 'deadline__lte', 'title']
+
+
+class EmployeeRequestFilter(filters.FilterSet):
+    request_type = filters.ChoiceFilter(choices=EmployeeRequest._meta.get_field('request_type').choices)
+    employee = filters.NumberFilter(field_name='employee__id')
+
+    class Meta:
+        model = EmployeeRequest
+        fields = ['employee', 'request_type']
 
 
 class GameOrderFilter(django_filters.FilterSet):

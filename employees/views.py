@@ -14,8 +14,8 @@ from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
-    SonyAccountFilter, SonyAccountPersonalFilter
-from employees.models import EmployeeTask, Employee, Repairman
+    SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter
+from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
     EmployeePersonalTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
@@ -32,7 +32,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
-    RepairOrderTypeSerializer
+    RepairOrderTypeSerializer, EmployeeRequestSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -51,6 +51,48 @@ class EmployeeGameOrderPagination(LimitOffsetPagination):
 
 
 # ==================== Personal Views ====================
+# -------------------- requests --------------------
+class EmployeePanelPersonalRequests(generics.ListCreateAPIView):
+    serializer_class = EmployeeRequestSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = EmployeeRequestFilter
+    search_fields = ['title', 'request_type', 'description']
+    ordering_fields = ['-created_at']
+
+    def get_queryset(self):
+        employee = self.request.user.employee
+        return EmployeeRequest.objects.filter(employee=employee)
+
+
+class EmployeePanelPersonalRequestsDetail(generics.RetrieveAPIView):
+    serializer_class = EmployeeRequestSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        employee = self.request.user.employee
+        return EmployeeRequest.objects.filter(employee=employee)
+
+
+class EmployeePanelRequestChoices(generics.ListAPIView):
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def list(self, request, *args, **kwargs):
+        request_type = [
+            {'value': value, 'label': label} for value, label in EmployeeRequest._meta.get_field('request_type').choices
+        ]
+        employees = Employee.objects.filter(is_deleted=False)
+        data = {
+            'request_type': EmployeeStatusChoicesSerializer(request_type, many=True).data,
+            'employees': EmployeeSerializer(employees, many=True).data,
+        }
+
+        return Response(data)
+
+
 # -------------------- sony-accounts --------------------
 class EmployeePanelOwnedSonyAccountList(generics.ListAPIView):
     serializer_class = EmployeeSonyAccountSerializer
@@ -1377,4 +1419,22 @@ class CustomerReportAPIView(generics.ListAPIView):
     queryset = Customer.objects.filter(is_deleted=False)
     serializer_class = CustomerReportSerializer
     permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelRequests(generics.ListAPIView):
+    queryset = EmployeeRequest.objects.filter(is_deleted=False)
+    serializer_class = EmployeeRequestSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = EmployeeRequestFilter
+    search_fields = ['title', 'request_type', 'description']
+    ordering_fields = ['-created_at']
+
+
+class EmployeePanelRequestsDetail(generics.RetrieveAPIView):
+    queryset = EmployeeRequest.objects.filter(is_deleted=False)
+    serializer_class = EmployeeRequestSerializer
+    permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]

@@ -6,7 +6,7 @@ from rest_framework import serializers
 from django.db import transaction as db_transaction
 from accounts.models import CustomUser
 from customers.models import Customer
-from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile
+from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile, EmployeeRequest
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
     CourseOrder, RepairOrderType
@@ -1171,3 +1171,10 @@ class CustomerReportSerializer(serializers.ModelSerializer):
         return Transaction.objects.filter(
             payer=obj.user, in_out=True, is_deleted=False, status='paid', **filters
         ).aggregate(total=Sum('amount'))['total'] or 0
+
+
+class EmployeeRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeRequest
+        fields = ['title', 'request_type', 'description', 'employee', 'created_at']
+        read_only_fields = ['created_at', 'employee']

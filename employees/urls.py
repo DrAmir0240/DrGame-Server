@@ -4,6 +4,11 @@ from employees.views import EmployeeListAdd, EmployeeDetail
 
 urlpatterns = [
     # ==================== Personal Views ====================
+    # -------------------- Requests --------------------
+    path('personal/requests/', views.EmployeePanelPersonalRequests.as_view(), name='personal-requests'),
+    path('personal/requests/<int:pk>/', views.EmployeePanelPersonalRequestsDetail.as_view(),
+         name='personal-requests-detail'),
+
     # -------------------- Sony Accounts --------------------
     path('personal/sony-accounts/', views.EmployeePanelOwnedSonyAccountList.as_view(), name='owned-sony-account-list'),
     path('personal/sony-accounts/<int:pk>/', views.EmployeePanelSonyAccountDetail.as_view(),
@@ -151,5 +156,8 @@ urlpatterns = [
     path('reports/finance/', views.FinanceReportsAPIView.as_view(), name="finance-reports"),
     path('reports/employee/', views.PerFormanceReportAPIView.as_view(), name="employee-reports"),
     path('reports/customer/', views.CustomerReportAPIView.as_view(), name="customer-reports"),
+    path('requests/', views.EmployeePanelRequests.as_view(), name='requests'),
+    path('requests/<int:pk>/', views.EmployeePanelRequestsDetail.as_view(), name='requests-detail'),
+    path('requests/choices/', views.EmployeePanelRequestChoices.as_view(), name='requests-choices'),
 
 ]

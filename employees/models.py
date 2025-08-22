@@ -43,6 +43,7 @@ class Employee(models.Model):
     has_access_to_blogs = models.BooleanField(default=False)
     has_access_to_messenger = models.BooleanField(default=False)
     has_access_to_reports = models.BooleanField(default=False)
+    has_access_to_requests = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
