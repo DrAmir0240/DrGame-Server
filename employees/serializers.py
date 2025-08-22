@@ -732,8 +732,8 @@ class EmployeeGameOrderItemWriteSerializer(serializers.Serializer):
     game = serializers.SlugRelatedField(slug_field='title', queryset=Game.objects.filter(is_deleted=False))
     account = serializers.BooleanField(required=False)
     data = serializers.BooleanField(required=False)
-    account_setter = serializers.BooleanField(required=False)
-    data_uploader = serializers.BooleanField(required=False)
+    aaccount_setter = serializers.BooleanField(required=False, allow_null=True)
+    data_uploader = serializers.BooleanField(required=False, allow_null=True)
 
 
 class EmployeeGameOrderSerializer(serializers.ModelSerializer):
