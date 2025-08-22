@@ -77,7 +77,7 @@ class EmployeePanelPersonalRequestsDetail(generics.RetrieveAPIView):
 
 
 class EmployeePanelRequestChoices(generics.ListAPIView):
-    permission_classes = [IsEmployee]
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def list(self, request, *args, **kwargs):
@@ -1425,7 +1425,7 @@ class CustomerReportAPIView(generics.ListAPIView):
 class EmployeePanelRequests(generics.ListAPIView):
     queryset = EmployeeRequest.objects.filter(is_deleted=False)
     serializer_class = EmployeeRequestSerializer
-    permission_classes = [IsEmployee]
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = EmployeeRequestFilter
@@ -1436,5 +1436,5 @@ class EmployeePanelRequests(generics.ListAPIView):
 class EmployeePanelRequestsDetail(generics.RetrieveAPIView):
     queryset = EmployeeRequest.objects.filter(is_deleted=False)
     serializer_class = EmployeeRequestSerializer
-    permission_classes = [IsEmployee]
+    permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
