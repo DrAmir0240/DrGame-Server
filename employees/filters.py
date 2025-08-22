@@ -15,7 +15,7 @@ class EmployeeTaskFilter(filters.FilterSet):
 
     class Meta:
         model = EmployeeTask
-        fields = ['type', 'status', 'deadline', 'deadline__gte', 'deadline__lte', 'title']
+        fields = ['type', 'status', 'deadline', 'title']
 
 
 class EmployeeRequestFilter(filters.FilterSet):
