@@ -284,6 +284,7 @@ class UserStatusView(APIView):
 
         user = request.user
         user_type = None
+        user_pic = None
         employee_role = None
         user_name = None
         employee_permissions = {}
@@ -297,6 +298,7 @@ class UserStatusView(APIView):
             user_type = "employee"
             employee = get_object_or_404(Employee, user=user)
             employee_role = employee.role
+            user_pic = employee.profile_picture.url
             user_name = f"{employee.first_name} {employee.last_name}"
 
             permission_fields = [
@@ -339,6 +341,7 @@ class UserStatusView(APIView):
             user_type = "customer"
             customer = get_object_or_404(Customer, user=user)
             user_name = customer.full_name
+            user_pic = user.customer.profile_pic.url
         else:
             user_type = "none"
 
@@ -349,6 +352,7 @@ class UserStatusView(APIView):
                 "employee_role": employee_role,
                 "user_name": user_name,
                 "user_id": user.id,
+                "user_pic": user_pic,
                 "employee_permissions": employee_permissions,
             },
             status=200
