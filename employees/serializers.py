@@ -166,28 +166,24 @@ class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
             GameImage.objects.create(game=game, **img_data)
         return game
 
-    @transaction.atomic
     def update(self, instance, validated_data):
         images_data = validated_data.pop('game_images', None)
 
-        # آپدیت خود Game
+        # آپدیت فیلدهای خود Game
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         if images_data is not None:
+            # حذف همه عکس‌های قبلی
+            instance.game_images.all().delete()
+            # ساخت عکس‌های جدید
             for img_data in images_data:
-                img_id = img_data.get('id', None)
-                if img_id:
-                    # حذف عکس با id
-                    try:
-                        img_obj = instance.game_images.get(id=img_id)
-                        img_obj.delete()
-                    except GameImage.DoesNotExist:
-                        raise serializers.ValidationError({"game_images": f"Invalid image id: {img_id}"})
-                else:
-                    # ساخت عکس جدید
-                    GameImage.objects.create(game=instance, **img_data)
+                img_data.pop('id', None)
+                img_data.pop('game', None)
+                if img_data.get('is_deleted'):
+                    continue
+                GameImage.objects.create(game=instance, **img_data)
 
         return instance
 
