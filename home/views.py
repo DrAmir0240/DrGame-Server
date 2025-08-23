@@ -623,5 +623,5 @@ class HomeBannerDeleteView(generics.DestroyAPIView):
 class SendResume(generics.CreateAPIView):
     queryset = EmployeeHire.objects.all()
     serializer_class = EmployeeHireSerializer
-    permission_classes = [IsEmployee, IsMainManager]
+    permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
