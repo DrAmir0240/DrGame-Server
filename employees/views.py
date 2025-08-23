@@ -15,7 +15,7 @@ from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsR
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
     SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter
-from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest
+from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
     EmployeePersonalTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
@@ -32,7 +32,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
-    RepairOrderTypeSerializer, EmployeeRequestSerializer
+    RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -831,6 +831,13 @@ class EmployeeSendSmsService(generics.GenericAPIView):
             return Response(response.json(), status=status.HTTP_200_OK)
         return Response({"detail": "خطا در ارسال پیامک", "response": response.text},
                         status=response.status_code)
+
+
+class EmployeeResumeList(generics.ListAPIView):
+    queryset = EmployeeHire.objects.all().order_by("-created_at")
+    serializer_class = EmployeeHireSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
 
 # ==================== Customer Views ====================

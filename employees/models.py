@@ -122,7 +122,7 @@ class EmployeeRequest(models.Model):
 class EmployeeHire(models.Model):
     full_name = models.CharField(max_length=100)
     birth_date = models.DateField()
-    resume_file = models.FileField(upload_to='hire/resume_files/')
+    resume_file = models.FileField(upload_to='hire/resume_files/', null=True, blank=True)
     phone_number = models.CharField(max_length=11)
     description = models.TextField(max_length=5000)
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)

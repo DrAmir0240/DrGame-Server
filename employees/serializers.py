@@ -6,7 +6,7 @@ from rest_framework import serializers
 from django.db import transaction as db_transaction
 from accounts.models import CustomUser
 from customers.models import Customer
-from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile, EmployeeRequest
+from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile, EmployeeRequest, EmployeeHire
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
     CourseOrder, RepairOrderType
@@ -83,6 +83,19 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
         return instance
 
 
+class EmployeeHireSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = EmployeeHire
+        fields = "__all__"
+        read_only_fields = ['user', 'created_at']
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        if request and hasattr(request, 'user'):
+            validated_data['user'] = request.user
+        return super().create(validated_data)
+
+
 class EmployeeDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
     payment_method_id = serializers.IntegerField()
     amount = serializers.IntegerField()
@@ -145,8 +158,8 @@ class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSeriali
         game = Game.objects.create(**validated_data)
         # ساخت تصاویر جدید (بدون نیاز به game در ورودی)
         for img_data in images_data:
-            img_data.pop('id', None)     # ورودی id برای ساخت لازم نیست
-            img_data.pop('game', None)   # امنیت بیشتر
+            img_data.pop('id', None)  # ورودی id برای ساخت لازم نیست
+            img_data.pop('game', None)  # امنیت بیشتر
             # اگر کاربر به اشتباه is_deleted=true فرستاد، ایجاد نکن
             if img_data.get('is_deleted'):
                 continue

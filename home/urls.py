@@ -83,4 +83,6 @@ urlpatterns = [
     path('banners/<int:pk>/', views.HomeBannerDetailView.as_view(), name='banner-detail'),
     path('banners/<int:pk>/update/', views.HomeBannerUpdateView.as_view(), name='banner-update'),
     path('banners/<int:pk>/delete/', views.HomeBannerDeleteView.as_view(), name='banner-delete'),
+    path('send-resume/', views.SendResume.as_view(), name='send-resume'),
+
 ]

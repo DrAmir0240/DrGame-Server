@@ -12,6 +12,8 @@ from rest_framework import status
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsCustomer, IsEmployee, IsMainManager
 from customers.models import Customer
+from employees.models import EmployeeHire
+from employees.serializers import EmployeeHireSerializer
 from payments.models import GAME_ORDER_CONSOLE_TYPE
 from storage.models import Game, Product, ProductCategory
 from storage.serializers import GameSerializer, ProductSerializer, ProductCategorySerializer
@@ -616,3 +618,10 @@ class HomeBannerUpdateView(generics.UpdateAPIView):
 class HomeBannerDeleteView(generics.DestroyAPIView):
     serializer_class = HomeBannerSerializer
     queryset = HomeBanner.objects.all().order_by('order')
+
+
+class SendResume(generics.CreateAPIView):
+    queryset = EmployeeHire.objects.all()
+    serializer_class = EmployeeHireSerializer
+    permission_classes = [IsEmployee, IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
