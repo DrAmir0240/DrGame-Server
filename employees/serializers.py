@@ -83,7 +83,7 @@ class EmployeeSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer)
         return instance
 
 
-class EmployeeHireSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeeHireSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeHire
         fields = "__all__"

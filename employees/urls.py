@@ -102,6 +102,7 @@ urlpatterns = [
     path('<int:pk>/deposit/', views.EmployeeDeposit.as_view(), name='employee-deposit'),
     path('send-sms-service/', views.EmployeeSendSmsService.as_view(), name='employee-send-sms-service'),
     path('resume/', views.EmployeeResumeList.as_view(), name='resume-list'),
+    path('resume/<int:pk>', views.EmployeeResumeDelete.as_view(), name='resume-delete'),
 
     # ==================== Customer Views ====================
     path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),

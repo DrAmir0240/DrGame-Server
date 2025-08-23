@@ -840,6 +840,13 @@ class EmployeeResumeList(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
+class EmployeeResumeDelete(generics.DestroyAPIView):
+    queryset = EmployeeHire.objects.all().order_by("-created_at")
+    serializer_class = EmployeeHireSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
 # ==================== Customer Views ====================
 class CustomerListCreate(generics.ListCreateAPIView):
     serializer_class = EmployeeCustomerSerializer
