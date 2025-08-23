@@ -686,37 +686,42 @@ class EmployeeOrganizeTaskSerializer(SoftDeleteSerializerMixin, serializers.Mode
         return super().create(validated_data)
 
 
-class EmployeeOrderItemSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    product = EmployeeProductSerializer(read_only=True)
+class EmployeeOrderItemSerializer(serializers.ModelSerializer):
+    product_id = serializers.PrimaryKeyRelatedField(
+        source='product',
+        queryset=Product.objects.filter(is_deleted=False)
+    )
+    quantity = serializers.IntegerField(min_value=1)
+
+    # اینها فقط read_only هستن
+    title = serializers.CharField(source='product.title', read_only=True)
+    amount = serializers.DecimalField(source='product.price', max_digits=12, decimal_places=2, read_only=True)
+    main_img = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = '__all__'
-        read_only_fields = ['is_deleted', 'created_at']
+        fields = ['product_id', 'quantity', 'title', 'amount', 'main_img']
 
-
-class EmployeeOrderItemWriteSerializer(serializers.Serializer):
-    product_id = serializers.IntegerField()
-    quantity = serializers.IntegerField(min_value=1)
+    def get_main_img(self, obj):
+        request = self.context.get('request')
+        if obj.product.main_img and hasattr(obj.product.main_img, 'url'):
+            return request.build_absolute_uri(obj.product.main_img.url) if request else obj.product.main_img.url
+        return None
 
 
 class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     customer = serializers.PrimaryKeyRelatedField(
         queryset=Customer.objects.filter(is_deleted=False)
     )
-    order_items = EmployeeOrderItemWriteSerializer(many=True, write_only=True)
-    order_items_show = EmployeeOrderItemSerializer(
-        many=True,
-        read_only=True,
-        source='order_items'
-    )
-    customer_name = serializers.SerializerMethodField()
+    order_items = EmployeeOrderItemSerializer(many=True)
+    customer_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Order
-        fields = ['id', 'customer', 'customer_name', 'order_type', 'amount', 'description', 'payment_status',
-                  'order_items',
-                  'order_items_show']
+        fields = [
+            'id', 'customer', 'customer_name', 'order_type', 'description', 'payment_status',
+            'order_items'
+        ]
         read_only_fields = ['amount', 'order_type', 'is_deleted', 'created_at', 'updated_at']
 
     def get_customer_name(self, obj):
@@ -726,27 +731,27 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
         order_items_data = validated_data.pop('order_items')
         total_amount = 0
 
-        # محاسبه مبلغ کل سفارش
-        for item in order_items_data:
-            product = Product.objects.get(pk=item['product_id'])
-            total_amount += product.price * item['quantity']
-
-        # ساخت خود Order (order_type همیشه employee ست میشه)
+        # ساخت Order
         order = Order.objects.create(
-            amount=total_amount,
-            order_type="employee",  # مقدار پیش‌فرض
+            order_type="employee",
             **validated_data
         )
 
-        # ساخت OrderItemها
+        # ساخت OrderItem ها
         for item in order_items_data:
-            product = Product.objects.get(pk=item['product_id'])
+            product = item['product']
+            quantity = item['quantity']
+            total_amount += product.price * quantity
+
             OrderItem.objects.create(
                 order=order,
                 product=product,
-                quantity=item['quantity'],
+                quantity=quantity,
                 price=product.price
             )
+
+        order.amount = total_amount
+        order.save()
 
         return order
 
