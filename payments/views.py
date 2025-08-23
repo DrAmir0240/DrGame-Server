@@ -27,11 +27,28 @@ class ZarinpalCallbackView(APIView):
     def get(self, request):
         status_param = request.GET.get("Status")
         authority = request.GET.get("Authority")
+        transaction = get_object_or_404(Transaction, authority=authority)
 
         if status_param != "OK":
+            if transaction.order:
+                transaction.order.delete()
+                transaction.payer.customer.balance += transaction.amount
+                transaction.payer.customer.save()
+            if transaction.game_order:
+                transaction.game_order.delete()
+                transaction.payer.customer.balance += transaction.amount
+                transaction.payer.customer.save()
+            if transaction.repair:
+                transaction.repair.delete()
+                transaction.payer.customer.balance += transaction.amount
+                transaction.payer.customer.save()
+            if transaction.course_order:
+                transaction.course_order.delete()
+                transaction.payer.customer.balance += transaction.amount
+                transaction.payer.customer.save()
             # اینجا باید موجودی کاربر برگشت بخوره و سفارشش حذف بشه و موحودیش برگرده به حالت اولیه
             return Response({"status": "error", "message": "پرداخت توسط کاربر لغو شد."})
-        transaction = get_object_or_404(Transaction, authority=authority)
+
         if transaction.order:
             transaction.order.payment_status = 'paid'
             transaction.order.save()
@@ -44,7 +61,8 @@ class ZarinpalCallbackView(APIView):
         if transaction.course_order:
             transaction.course_order.customer.has_access_to_course = True
             transaction.course_order.customer.save()
-
+        transaction.payer.customer.balance += transaction.amount
+        transaction.payer.customer.save()
         result = transaction.verify_payment()
         print(result)
         return redirect("https://gamedr.ir/customer/transactions")
@@ -81,6 +99,8 @@ class OrderCreate(generics.CreateAPIView):
 
             cart.cart_items.all().delete()
             cart.delete()
+            order.customer.balance -= order.amount
+            order.customer.save()
 
         except Cart.DoesNotExist:
             raise ValidationError("سبد خرید یافت نشد.")
@@ -211,6 +231,8 @@ class GameOrderCreate(generics.CreateAPIView):
             game_order.save()
 
             game_cart.delete()
+            game_order.customer.balance -= game_order.amount
+            game_order.customer.save()
 
             response_serializer = GameOrderSerializer(game_order)
             return Response(response_serializer.data, status=201)

@@ -752,6 +752,8 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
 
         order.amount = total_amount
         order.save()
+        order.customer.balance -= order.amount
+        order.customer.save()
 
         return order
 
@@ -780,7 +782,7 @@ class EmployeeGameOrderItemWriteSerializer(serializers.Serializer):
     game = serializers.SlugRelatedField(slug_field='title', queryset=Game.objects.filter(is_deleted=False))
     account = serializers.BooleanField(required=False)
     data = serializers.BooleanField(required=False)
-    aaccount_setter = serializers.BooleanField(required=False, allow_null=True)
+    account_setter = serializers.BooleanField(required=False, allow_null=True)
     data_uploader = serializers.BooleanField(required=False, allow_null=True)
 
 
@@ -874,6 +876,7 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         print(instance.employee)
         request = self.context.get('request')
+        old_amount = instance.amount  # مبلغ قبلی سفارش
         old_status = instance.status
         new_status = validated_data.get('status', old_status)
 
@@ -886,10 +889,6 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
 
         # مدیریت games_data
         games_data = validated_data.pop('games', None)
-
-        # آپدیت instance با super تا DRF دیتابیس رو درست save کنه
-        instance = super().update(instance, validated_data)
-        print(instance.employee)
 
         if games_data:
             for item_data in games_data:
@@ -918,6 +917,30 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
 
                 game_item.save()
 
+        if old_status != new_status and new_status == 'done':
+            instance.employee = instance.recipient or request.user.employee
+            instance.save()
+
+            for item in instance.games.filter(is_deleted=False):
+                if item.account_setter:
+                    item.account_setter.balance += item.amount * (item.account_setter.comission / 100)
+                    item.account_setter.save()
+                if item.data_uploader:
+                    item.data_uploader.balance += item.amount * (item.data_uploader.comission / 100)
+                    item.data_uploader.save()
+
+        new_amount = sum(item.amount for item in instance.games.filter(is_deleted=False))
+        if new_amount != old_amount:
+            # برگردوندن مبلغ قبلی به مشتری
+            instance.customer.balance += old_amount
+            # کم کردن مبلغ جدید
+            instance.customer.balance -= new_amount
+            instance.customer.save()
+            instance.amount = new_amount
+            instance.save()
+
+        instance = super().update(instance, validated_data)
+        print(instance.employee)
         return instance
 
 
@@ -1040,13 +1063,38 @@ class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
                 raise serializers.ValidationError({
                     "repairman_fee": "برای تغییر وضعیت به 'waiting_for_amount' باید مبلغ تعمیرکار را وارد کنید."
                 })
-
+        # شرط 3: اگه وضعیت از waiting_for_amount → waiting_for_customer_to_accept تغییر کنه
         if instance.status == "waiting_for_amount" and new_status == "waiting_for_customer_to_accept":
             amount = validated_data.get("amount")
             if not amount:
                 raise serializers.ValidationError({
                     "amount": "برای تغییر وضعیت به 'waiting_for_amount' باید مبلغ تعمیرکار را وارد کنید."
                 })
+        # شرط 4: اگه وضعیت شد in_progress → کم کردن مبلغ از موجودی مشتری
+        if new_status == "in_progress" and instance.status != "in_progress":
+            amount = instance.amount or validated_data.get("amount")
+            customer = instance.customer
+
+            if not amount:
+                raise serializers.ValidationError({
+                    "amount": "برای شروع سفارش باید مبلغ مشخص شده باشد."
+                })
+            customer.balance -= amount
+            customer.save()
+
+        if "amount" in validated_data:
+            new_amount = validated_data.get("amount")
+            if instance.amount != new_amount and instance.amount != 0:
+                customer = instance.customer
+                if instance.amount:
+                    customer.balance += instance.amount
+
+                customer.wallet_balance -= new_amount
+                customer.save()
+
+        if new_status == 'done' and instance.status == 'in_progress':
+            instance.repair_man.balance += instance.repairman_fee
+            instance.repair_man.save()
 
         return super().update(instance, validated_data)
 
