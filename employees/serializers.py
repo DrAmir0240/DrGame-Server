@@ -719,10 +719,10 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
     class Meta:
         model = Order
         fields = [
-            'id', 'customer', 'customer_name', 'order_type', 'description', 'payment_status',
-            'order_items'
+            'id', 'customer', 'customer_name', 'amount', 'order_type', 'description', 'payment_status',
+            'order_items', 'created_at'
         ]
-        read_only_fields = ['amount', 'order_type', 'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ['amount', 'order_type', 'is_deleted', 'updated_at', 'created_at']
 
     def get_customer_name(self, obj):
         return obj.customer.full_name if obj.customer else None
