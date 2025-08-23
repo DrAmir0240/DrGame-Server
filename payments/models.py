@@ -167,7 +167,7 @@ class Transaction(models.Model):
 
 
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
     order_type = models.CharField(max_length=30, choices=(
         ('customer', 'سفارش از طریق مشتری'),
         ('employee', 'سفارش از طریق کارمند')
