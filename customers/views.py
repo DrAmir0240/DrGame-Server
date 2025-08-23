@@ -30,13 +30,14 @@ class CustomerProfileCreateAPIView(generics.CreateAPIView):
 class CustomerProfileRetrieveAPIView(generics.RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
+    serializer_class = CustomerProfileSerializer
 
     def get_object(self):
-        return get_object_or_404(Customer, user=self.request.user, is_deleted=False)
-
-    def get_serializer_class(self):
-        obj = self.get_object()
-        return CustomerProfileSerializer
+        customer, created = Customer.objects.get_or_create(
+            user=self.request.user,
+            defaults={'full_name': ''}  # می‌تونی مقادیر اولیه هم بدی
+        )
+        return customer
 
 
 class CustomerOrderListAPIView(generics.ListAPIView):
