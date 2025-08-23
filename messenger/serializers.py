@@ -26,8 +26,8 @@ def user_display_name(user: User) -> str:
     emp = getattr(user, 'employee', None)
     if emp:
         full = f'{emp.first_name or ""} {emp.last_name or ""}'.strip()
-        return full or (user.get_full_name() or user.username or 'نامشخص')
-    return user.get_full_name() or user.username or 'نامشخص'
+        return full or (user or 'نامشخص')
+    return 'نامشخص'
 
 
 def employee_profile_url(user: User):
@@ -253,7 +253,7 @@ class ChatRoomUpdateSerializer(serializers.ModelSerializer):
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.CharField(source='sender.username', read_only=True)
+    sender_name = serializers.SerializerMethodField()
     sender_profile = serializers.SerializerMethodField()
     # ورودی ساده برای reply: فقط id می‌گیریم
     reply_to_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
@@ -268,6 +268,9 @@ class MessageSerializer(serializers.ModelSerializer):
 
     def get_sender_profile(self, obj: Message):
         return employee_profile_url(obj.sender)
+
+    def get_sender_name(self, obj: Message):
+        return user_display_name(obj.sender)
 
     def validate(self, attrs):
         """
