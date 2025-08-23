@@ -704,13 +704,23 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
     customer = serializers.PrimaryKeyRelatedField(
         queryset=Customer.objects.filter(is_deleted=False)
     )
-    order_items = EmployeeOrderItemWriteSerializer(many=True)
-    order_items_show = EmployeeOrderItemSerializer(read_only=True, many=True)
+    order_items = EmployeeOrderItemWriteSerializer(many=True, write_only=True)
+    order_items_show = EmployeeOrderItemSerializer(
+        many=True,
+        read_only=True,
+        source='order_items'
+    )
+    customer_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
-        fields = ['customer', 'order_type', 'description', 'payment_status', 'order_items', 'order_items_show']
+        fields = ['id', 'customer', 'customer_name', 'order_type', 'amount', 'description', 'payment_status',
+                  'order_items',
+                  'order_items_show']
         read_only_fields = ['amount', 'order_type', 'is_deleted', 'created_at', 'updated_at']
+
+    def get_customer_name(self, obj):
+        return obj.customer.full_name if obj.customer else None
 
     def create(self, validated_data):
         order_items_data = validated_data.pop('order_items')
