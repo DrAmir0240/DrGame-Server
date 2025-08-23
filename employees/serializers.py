@@ -998,7 +998,7 @@ class RepairOrderTypeSerializer(serializers.ModelSerializer):
 
 
 class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    customer = serializers.SlugRelatedField(slug_field='full_name', read_only=True)
+    customer_name = serializers.SerializerMethodField()
     order_type = serializers.SlugRelatedField(slug_field='title', read_only=True)
     delivery_to_drgame = DeliveryManSerializer(read_only=True)
     delivery_to_customer = DeliveryManSerializer(read_only=True)
@@ -1006,9 +1006,53 @@ class RepairManRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
     class Meta:
         model = RepairOrder
         fields = "__all__"
-        read_only_fields = ['customer', 'repair_man', 'console',
-                            'payment_status', 'transaction', 'description',
-                            'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def update(self, instance, validated_data):
+        request = self.context.get("request")
+        user = request.user
+
+        new_status = validated_data.get("status", instance.status)
+
+        # شرط 1: اگه سفارش تو صف پذیرش باشه و تعمیرکار بخواد آپدیتش کنه → ست بشه روی repair_man
+        if instance.status == "in_accepting_queue" and new_status == "waiting_for_repairman_fee":
+            instance.repair_man = user.repairman
+
+        # شرط 2: اگه وضعیت از waiting_for_repairman_fee → waiting_for_amount تغییر کنه
+        if instance.status == "waiting_for_repairman_fee" and new_status == "waiting_for_amount":
+            repairman_fee = validated_data.get("repairman_fee")
+            if not repairman_fee:
+                raise serializers.ValidationError({
+                    "repairman_fee": "برای تغییر وضعیت به 'waiting_for_amount' باید مبلغ تعمیرکار را وارد کنید."
+                })
+
+        if instance.status == "waiting_for_amount" and new_status == "waiting_for_customer_to_accept":
+            amount = validated_data.get("amount")
+            if not amount:
+                raise serializers.ValidationError({
+                    "amount": "برای تغییر وضعیت به 'waiting_for_amount' باید مبلغ تعمیرکار را وارد کنید."
+                })
+
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+
+        # وضعیت رو دیفالت دومین مقدار choices می‌ذاریم
+        status_default = "in_accepting_queue"
+
+        # ساخت سفارش
+        order = RepairOrder.objects.create(
+            customer=validated_data['customer'],
+            console=validated_data['console'],
+            description=validated_data['description'],
+            status=status_default,  # دومی از choices
+        )
+        return order
+
+    def get_customer_name(self, obj):
+        if obj.customer:
+            return obj.customer.full_name
+        return None
 
 
 class RepairManTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

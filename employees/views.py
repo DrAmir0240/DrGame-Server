@@ -466,8 +466,8 @@ class EmployeePanelProductOrderChoices(generics.ListAPIView):
         customers = Customer.objects.filter(is_deleted=False)
         products = Product.objects.filter(is_deleted=False)
         response_data = {
-            'customers': EmployeeGameSerializer(customers, many=True).data,
-            'products': EmployeeGameSerializer(products, many=True).data,
+            'customers': EmployeeCustomerSerializer(customers, many=True).data,
+            'products': EmployeeProductSerializer(products, many=True).data,
 
         }
         return Response(response_data)
@@ -1060,7 +1060,6 @@ class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
 
 # ==================== RepairManPanel Views ====================
 class RepairManRepairOrderList(generics.ListAPIView):
-    queryset = RepairOrder.objects.filter(is_deleted=False)
     serializer_class = RepairManRepairOrderSerializer
     permission_classes = [IsRepairman]
     authentication_classes = [CustomJWTAuthentication]
@@ -1069,13 +1068,24 @@ class RepairManRepairOrderList(generics.ListAPIView):
     search_fields = ['order_type', 'status']
     ordering_fields = ['-created_at', 'amount']
 
+    def get_queryset(self):
+        repairman = self.request.user.repairman
+        repair_orders = RepairOrder.objects.filter(Q(repair_man=repairman) | Q(status='in_accepting_queue'),
+                                                   is_deleted=False)
+        return repair_orders
+
 
 class RepairManPanelRepairOrderDetail(generics.RetrieveUpdateAPIView):
-    queryset = RepairOrder.objects.all()
     serializer_class = RepairManRepairOrderSerializer
     permission_classes = [IsRepairman]
     authentication_classes = [CustomJWTAuthentication]
-    lockup_field = 'id'
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        repairman = self.request.user.repairman
+        repair_orders = RepairOrder.objects.filter(Q(repair_man=repairman) | Q(status='in_accepting_queue'),
+                                                   is_deleted=False)
+        return repair_orders
 
 
 class RepairManPanelStatusChoices(generics.ListAPIView):

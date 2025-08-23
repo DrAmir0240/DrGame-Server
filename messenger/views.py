@@ -43,6 +43,9 @@ class ChatRoomListView(generics.ListAPIView):
 class ChatRoomCreateView(generics.CreateAPIView):
     """
     ایجاد چت جدید (فقط MainManager می‌تواند بسازد)
+
+    چت در سه مدل است
+    group, channel, pv
     """
     serializer_class = ChatRoomCreateSerializer
     permission_classes = [IsMainManager]
