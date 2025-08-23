@@ -6,6 +6,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
 from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from DrGame import settings
@@ -843,7 +844,7 @@ class EmployeeResumeList(generics.ListAPIView):
 class EmployeeResumeDelete(generics.DestroyAPIView):
     queryset = EmployeeHire.objects.all().order_by("-created_at")
     serializer_class = EmployeeHireSerializer
-    permission_classes = [IsEmployee | IsMainManager]
+    permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
 
 
