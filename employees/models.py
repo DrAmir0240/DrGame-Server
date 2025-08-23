@@ -117,3 +117,16 @@ class EmployeeRequest(models.Model):
 
     def __str__(self):
         return f'{self.employee}: {self.title}'
+
+
+class EmployeeHire(models.Model):
+    full_name = models.CharField(max_length=100)
+    birth_date = models.DateField()
+    resume_file = models.FileField(upload_to='hire/resume_files/')
+    phone_number = models.CharField(max_length=11)
+    description = models.TextField(max_length=5000)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.full_name}'

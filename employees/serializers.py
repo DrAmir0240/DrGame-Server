@@ -123,32 +123,58 @@ class CustomerDepositSerializer(SoftDeleteSerializerMixin, serializers.Serialize
 
 
 class EmployeeGameImageSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    # برای اینکه بتوانیم در آپدیت، id را از ورودی بخوانیم
+    id = serializers.IntegerField(required=False)
+
     class Meta:
         model = GameImage
-        fields = "__all__"
+        # game را از ورودی حذف می‌کنیم؛ اتصال را خودمان انجام می‌دهیم
+        exclude = ['game']
 
 
 class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    game_images = EmployeeGameImageSerializer(many=True)
+    game_images = EmployeeGameImageSerializer(many=True, required=False)
 
     class Meta:
         model = Game
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
+    def create(self, validated_data):
+        images_data = validated_data.pop('game_images', [])
+        game = Game.objects.create(**validated_data)
+        # ساخت تصاویر جدید (بدون نیاز به game در ورودی)
+        for img_data in images_data:
+            img_data.pop('id', None)     # ورودی id برای ساخت لازم نیست
+            img_data.pop('game', None)   # امنیت بیشتر
+            # اگر کاربر به اشتباه is_deleted=true فرستاد، ایجاد نکن
+            if img_data.get('is_deleted'):
+                continue
+            GameImage.objects.create(game=game, **img_data)
+        return game
+
+    @transaction.atomic
     def update(self, instance, validated_data):
-        game_images_data = validated_data.pop('game_images', None)
+        images_data = validated_data.pop('game_images', None)
 
         # آپدیت خود Game
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
-        if game_images_data is not None:
-            # پاک‌کردن یا آپدیت عکس‌های موجود
-            instance.game_images.all().delete()
-            for img_data in game_images_data:
-                GameImage.objects.create(game=instance, **img_data)
+        if images_data is not None:
+            for img_data in images_data:
+                img_id = img_data.get('id', None)
+                if img_id:
+                    # حذف عکس با id
+                    try:
+                        img_obj = instance.game_images.get(id=img_id)
+                        img_obj.delete()
+                    except GameImage.DoesNotExist:
+                        raise serializers.ValidationError({"game_images": f"Invalid image id: {img_id}"})
+                else:
+                    # ساخت عکس جدید
+                    GameImage.objects.create(game=instance, **img_data)
 
         return instance
 
