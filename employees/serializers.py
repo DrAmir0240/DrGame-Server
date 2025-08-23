@@ -868,7 +868,7 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
                 game=game,
                 amount=price,
             )
-
+        total_amount = total_amount * (customer.discount / 100)
         customer.balance -= total_amount
         customer.save()
         return game_order
@@ -932,9 +932,9 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
         new_amount = sum(item.amount for item in instance.games.filter(is_deleted=False))
         if new_amount != old_amount:
             # برگردوندن مبلغ قبلی به مشتری
-            instance.customer.balance += old_amount
+            instance.customer.balance += old_amount * (instance.customer.discount / 100)
             # کم کردن مبلغ جدید
-            instance.customer.balance -= new_amount
+            instance.customer.balance -= new_amount * (instance.customer.discount / 100)
             instance.customer.save()
             instance.amount = new_amount
             instance.save()
