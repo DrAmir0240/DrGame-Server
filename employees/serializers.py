@@ -963,11 +963,11 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
             instance.save()
 
             for item in instance.games.filter(is_deleted=False):
-                if item.account_setter:
-                    item.account_setter.balance += item.amount * (item.account_setter.comission / 100)
+                if item.account_setter and item.account_setter.commission_amount:
+                    item.account_setter.balance += item.amount * (item.account_setter.commission_amount / 100)
                     item.account_setter.save()
-                if item.data_uploader:
-                    item.data_uploader.balance += item.amount * (item.data_uploader.comission / 100)
+                if item.data_uploader and item.data_uploader.commission_amount:
+                    item.data_uploader.balance += item.amount * (item.data_uploader.commission_amount / 100)
                     item.data_uploader.save()
 
         new_amount = sum(item.amount for item in instance.games.filter(is_deleted=False))
