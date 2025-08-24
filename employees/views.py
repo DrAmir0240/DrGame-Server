@@ -1277,14 +1277,18 @@ class FinanceSummaryAPIView(generics.GenericAPIView):
         total_payment_method_balance = PaymentMethod.objects.filter(
             is_deleted=False
         ).aggregate(total=Sum('balance'))['total'] or 0
+        total_repairman_credit = \
+        Repairman.objects.filter(is_deleted=False, balance__gt=0).aggregate(total=Sum('balance'))[
+            'total'] or 0
 
-        net_balance = total_payment_method_balance - total_employee_credit - total_customer_credit + total_customer_debt + total_employee_debt
+        net_balance = total_payment_method_balance - total_employee_credit - total_customer_credit + total_customer_debt + total_employee_debt - repairman_credit
 
         data = {
             "total_employee_credit": total_employee_credit,
             "total_employee_debt": total_employee_debt,
             "total_customer_credit": total_customer_credit,
             "total_customer_debt": total_customer_debt,
+            "total_repairman_credit": total_repairman_credit,
             "total_payment_method_balance": total_payment_method_balance,
             "net_balance": net_balance
         }
