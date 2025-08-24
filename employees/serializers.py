@@ -134,6 +134,7 @@ class CustomerDepositSerializer(SoftDeleteSerializerMixin, serializers.Serialize
     amount = serializers.IntegerField()
     description = serializers.CharField(required=False, allow_blank=True)
 
+
 class RepairmanDepositSerializer(SoftDeleteSerializerMixin, serializers.Serializer):
     payment_method_id = serializers.IntegerField()
     amount = serializers.IntegerField()
