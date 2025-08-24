@@ -33,7 +33,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
-    RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer
+    RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -1073,6 +1073,52 @@ class RepairmanDetail(generics.RetrieveUpdateDestroyAPIView):
     lockup_field = 'id'
 
 
+class RepairmanDeposit(generics.GenericAPIView):
+    """
+    ایدی در یو ار ال ایدی تعمیرکار است
+    """
+    serializer_class = RepairmanDepositSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        repairman_id = self.kwargs.get('pk')
+        payment_method_id = serializer.validated_data['payment_method_id']
+        amount = serializer.validated_data['amount']
+        description = serializer.validated_data.get('description', '')
+
+        try:
+            payment_method = PaymentMethod.objects.get(id=payment_method_id)
+            repairman = Repairman.objects.get(id=repairman_id)
+        except PaymentMethod.DoesNotExist:
+            return Response({"error": "Payment method not found."}, status=404)
+        except Customer.DoesNotExist:
+            return Response({"error": "Repairman not found."}, status=404)
+
+        # ایجاد تراکنش
+        transaction = Transaction.objects.create(
+            payer=repairman.user,
+            receiver_str='دکترگیم',
+            amount=amount,
+            payment_method=payment_method,
+            in_out=False,
+            description=description
+        )
+
+        # بروزرسانی موجودی‌ها
+        repairman.balance -= amount
+        repairman.save()
+        payment_method.balance -= amount
+        payment_method.save()
+
+        # بازگرداندن تراکنش
+        transaction_serializer = TransactionSerializer(transaction)
+        return Response(transaction_serializer.data, status=201)
+
+
 # ==================== RepairManPanel Views ====================
 class RepairManRepairOrderList(generics.ListAPIView):
     serializer_class = RepairManRepairOrderSerializer
@@ -1278,8 +1324,8 @@ class FinanceSummaryAPIView(generics.GenericAPIView):
             is_deleted=False
         ).aggregate(total=Sum('balance'))['total'] or 0
         total_repairman_credit = \
-        Repairman.objects.filter(is_deleted=False, balance__gt=0).aggregate(total=Sum('balance'))[
-            'total'] or 0
+            Repairman.objects.filter(is_deleted=False, balance__gt=0).aggregate(total=Sum('balance'))[
+                'total'] or 0
 
         net_balance = total_payment_method_balance - total_employee_credit - total_customer_credit + total_customer_debt + total_employee_debt - total_repairman_credit
 

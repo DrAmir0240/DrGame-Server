@@ -133,6 +133,7 @@ urlpatterns = [
     # ==================== RepairMan Views ====================
     path('repairmans/', views.RepairManList.as_view(), name="repairman's-list-add"),
     path('repairmans/<int:pk>/', views.RepairmanDetail.as_view(), name="repairman's-detail"),
+    path('repairmans/<int:pk>/deposit/', views.RepairmanDeposit.as_view(), name='repairman-deposit'),
 
     # ==================== RepairManPanel Views ====================
     path('repairman-panel/orders/', views.RepairManRepairOrderList.as_view(), name="repairman-panel-orders"),
