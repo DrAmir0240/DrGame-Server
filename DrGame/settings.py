@@ -223,6 +223,7 @@ AWS_S3_REGION_NAME = 'us-east-1'
 # FARAZ SMS Configuration
 FARAZ_URL = os.getenv("FARAZ_URL")
 FARAZ_API_KEY = os.getenv("FARAZ_API_KEY")
+FARAZ_SMS_PATTERN = os.getenv("FARAZ_SMS_PATTERN")
 
 # Zarrin Pall
 ZARINPAL_MERCHANT_ID = os.getenv("ZARINPAL_MERCHANT_ID")

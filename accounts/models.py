@@ -51,7 +51,8 @@ class OTP(models.Model):
         return timezone.now() <= self.expires_at
 
     def send_otp(self, phone, otp_code):
-        url = "https://edge.ippanel.com/v1/api/send"
+        url = settings.FARAZ_URL
+        pattern = settings.FARAZ_SMS_PATTERN
         api_key = settings.FARAZ_API_KEY
         phone = '+98' + phone[1:]  # فرمت شماره تلفن
         headers = {
@@ -60,15 +61,16 @@ class OTP(models.Model):
         }
         print(phone)
         print(otp_code)
-        message = f"به دکتر گیم خوش آمدید\ncode : {otp_code}\n\nبزرگترین مرجع نصب بازی‌های کنسول در ایران\nـــــــ"
-        print(message)
         payload = {
-            "sending_type": "webservice",
-            "from_number": "+983000505",  # شماره فرستنده
-            "message": message,
+            "sending_type": "pattern",
+            "from_number": "+983000505",
+            "code": pattern,
+            "recipients": [
+                phone
+            ],
             "params": {
-                "recipients": [phone, ]
-            }
+                "code": otp_code,
+            },
         }
         try:
             response = requests.post(url, json=payload, headers=headers, timeout=10)
