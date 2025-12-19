@@ -283,11 +283,15 @@ class UserStatusView(APIView):
             )
 
         user = request.user
+        is_completed = False
         user_type = None
         user_pic = None
         employee_role = None
         user_name = None
         employee_permissions = {}
+        if hasattr(user, 'customer'):
+            if user.customer.full_name and user.customer.address:
+                is_completed = True
 
         if MainManager.objects.filter(user=user).exists():
             main_manager = get_object_or_404(MainManager, user=user)

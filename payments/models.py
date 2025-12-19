@@ -1,6 +1,8 @@
 import requests
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
+
 from employees.models import Employee, Repairman
 from home.models import Course
 from storage.models import Product, Game, SonyAccount
@@ -223,7 +225,7 @@ GAME_ORDER_CONSOLE_TYPE = (
     ('nintendo', 'nintendo'),
 )
 GAME_ORDER_STATUS = (
-    ('waiting_for_delivery', 'پرداخت شده و در انتظار تحویل به دکتر گیم'),
+    ('waiting_for_delivery', 'در انتظار تحویل به دکتر گیم'),
     ('delivered_to_drgame_and_in_waiting_queue', 'تحویل شده به دکتر گیم و در لیست انتظار'),
     ('account_setting_in_progress', 'در حال ست شدن اکانت'),
     ('in_data_uploading_queue', 'در انتظار اپلود داده'),
@@ -256,14 +258,27 @@ class GameOrder(models.Model):
     transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, blank=True,
                                        related_name='game_order')
     sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
-    delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                              related_name='delivery_console_to_drgame', blank=True)
+    delivery_to_drgame = models.ForeignKey(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                           related_name='delivery_console_to_drgame', blank=True)
     dead_line = models.DateTimeField(null=True, blank=True)
-    delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                                related_name='delivery_console_to_customer', blank=True)
+    delivery_to_customer = models.ForeignKey(DeliveryMan, on_delete=models.SET_NULL, null=True,
+                                             related_name='delivery_console_to_customer', blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.dead_line:
+            base_time = self.created_at or timezone.now()
+
+            if self.dead_line < base_time:
+                raise ValidationError({
+                    'dead_line': 'تاریخ ددلاین نمی‌تواند قبل از تاریخ ایجاد سفارش باشد.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # اجرای clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'سفارش {self.customer.full_name}'
