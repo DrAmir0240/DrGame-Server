@@ -355,6 +355,7 @@ class UserStatusView(APIView):
             {
                 "is_authenticated": True,
                 "user_type": user_type,
+                "is_completed_profile": is_completed,
                 "employee_role": employee_role,
                 "user_name": user_name,
                 "user_id": user.id,
