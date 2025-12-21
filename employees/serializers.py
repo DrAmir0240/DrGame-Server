@@ -247,7 +247,7 @@ class EmployeeSonyAccountStatusSerializer(SoftDeleteSerializerMixin, serializers
 
 class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     employee_name = serializers.SerializerMethodField()
-    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
+    games = serializers.SerializerMethodField(read_only=True)
     status_title = serializers.SerializerMethodField()
     game_ids = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
@@ -267,6 +267,15 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
         if obj.status:
             return obj.status.title
         return None
+
+    def get_games(self, obj):
+        return [
+            {
+                "id": game.id,
+                "title": game.title
+            }
+            for game in obj.games.filter(is_deleted=False)
+        ]
 
     def update(self, instance, validated_data):
         game_ids = validated_data.pop("game_ids", None)
