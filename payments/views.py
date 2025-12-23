@@ -302,14 +302,14 @@ class AssignDeliveryToDrGameForGameOrder(APIView):
 
 
 class DeliveredGameOrderToCustomer(generics.UpdateAPIView):
-    queryset = GameOrder.objects.filter(is_deleted=False, status='done')
     serializer_class = RepairOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'id'
 
     def get_queryset(self):
-        return self.queryset.filter(self.request.user.customer)
+        qs = GameOrder.objects.filter(is_deleted=False, status='done', customer=self.request.user)
+        return qs
 
     def perform_update(self, serializer):
         serializer.save(status='delivered_to_customer')
@@ -384,14 +384,14 @@ class RequestPaymentForRepairOrder(generics.GenericAPIView):
 
 
 class DeliveredRepairOrderToCustomer(generics.UpdateAPIView):
-    queryset = RepairOrder.objects.filter(is_deleted=False, status='done')
     serializer_class = GameOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
     lookup_field = 'id'
 
     def get_queryset(self):
-        return self.queryset.filter(self.request.user.customer)
+        qs = RepairOrder.objects.filter(is_deleted=False, status='done', customer=self.request.user.customer)
+        return qs
 
     def perform_update(self, serializer):
         serializer.save(status='delivered_to_customer')
