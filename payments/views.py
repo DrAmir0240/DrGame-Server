@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation.trans_real import translation
 from rest_framework import generics, permissions
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -302,13 +302,13 @@ class AssignDeliveryToDrGameForGameOrder(APIView):
 
 
 class DeliveredGameOrderToCustomer(generics.UpdateAPIView):
-    serializer_class = RepairOrderSerializer
-    permission_classes = [IsCustomer]
+    serializer_class = GameOrderSerializer
+    permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'id'
+    lookup_field = 'pk'
 
     def get_queryset(self):
-        qs = GameOrder.objects.filter(is_deleted=False, status='done', customer=self.request.user)
+        qs = GameOrder.objects.filter(is_deleted=False, status='done', customer=self.request.user.customer)
         return qs
 
     def perform_update(self, serializer):
@@ -384,10 +384,10 @@ class RequestPaymentForRepairOrder(generics.GenericAPIView):
 
 
 class DeliveredRepairOrderToCustomer(generics.UpdateAPIView):
-    serializer_class = GameOrderSerializer
+    serializer_class = RepairOrderSerializer
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'id'
+    lookup_field = 'pk'
 
     def get_queryset(self):
         qs = RepairOrder.objects.filter(is_deleted=False, status='done', customer=self.request.user.customer)

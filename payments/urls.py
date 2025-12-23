@@ -19,7 +19,7 @@ urlpatterns = [
          name='assign_game-order-delivery_to_drgame'),
     path('game-orders/request-payment/<int:game_order_id>/', views.RequestPaymentForGameOrder.as_view(),
          name='game-order-request-payment'),
-    path('game-orders/<int:order_id>/delivered-to-customer/', views.DeliveredGameOrderToCustomer.as_view(),
+    path('game-orders/<int:pk>/delivered-to-customer/', views.DeliveredGameOrderToCustomer.as_view(),
          name='delivered-game-order-to-customer'),
 
     # ==================== RepairOrder Views ====================
@@ -29,9 +29,9 @@ urlpatterns = [
          name='assign-repair-order-delivery_to_drgame'),
     path('repair-orders/request-payment/<int:repair_order_id>/', views.RequestPaymentForRepairOrder.as_view(),
          name='repair-order-request-payment'),
-    path('repair-orders/<int:order_id>/delivered-to-customer/', views.DeliveredRepairOrderToCustomer.as_view(),
+    path('repair-orders/<int:pk>/delivered-to-customer/', views.DeliveredRepairOrderToCustomer.as_view(),
          name='delivered-repair-order-to-customer'),
-    # ==================== RepairOrder Views ====================
+    # ==================== CourseOrder Views ====================
     path('course-orders/create/', views.CourseOrderCreate.as_view(), name='course-make-order'),
     path('course-orders/<int:id>/', views.CourseOrderDetail.as_view(), name='course-order-detail'),
     path('course-orders/request-payment/<int:order_id>/', views.RequestPaymentForCourseOrder.as_view(),
