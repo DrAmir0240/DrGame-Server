@@ -1032,6 +1032,7 @@ class EmployeePanelDocCategory(generics.ListCreateAPIView):
     serializer_class = EmployeeDocCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = None
 
 
 # ==================== Real Assets Views ====================
