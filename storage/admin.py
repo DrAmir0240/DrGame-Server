@@ -92,3 +92,17 @@ class DocumentAdmin(admin.ModelAdmin):
     class Media:
         fields = '__all__'
         search_fields = '__all__'
+
+
+@admin.register(models.RealAssetsCategory)
+class RealAssetsCategoryAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
+@admin.register(models.RealAssets)
+class RealAssetsAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'

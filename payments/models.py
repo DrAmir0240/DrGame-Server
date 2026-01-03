@@ -37,6 +37,16 @@ class PaymentMethod(models.Model):
         return f'Payment method #{self.title}'
 
 
+class TransactionCategory(models.Model):
+    title = models.CharField(max_length=100)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Transaction category #{self.title}'
+
+
 class Transaction(models.Model):
     payer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='payer')
     payer_str = models.CharField(max_length=100, null=True, blank=True)
@@ -44,6 +54,8 @@ class Transaction(models.Model):
     receiver_str = models.CharField(max_length=100, null=True, blank=True)
     payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True,
                                        related_name='transactions')
+    category = models.ForeignKey(TransactionCategory, on_delete=models.SET_NULL, null=True, blank=True,
+                                 related_name='transactions')
     amount = models.PositiveIntegerField()
     authority = models.CharField(max_length=100, blank=True)
     ref_id = models.CharField(max_length=100, blank=True, null=True)
