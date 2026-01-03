@@ -95,6 +95,7 @@ class SonyAccountBank(models.Model):
 class Game(models.Model):
     title = models.CharField(max_length=100, unique=True, null=True)
     main_img = models.ImageField(null=True, blank=True, upload_to="main_img/game/")
+    volume = models.PositiveIntegerField(null=True, blank=True)
     online_ps4_price = models.IntegerField(null=True, blank=True)
     online_ps5_price = models.IntegerField(null=True, blank=True)
     offline_ps4_price = models.IntegerField(null=True, blank=True)
@@ -210,10 +211,23 @@ class DocCategory(models.Model):
         return self.title
 
 
+class DocSubCategory(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    category = models.ForeignKey(DocCategory, on_delete=models.SET_NULL, null=True,
+                                 related_name='sub_cats')
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
 class Document(models.Model):
     title = models.CharField(max_length=100)
     file = models.FileField(upload_to='docs/')
-    category = models.ForeignKey(DocCategory, on_delete=models.SET_NULL, null=True)
+    category = models.ForeignKey(DocSubCategory, on_delete=models.SET_NULL, null=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -233,10 +247,25 @@ class RealAssetsCategory(models.Model):
         return self.title
 
 
+class RealAssetsSubCategory(models.Model):
+    title = models.CharField(max_length=100, unique=True)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    category = models.ForeignKey(RealAssetsCategory, on_delete=models.SET_NULL, null=True,
+                                 related_name='sub_cats')
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
 class RealAssets(models.Model):
     title = models.CharField(max_length=100)
     image = models.FileField(upload_to='real_assets/photos/', blank=True, null=True)
-    category = models.ForeignKey(RealAssetsCategory, on_delete=models.SET_NULL, null=True, related_name='real_assets')
+    category = models.ForeignKey(RealAssetsSubCategory, on_delete=models.SET_NULL, null=True,
+                                 related_name='real_assets')
+    price = models.IntegerField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
