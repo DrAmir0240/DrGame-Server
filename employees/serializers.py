@@ -995,7 +995,7 @@ class EmployeeTelegramOrderSerializer(serializers.ModelSerializer):
     sony_account_game_list = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model: TelegramOrder
+        model= TelegramOrder
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
