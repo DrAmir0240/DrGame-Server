@@ -4,7 +4,7 @@ from employees.models import EmployeeTask, EmployeeRequest
 from django_filters import rest_framework as filters
 
 from payments.models import Transaction, GameOrder, RepairOrder
-from storage.models import SonyAccount, Document, RealAssets
+from storage.models import SonyAccount, Document, RealAssets, Product
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -128,3 +128,51 @@ class RealAssetsFilter(django_filters.FilterSet):
     class Meta:
         model = RealAssets
         fields = ["category", "sub_category", "min_price", "max_price"]
+
+
+class EmployeeProductFilter(django_filters.FilterSet):
+    # --- Relation Filters ---
+    category = django_filters.NumberFilter(field_name="category_id")
+    company = django_filters.NumberFilter(field_name="company_id")
+    color = django_filters.NumberFilter(field_name="color_id")
+
+    # --- Price Range ---
+    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
+    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+
+    # --- Stock / Sales ---
+    min_stock = django_filters.NumberFilter(field_name="stock", lookup_expr="gte")
+    max_stock = django_filters.NumberFilter(field_name="stock", lookup_expr="lte")
+    min_units_sold = django_filters.NumberFilter(field_name="units_sold", lookup_expr="gte")
+    max_units_sold = django_filters.NumberFilter(field_name="units_sold", lookup_expr="lte")
+
+    # --- Date Filters ---
+    created_from = django_filters.DateFilter(field_name="created_at", lookup_expr="gte")
+    created_to = django_filters.DateFilter(field_name="created_at", lookup_expr="lte")
+
+    # --- Boolean Logic ---
+    in_stock = django_filters.BooleanFilter(method="filter_in_stock")
+
+    def filter_in_stock(self, queryset, name, value):
+        if value is True:
+            return queryset.filter(stock__gt=0)
+        if value is False:
+            return queryset.filter(stock=0)
+        return queryset
+
+    class Meta:
+        model = Product
+        fields = [
+            "category",
+            "company",
+            "color",
+            "min_price",
+            "max_price",
+            "min_stock",
+            "max_stock",
+            "min_units_sold",
+            "max_units_sold",
+            "created_from",
+            "created_to",
+            "in_stock",
+        ]

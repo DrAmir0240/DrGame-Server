@@ -15,7 +15,8 @@ from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
-    SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter, DocumentFilter, RealAssetsFilter
+    SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter, DocumentFilter, RealAssetsFilter, \
+    EmployeeProductFilter
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -329,9 +330,31 @@ class EmployeePanelOrganizeTaskChoices(generics.ListAPIView):
 # ==================== Product Views ====================
 class EmployeePanelProductList(generics.ListAPIView):
     serializer_class = EmployeeProductSerializer
-    queryset = Product.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+
+    filterset_class = EmployeeProductFilter
+    search_fields = [
+        "title",
+        "category__title",
+        "company__title",
+        "color__title",
+    ]
+    ordering_fields = [
+        "created_at",
+        "price",
+        "stock",
+        "units_sold",
+    ]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        return (
+            Product.objects
+            .filter(is_deleted=False)
+            .select_related("category", "company", "color")
+            .prefetch_related("images")
+        )
 
 
 class EmployeePanelProductDetail(generics.RetrieveUpdateDestroyAPIView):
