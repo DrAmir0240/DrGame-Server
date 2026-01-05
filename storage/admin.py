@@ -87,6 +87,13 @@ class DocCategoryAdmin(admin.ModelAdmin):
         search_fields = '__all__'
 
 
+@admin.register(models.DocSubCategory)
+class DocSubCategoryAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
 @admin.register(models.Document)
 class DocumentAdmin(admin.ModelAdmin):
     class Media:
@@ -96,6 +103,13 @@ class DocumentAdmin(admin.ModelAdmin):
 
 @admin.register(models.RealAssetsCategory)
 class RealAssetsCategoryAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
+@admin.register(models.RealAssetsSubCategory)
+class RealAssetsSubCategoryAdmin(admin.ModelAdmin):
     class Media:
         fields = '__all__'
         search_fields = '__all__'
