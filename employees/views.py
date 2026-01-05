@@ -106,7 +106,7 @@ class EmployeePanelOwnedSonyAccountList(generics.ListAPIView):
     serializer_class = EmployeeSonyAccountSerializer
     permission_classes = [IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = SonyAccountPersonalFilter
     search_fields = ['username', 'status__title']
 
@@ -344,7 +344,7 @@ class EmployeePanelProductList(generics.ListAPIView):
     serializer_class = EmployeeProductSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = EmployeeProductFilter
     search_fields = [
         "title",
@@ -595,6 +595,7 @@ class EmployeePanelTelegramOrderList(generics.ListAPIView):
     serializer_class = EmployeeTelegramOrderSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TelegramOrderFilter
 
     def get_queryset(self):
@@ -1112,6 +1113,7 @@ class DocumentListAPIView(generics.ListAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = DocumentFilter
     search_fields = ["title"]
     ordering_fields = ["created_at"]
@@ -1160,6 +1162,7 @@ class RealAssetsSubCategoryListAPIView(generics.ListAPIView):
     serializer_class = RealAssetsSubCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ["category"]
     pagination_class = None
 
@@ -1177,6 +1180,7 @@ class RealAssetsListAPIView(generics.ListAPIView):
     serializer_class = RealAssetsSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = RealAssetsFilter
     search_fields = ["title"]
     ordering_fields = ["created_at", "price"]
@@ -1531,6 +1535,7 @@ class ProductsStatsAPIView(generics.GenericAPIView):
     serializer_class = ProductStatsSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = EmployeeProductFilter  # همون فیلتر لیست
 
     def get_queryset(self):
@@ -1561,6 +1566,7 @@ class RealAssetStatsAPIView(generics.GenericAPIView):
     serializer_class = RealAssetStatsSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = RealAssetsFilter
 
     def get_queryset(self):
