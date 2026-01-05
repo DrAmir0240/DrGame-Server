@@ -3,7 +3,7 @@ import django_filters
 from employees.models import EmployeeTask, EmployeeRequest
 from django_filters import rest_framework as filters
 
-from payments.models import Transaction, GameOrder, RepairOrder
+from payments.models import Transaction, GameOrder, RepairOrder, GAME_ORDER_CONSOLE_TYPE
 from storage.models import SonyAccount, Document, RealAssets, Product
 
 
@@ -55,7 +55,10 @@ class TransactionFilter(filters.FilterSet):
     payment_method = filters.NumberFilter(field_name='payment_method__id')
     in_out = filters.BooleanFilter(field_name='in_out')
     order_type = filters.CharFilter(method='filter_by_order_type')
-
+    game_console_type = filters.ChoiceFilter(
+        method='filter_by_game_console_type',
+        choices=GAME_ORDER_CONSOLE_TYPE
+    )
     created_at_after = filters.DateFilter(field_name='created_at', lookup_expr='gte')
     created_at_before = filters.DateFilter(field_name='created_at', lookup_expr='lte')
 
@@ -65,6 +68,8 @@ class TransactionFilter(filters.FilterSet):
             'payer', 'payer_str',
             'receiver', 'receiver_str',
             'payment_method', 'in_out',
+            'order_type',
+            'game_console_type',
             'created_at_after', 'created_at_before'
         ]
 
@@ -78,6 +83,16 @@ class TransactionFilter(filters.FilterSet):
         elif value == 'normal':
             return queryset.filter(order__isnull=False)
         return queryset
+
+    def filter_by_game_console_type(self, queryset, name, value):
+        """
+        فیلتر تراکنش‌هایی که مربوط به GameOrder هستند
+        و order_console_type مشخص دارند
+        """
+        return queryset.filter(
+            game_order__isnull=False,
+            game_order__order_console_type=value
+        )
 
 
 class SonyAccountFilter(filters.FilterSet):

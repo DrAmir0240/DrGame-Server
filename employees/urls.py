@@ -75,7 +75,7 @@ urlpatterns = [
     path('repair-orders/', views.EmployeePanelRepairOrderList.as_view(), name='repair-order-list-add'),
     path('repair-orders/<int:pk>/', views.EmployeePanelRepairOrderDetail.as_view(), name='repair-order-detail'),
     path('repair-orders/<int:order_id>/assign-delivery-to-customer/',
-         views.AssignDeliveryToCustomerForGamedOrder.as_view(),
+         views.AssignDeliveryToCustomerForRepairOrder.as_view(),
          name='assign-delivery-to-customer-for-repair-orders'),
     path("repair-orders/<int:repair_order_id>/create-transaction/",
          views.EmployeePanelCreateRepairOrderTransactionView.as_view(),
@@ -86,7 +86,8 @@ urlpatterns = [
     path('course-orders/<int:pk>/', views.EmployeePanelCourseOrdersDetail.as_view(), name='course-order-detail'),
 
     # ==================== Transactions Views ====================
-    path('transactions/', views.EmployeePanelTransactionList.as_view(), name='transaction-list'),
+    path('transactions/in/', views.EmployeePanelInTransactionList.as_view(), name='transaction-in-list'),
+    path('transactions/out/', views.EmployeePanelOutTransactionList.as_view(), name='transaction-out-list'),
     path('transactions/<int:pk>/', views.EmployeePanelTransactionDetail.as_view(), name='transaction-detail'),
     path('transactions/in/add/', views.EmployeePanelAddIncomingTransactionView.as_view(), name='in-transaction-add'),
     path('transactions/out/add/', views.EmployeePanelAddOutGoingTransaction.as_view(), name='out-transaction-add'),

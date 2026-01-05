@@ -630,15 +630,32 @@ class EmployeePanelCourseOrdersDetail(generics.RetrieveAPIView):
 
 
 # ==================== Transactions Views ====================
-class EmployeePanelTransactionList(generics.ListAPIView):
-    queryset = Transaction.objects.filter(is_deleted=False)
+class EmployeePanelInTransactionList(generics.ListAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False, in_out=True)
     serializer_class = EmployeeTransactionSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_class = TransactionFilter
     search_fields = [
-        'description',
+        'description', 'category',
+        'payment_method__title',
+        'payer__customer__full_name',
+        'receiver__employee__first_name',
+        'receiver__employee__last_name',
+    ]
+    ordering_fields = ['created_at', 'amount']
+
+
+class EmployeePanelOutTransactionList(generics.ListAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False, in_out=False)
+    serializer_class = EmployeeTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = TransactionFilter
+    search_fields = [
+        'description', 'category',
         'payment_method__title',
         'payer__customer__full_name',
         'receiver__employee__first_name',
