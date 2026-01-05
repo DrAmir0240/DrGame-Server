@@ -80,7 +80,7 @@ class GameSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'main_img', 'game_images', 'description', 'is_trend', 'units_sold',
                   'online_ps4_price', 'online_ps5_price', 'offline_ps4_price',
                   'offline_ps5_price', 'data_ps4_price', 'data_ps5_price',
-                  'xbox_price', 'nintendo_price',
+                  'xbox_price', 'nintendo_price', 'volume',
                   'is_deleted', 'created_at', 'updated_at']
 
     def validate(self, data):

@@ -101,8 +101,6 @@ class GameCartChoicesSerializer(serializers.Serializer):
 class GameCartItemSerializer(serializers.ModelSerializer):
     game = GameSerializer(read_only=True)
 
-    # game = serializers.SlugRelatedField(read_only=True, slug_field='title')
-
     class Meta:
         model = GameCartItem
         fields = "__all__"
@@ -111,11 +109,16 @@ class GameCartItemSerializer(serializers.ModelSerializer):
 
 class GameCartSerializer(serializers.ModelSerializer):
     games = GameCartItemSerializer(many=True)
+    volume = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = GameCart
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def get_volume(self, obj):
+        volume = sum(game.volume for game in obj.games.all())
+        return volume
 
 
 ######################################

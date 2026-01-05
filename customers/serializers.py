@@ -79,11 +79,12 @@ class GameOrderSerializer(serializers.ModelSerializer):
     games = GameOrderItemSerializer(many=True, read_only=True)
     delivery_to_drgame = serializers.SerializerMethodField()
     delivery_to_customer = serializers.SerializerMethodField()
+    volume = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = GameOrder
         fields = ['id', 'order_type', 'amount', 'status', 'payment_status', 'games', 'created_at', 'dead_line',
-                  'delivery_to_drgame', 'delivery_to_customer']
+                  'delivery_to_drgame', 'delivery_to_customer', 'volume']
         read_only_fields = fields
 
     def get_delivery_to_drgame(self, obj):
@@ -95,6 +96,10 @@ class GameOrderSerializer(serializers.ModelSerializer):
         if obj.delivery_to_customer:
             return f'{obj.delivery_to_customer.full_name} : {obj.delivery_to_customer.phone_number}'
         return None
+
+    def get_volume(self, obj):
+        volume = sum(game.volume for game in obj.games.all())
+        return volume
 
 
 class RepairOrderSerializer(serializers.ModelSerializer):
