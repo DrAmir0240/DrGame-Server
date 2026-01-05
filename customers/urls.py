@@ -23,7 +23,7 @@ urlpatterns = [
     path('orders/course/<int:pk>/', views.CustomerCourseOrderRetrieveAPIView.as_view(), name='course-order-detail'),
 
     # transactions
-    path('personal/transactions/balance/', views.CustomerSelfBalance.as_view(),
+    path('transactions/balance/', views.CustomerSelfBalance.as_view(),
          name='customer-balance'),
     path('transactions/', views.CustomerTransactionListAPIView.as_view(), name='customer-transactions'),
     path('transactions/<int:pk>/', views.CustomerTransactionRetrieveAPIView.as_view(),
