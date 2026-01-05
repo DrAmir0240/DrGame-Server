@@ -139,10 +139,13 @@ class RealAssetsFilter(django_filters.FilterSet):
     max_price = django_filters.NumberFilter(
         field_name="price", lookup_expr="lte"
     )
+    employee = django_filters.NumberFilter(
+        field_name="employee__id"
+    )
 
     class Meta:
         model = RealAssets
-        fields = ["category", "sub_category", "min_price", "max_price"]
+        fields = ["category", "sub_category", "employee", "min_price", "max_price"]
 
 
 class EmployeeProductFilter(django_filters.FilterSet):

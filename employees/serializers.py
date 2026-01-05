@@ -995,7 +995,7 @@ class EmployeeTelegramOrderSerializer(serializers.ModelSerializer):
     sony_account_game_list = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model= TelegramOrder
+        model = TelegramOrder
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
@@ -1095,6 +1095,7 @@ class RealAssetsSerializer(serializers.ModelSerializer):
     main_category_title = serializers.CharField(
         source="category.category.title", read_only=True
     )
+    employee_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = RealAssets
@@ -1108,7 +1109,14 @@ class RealAssetsSerializer(serializers.ModelSerializer):
             "main_category_id",
             "main_category_title",
             "created_at",
+            "employee",
+            "employee_name"
         ]
+
+    def get_employee_name(self, obj):
+        if obj.employee:
+            return obj.employee.first_name + " " + obj.employee.last_name
+        return ""
 
 
 class EmployeeCourseOrderSerializer(serializers.ModelSerializer):

@@ -265,6 +265,7 @@ class RealAssets(models.Model):
     image = models.FileField(upload_to='real_assets/photos/', blank=True, null=True)
     category = models.ForeignKey(RealAssetsSubCategory, on_delete=models.SET_NULL, null=True,
                                  related_name='real_assets')
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, related_name='real_assets')
     price = models.IntegerField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
