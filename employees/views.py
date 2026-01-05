@@ -1108,6 +1108,8 @@ class DocCategoryListAPIView(generics.ListAPIView):
 
 class DocCategoryCreateAPIView(generics.CreateAPIView):
     serializer_class = DocCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
 
 class DocSubCategoryListAPIView(generics.ListAPIView):
@@ -1123,6 +1125,8 @@ class DocSubCategoryListAPIView(generics.ListAPIView):
 
 class DocSubCategoryCreateAPIView(generics.CreateAPIView):
     serializer_class = DocSubCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
 
 
 class DocumentListAPIView(generics.ListAPIView):

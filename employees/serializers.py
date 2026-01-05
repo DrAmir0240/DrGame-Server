@@ -1034,7 +1034,6 @@ class DocCategorySerializer(serializers.ModelSerializer):
 
 
 class DocSubCategorySerializer(serializers.ModelSerializer):
-    category_id = serializers.IntegerField(source="category.id", read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
 
     class Meta:
@@ -1043,13 +1042,12 @@ class DocSubCategorySerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
-            "category_id",
+            "category",
             "category_title",
         ]
 
 
 class DocumentSerializer(serializers.ModelSerializer):
-    category_id = serializers.IntegerField(source="category.id", read_only=True)
     sub_category_title = serializers.CharField(source="category.title", read_only=True)
     main_category_id = serializers.IntegerField(source="category.category.id", read_only=True)
     main_category_title = serializers.CharField(source="category.category.title", read_only=True)
@@ -1060,7 +1058,7 @@ class DocumentSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "file",
-            "category_id",
+            "category",
             "sub_category_title",
             "main_category_id",
             "main_category_title",
@@ -1075,7 +1073,6 @@ class RealAssetsCategorySerializer(serializers.ModelSerializer):
 
 
 class RealAssetsSubCategorySerializer(serializers.ModelSerializer):
-    category_id = serializers.IntegerField(source="category.id", read_only=True)
     category_title = serializers.CharField(source="category.title", read_only=True)
 
     class Meta:
@@ -1084,13 +1081,12 @@ class RealAssetsSubCategorySerializer(serializers.ModelSerializer):
             "id",
             "title",
             "description",
-            "category_id",
+            "category",
             "category_title",
         ]
 
 
 class RealAssetsSerializer(serializers.ModelSerializer):
-    sub_category_id = serializers.IntegerField(source="category.id", read_only=True)
     sub_category_title = serializers.CharField(source="category.title", read_only=True)
 
     main_category_id = serializers.IntegerField(
@@ -1108,7 +1104,7 @@ class RealAssetsSerializer(serializers.ModelSerializer):
             "title",
             "image",
             "price",
-            "sub_category_id",
+            "category",
             "sub_category_title",
             "main_category_id",
             "main_category_title",
