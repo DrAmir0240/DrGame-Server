@@ -1,6 +1,6 @@
 import requests
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, Count, Sum
+from django.db.models import Q, Count, Sum, F, DecimalField
 from django.utils.dateparse import parse_date
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
@@ -35,7 +35,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
     RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer, \
     DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, RealAssetsSerializer, \
-    RealAssetsSubCategorySerializer, RealAssetsCategorySerializer
+    RealAssetsSubCategorySerializer, RealAssetsCategorySerializer, RealAssetStatsSerializer, ProductStatsSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -1497,6 +1497,63 @@ class CustomerStatsAPIView(generics.GenericAPIView):
             'customers': qs.count(),
         }
         serializer = self.get_serializer(data)
+        return Response(serializer.data)
+
+
+class ProductsStatsAPIView(generics.GenericAPIView):
+    serializer_class = ProductStatsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_class = EmployeeProductFilter  # همون فیلتر لیست
+
+    def get_queryset(self):
+        return (
+            Product.objects
+            .filter(is_deleted=False)
+            .select_related("category", "company", "color")
+        )
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        total_value = queryset.aggregate(
+            total_value=Sum(
+                F("price") * F("stock"),
+                output_field=DecimalField(max_digits=25, decimal_places=5)
+            )
+        )["total_value"] or 0
+
+        serializer = self.get_serializer({
+            "total_value": total_value
+        })
+
+        return Response(serializer.data)
+
+
+class RealAssetStatsAPIView(generics.GenericAPIView):
+    serializer_class = RealAssetStatsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_class = RealAssetsFilter
+
+    def get_queryset(self):
+        return (
+            RealAssets.objects
+            .filter(is_deleted=False)
+            .select_related("category", "category__category")
+        )
+
+    def get(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        total_price = queryset.aggregate(
+            value_sum=Sum("price")
+        )["value_sum"] or 0
+
+        serializer = self.get_serializer({
+            "value_sum": total_price
+        })
+
         return Response(serializer.data)
 
 

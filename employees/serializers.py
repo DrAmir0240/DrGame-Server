@@ -1265,6 +1265,14 @@ class CustomerStatsSerializer(serializers.Serializer):
     customers = serializers.IntegerField()
 
 
+class ProductStatsSerializer(serializers.Serializer):
+    total_value = serializers.DecimalField(max_digits=25, decimal_places=5)
+
+
+class RealAssetStatsSerializer(serializers.Serializer):
+    value_sum = serializers.IntegerField()
+
+
 class SellReportSerializer(serializers.Serializer):
     game_income = serializers.IntegerField()
     game_count = serializers.IntegerField()

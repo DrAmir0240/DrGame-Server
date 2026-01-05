@@ -155,6 +155,7 @@ urlpatterns = [
          name="repairman-panel-in-transaction-list"),
     path('repairman-panel/transaction/out/', views.RepairManPanelOutTransactionList.as_view(),
          name="repairman-panel-out-transaction-list"),
+
     # ==================== Stats Views ====================
     path('stats/employee-tasks/', views.TaskStatsAPIView.as_view(), name="employee-task-stats"),
     path('stats/game-orders/', views.GameOrderStatsAPIView.as_view(), name="game-order-stats"),
@@ -165,11 +166,16 @@ urlpatterns = [
     path('stats/finance/', views.FinanceSummaryAPIView.as_view(), name="finance-stats"),
     path('stats/employees/', views.EmployeeStatsAPIView.as_view(), name="employees-stats"),
     path('stats/customers/', views.CustomerStatsAPIView.as_view(), name="customers-stats"),
+    path('stats/real-assets/', views.RealAssetStatsAPIView.as_view(), name="real-assets-stats"),
+    path('stats/products/', views.ProductsStatsAPIView.as_view(), name="products-stats"),
+
     # ==================== Reports Views ====================
     path('reports/sell/', views.SellReportsAPIView.as_view(), name="sell-reports"),
     path('reports/finance/', views.FinanceReportsAPIView.as_view(), name="finance-reports"),
     path('reports/employee/', views.PerFormanceReportAPIView.as_view(), name="employee-reports"),
     path('reports/customer/', views.CustomerReportAPIView.as_view(), name="customer-reports"),
+
+    # ==================== Requests Views ====================
     path('requests/', views.EmployeePanelRequests.as_view(), name='requests'),
     path('requests/<int:pk>/', views.EmployeePanelRequestsDetail.as_view(), name='requests-detail'),
     path('requests/choices/', views.EmployeePanelRequestChoices.as_view(), name='requests-choices'),
