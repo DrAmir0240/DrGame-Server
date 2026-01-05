@@ -20,6 +20,7 @@ urlpatterns = [
     path('personal/game-orders/owned/', views.EmployeePanelOwnedGameOrderList.as_view(), name='owned-game-order-list'),
     path('personal/game-orders/owned/<int:pk>/', views.EmployeePanelOwnedGameOrderDetail.as_view(),
          name='owned-game-order-detail'),
+    path('personal/telegram-orders/', views.EmployeePanelPersonalTelegramOrderList.as_view(), name='telegram-orders'),
 
     # -------------------- Tasks --------------------
     path('personal/tasks/', views.EmployeePanelTaskList.as_view(), name='personal-task-list'),
@@ -80,6 +81,8 @@ urlpatterns = [
     path("repair-orders/<int:repair_order_id>/create-transaction/",
          views.EmployeePanelCreateRepairOrderTransactionView.as_view(),
          name="create-repair-order-transaction"),
+    # ==================== RepairOrders Views ====================
+    path('telegram-orders/', views.EmployeePanelTelegramOrderList.as_view(), name='telegram-orders'),
 
     # ==================== CourseOrders Views ====================
     path('course-orders/', views.EmployeePanelCourseOrdersList.as_view(), name='course-order-list'),

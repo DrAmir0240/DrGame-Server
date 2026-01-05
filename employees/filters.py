@@ -3,7 +3,7 @@ import django_filters
 from employees.models import EmployeeTask, EmployeeRequest
 from django_filters import rest_framework as filters
 
-from payments.models import Transaction, GameOrder, RepairOrder, GAME_ORDER_CONSOLE_TYPE
+from payments.models import Transaction, GameOrder, RepairOrder, GAME_ORDER_CONSOLE_TYPE, TelegramOrder
 from storage.models import SonyAccount, Document, RealAssets, Product
 
 
@@ -191,3 +191,11 @@ class EmployeeProductFilter(django_filters.FilterSet):
             "created_to",
             "in_stock",
         ]
+
+
+class TelegramOrderFilter(django_filters.FilterSet):
+    employee = django_filters.NumberFilter(field_name="employee_id")
+
+    class Meta:
+        model = TelegramOrder
+        fields = ["employee"]

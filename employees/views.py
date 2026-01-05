@@ -16,7 +16,7 @@ from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsR
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
     SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter, DocumentFilter, RealAssetsFilter, \
-    EmployeeProductFilter
+    EmployeeProductFilter, TelegramOrderFilter
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -35,7 +35,8 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
     RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer, \
     DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, RealAssetsSerializer, \
-    RealAssetsSubCategorySerializer, RealAssetsCategorySerializer, RealAssetStatsSerializer, ProductStatsSerializer
+    RealAssetsSubCategorySerializer, RealAssetsCategorySerializer, RealAssetStatsSerializer, ProductStatsSerializer, \
+    EmployeeTelegramOrderSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -193,6 +194,17 @@ class EmployeePanelOwnedGameOrderDetail(generics.RetrieveUpdateDestroyAPIView):
             ).order_by('-created_at').select_related('customer').prefetch_related('games')
 
         return GameOrder.objects.none()
+
+
+class EmployeePanelPersonalTelegramOrderList(generics.ListAPIView):
+    serializer_class = EmployeeTelegramOrderSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        if hasattr(self.request.user, 'employee'):
+            return TelegramOrder.objects.filter(employee=self.request.user.employee)
+        return TelegramOrder.objects.none()
 
 
 # -------------------- tasks --------------------
@@ -576,6 +588,21 @@ class AssignDeliveryToCustomerForGamedOrder(generics.GenericAPIView):
             repair_order.delivery_to_customer = deliveryman
             repair_order.save()
             return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
+
+
+# ==================== TelegramOrders Views ====================
+class EmployeePanelTelegramOrderList(generics.ListAPIView):
+    serializer_class = EmployeeTelegramOrderSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_class = TelegramOrderFilter
+
+    def get_queryset(self):
+        return (
+            TelegramOrder.objects
+            .filter(is_deleted=False)
+            .select_related("employee", "sony_account")
+        )
 
 
 # ==================== RepairOrders Views ====================

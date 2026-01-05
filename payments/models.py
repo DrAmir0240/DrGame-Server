@@ -369,6 +369,7 @@ class TelegramOrder(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
     sony_account = models.ForeignKey(SonyAccount, on_delete=models.PROTECT)
     amount = models.IntegerField()
+    customer_tel_id = models.CharField(max_length=100, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

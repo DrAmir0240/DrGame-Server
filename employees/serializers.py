@@ -9,7 +9,7 @@ from customers.models import Customer
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeFile, EmployeeRequest, EmployeeHire
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
-    CourseOrder, RepairOrderType
+    CourseOrder, RepairOrderType, TelegramOrder
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank, \
@@ -990,6 +990,25 @@ class EmployeeStatusChoicesSerializer(serializers.Serializer):
     label = serializers.CharField(max_length=100)
 
 
+class EmployeeTelegramOrderSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField(read_only=True)
+    sony_account_game_list = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model: TelegramOrder
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def get_employee_name(self, obj):
+        if obj.employee:
+            return obj.employee.name
+        return None
+
+    def get_sony_account_game_list(self, obj):
+        game_list = [game.title for game in obj.sony_account.games.all()]
+        return game_list
+
+
 class EmployeeRepairOrderSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
         model = RepairOrder
@@ -1003,8 +1022,6 @@ class EmployeePaymentMethodSerializer(SoftDeleteSerializerMixin, serializers.Mod
         fields = "__all__"
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
-
-# EmployeePanel
 
 class DocCategorySerializer(serializers.ModelSerializer):
     class Meta:
