@@ -119,16 +119,26 @@ urlpatterns = [
     path('blog/list-add/', views.EmployeeBlogListCreate.as_view(), name='blog-list-add'),
     path('blog/<str:slug>/', views.EmployeeBlogDetail.as_view(), name='blog-detail'),
 
-    # ==================== Docs Views ====================
-    path('docs/', views.EmployeePanelDocument.as_view(), name='docs-list-add'),
-    path('docs/<int:pk>', views.EmployeePanelDocumentDetail.as_view(), name='docs-detail'),
-    path('docs/category/', views.EmployeePanelDocCategory.as_view(), name='docs-category-list-add'),
+    # ==================== Docs ====================
+    path("docs/", views.DocumentListAPIView.as_view(), name="doc-list"),
+    path("docs/create/", views.DocumentCreateAPIView.as_view(), name="doc-create"),
+    path("docs/<int:pk>/", views.DocumentDetailAPIView.as_view(), name="doc-detail"),
+    path("docs/categories/", views.DocCategoryListAPIView.as_view(), name="doc-category-list"),
+    path("docs/categories/create/", views.DocCategoryCreateAPIView.as_view(), name="doc-category-create"),
+    path("docs/sub-categories/", views.DocSubCategoryListAPIView.as_view(), name="doc-sub-category-list"),
+    path("docs/sub-categories/create/", views.DocSubCategoryCreateAPIView.as_view(), name="doc-sub-category-create"),
 
-    # ==================== RealAssets Views ====================
-    path('real-assets/', views.EmployeePanelRealAssets.as_view(), name='real-assets-list-add'),
-    path('real-assets/<int:pk>', views.EmployeePanelRealAssetsDetail.as_view(), name='real-assets-detail'),
-    path('real-assets/category/', views.EmployeePanelRealAssetsCategory.as_view(),
-         name='real-assets-category-list-add'),
+    # ==================== Real Assets ====================
+    path("real-assets/", views.RealAssetsListAPIView.as_view(), name="real-asset-list"),
+    path("real-assets/create/", views.RealAssetsCreateAPIView.as_view(), name="real-asset-create"),
+    path("real-assets/<int:pk>/", views.RealAssetsDetailAPIView.as_view(), name="real-asset-detail"),
+    path("real-assets/categories/", views.RealAssetsCategoryListAPIView.as_view(), name="real-asset-category-list"),
+    path("real-assets/categories/create/", views.RealAssetsCategoryCreateAPIView.as_view(),
+         name="real-asset-category-create"),
+    path("real-assets/sub-categories/", views.RealAssetsSubCategoryListAPIView.as_view(),
+         name="real-asset-sub-category-list"),
+    path("real-assets/sub-categories/create/", views.RealAssetsSubCategoryCreateAPIView.as_view(),
+         name="real-asset-sub-category-create"),
 
     # ==================== RepairMan Views ====================
     path('repairmans/', views.RepairManList.as_view(), name="repairman's-list-add"),

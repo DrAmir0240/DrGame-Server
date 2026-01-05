@@ -15,31 +15,33 @@ from accounts.models import CustomUser
 from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsRepairman
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
-    SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter
+    SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter, DocumentFilter, RealAssetsFilter
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
     EmployeePersonalTaskSerializer, EmployeeProductOrderSerializer, EmployeeRepairOrderSerializer, \
     EmployeeProductColorSerializer, EmployeeProductCategorySerializer, EmployeeProductCompanySerializer, \
     EmployeeCustomerSerializer, EmployeeSerializer, \
-    EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, EmployeeDocsSerializer, \
-    EmployeeDocCategorySerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
+    EmployeeStatusChoicesSerializer, CustomUserSerializer, EmployeeBlogSerializer, \
+    EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer, \
     EmployeePaymentMethodSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, \
     RepairManTransactionSerializer, GameBulkPriceUpdateSerializer, EmployeeOrganizeTaskSerializer, \
-    EmployeeRealAssetsSerializer, EmployeeRealAssetsCategorySerializer, \
     EmployeePersonalGameOrderItemSerializer, EmployeeCourseOrderSerializer, \
     CreateTransactionGenericSerializer, EmployeeTaskStatsSerializer, GameAndRepairOrderStatsSerializer, \
     OrderStatsSerializer, ProductOrderStatsSerializer, FinanceSummarySerializer, EmployeeStatsSerializer, \
     CustomerStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer, EmployeeDepositSerializer, CustomerDepositSerializer, SendSmsSerializer, \
     SendSmsToEmployeeSerializer, EmployeeSonyAccountStatusSerializer, EmployeeSonyAccountBankSerializer, \
-    RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer
+    RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer, \
+    DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, RealAssetsSerializer, \
+    RealAssetsSubCategorySerializer, RealAssetsCategorySerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
 from payments.serializers import DeliveryManSerializer, TransactionSerializer
 from storage.models import SonyAccount, SonyAccountGame, Product, ProductColor, ProductCategory, ProductCompany, Game, \
-    Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus, SonyAccountBank
+    Document, DocCategory, RealAssets, RealAssetsCategory, SonyAccountStatus, SonyAccountBank, DocSubCategory, \
+    RealAssetsSubCategory
 
 
 # Create your views here.
@@ -1012,50 +1014,130 @@ class EmployeeBlogDetail(generics.RetrieveUpdateDestroyAPIView):
 
 
 # ==================== Docs Views ====================
-class EmployeePanelDocument(generics.ListCreateAPIView):
-    queryset = Document.objects.filter(is_deleted=False)
-    serializer_class = EmployeeDocsSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-
-class EmployeePanelDocumentDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Document.objects.filter(is_deleted=False)
-    serializer_class = EmployeeDocsSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-    lockup_field = 'id'
-
-
-class EmployeePanelDocCategory(generics.ListCreateAPIView):
+class DocCategoryListAPIView(generics.ListAPIView):
     queryset = DocCategory.objects.filter(is_deleted=False)
-    serializer_class = EmployeeDocCategorySerializer
+    serializer_class = DocCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     pagination_class = None
 
 
+class DocCategoryCreateAPIView(generics.CreateAPIView):
+    serializer_class = DocCategorySerializer
+
+
+class DocSubCategoryListAPIView(generics.ListAPIView):
+    serializer_class = DocSubCategorySerializer
+    filterset_fields = ["category"]
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    pagination_class = None
+
+    def get_queryset(self):
+        return DocSubCategory.objects.filter(is_deleted=False)
+
+
+class DocSubCategoryCreateAPIView(generics.CreateAPIView):
+    serializer_class = DocSubCategorySerializer
+
+
+class DocumentListAPIView(generics.ListAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_class = DocumentFilter
+    search_fields = ["title"]
+    ordering_fields = ["created_at"]
+
+    def get_queryset(self):
+        return (
+            Document.objects
+            .filter(is_deleted=False)
+            .select_related("category", "category__category")
+        )
+
+
+class DocumentCreateAPIView(generics.CreateAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class DocumentDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = DocumentSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    queryset = (
+        Document.objects
+        .filter(is_deleted=False)
+        .select_related("category", "category__category")
+    )
+
+
 # ==================== Real Assets Views ====================
-class EmployeePanelRealAssets(generics.ListCreateAPIView):
-    queryset = RealAssets.objects.filter(is_deleted=False)
-    serializer_class = EmployeeRealAssetsSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-
-class EmployeePanelRealAssetsDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = RealAssets.objects.filter(is_deleted=False)
-    serializer_class = EmployeeRealAssetsSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-    lockup_field = 'id'
-
-
-class EmployeePanelRealAssetsCategory(generics.ListCreateAPIView):
+class RealAssetsCategoryListAPIView(generics.ListAPIView):
     queryset = RealAssetsCategory.objects.filter(is_deleted=False)
-    serializer_class = EmployeeRealAssetsCategorySerializer
+    serializer_class = RealAssetsCategorySerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    pagination_class = None
+
+
+class RealAssetsCategoryCreateAPIView(generics.CreateAPIView):
+    serializer_class = RealAssetsCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class RealAssetsSubCategoryListAPIView(generics.ListAPIView):
+    serializer_class = RealAssetsSubCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_fields = ["category"]
+    pagination_class = None
+
+    def get_queryset(self):
+        return RealAssetsSubCategory.objects.filter(is_deleted=False)
+
+
+class RealAssetsSubCategoryCreateAPIView(generics.CreateAPIView):
+    serializer_class = RealAssetsSubCategorySerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class RealAssetsListAPIView(generics.ListAPIView):
+    serializer_class = RealAssetsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filterset_class = RealAssetsFilter
+    search_fields = ["title"]
+    ordering_fields = ["created_at", "price"]
+
+    def get_queryset(self):
+        return (
+            RealAssets.objects
+            .filter(is_deleted=False)
+            .select_related("category", "category__category")
+        )
+
+
+class RealAssetsCreateAPIView(generics.CreateAPIView):
+    serializer_class = RealAssetsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class RealAssetsDetailAPIView(generics.RetrieveAPIView):
+    serializer_class = RealAssetsSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    queryset = (
+        RealAssets.objects
+        .filter(is_deleted=False)
+        .select_related("category", "category__category")
+    )
 
 
 # ==================== RepairMan Views ====================

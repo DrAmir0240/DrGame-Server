@@ -13,7 +13,7 @@ from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentM
 from payments.serializers import DeliveryManSerializer
 from storage.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
     GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank, \
-    SonyAccountGame
+    SonyAccountGame, DocSubCategory, RealAssetsSubCategory
 
 
 class SoftDeleteSerializerMixin:
@@ -1004,46 +1004,94 @@ class EmployeePaymentMethodSerializer(SoftDeleteSerializerMixin, serializers.Mod
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
 
-class EmployeeDocsSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
-        slug_field='title',
-        queryset=DocCategory.objects.all()
-    )
+# EmployeePanel
+
+class DocCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DocCategory
+        fields = ["id", "title", "description"]
+
+
+class DocSubCategorySerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
+    category_title = serializers.CharField(source="category.title", read_only=True)
+
+    class Meta:
+        model = DocSubCategory
+        fields = [
+            "id",
+            "title",
+            "description",
+            "category_id",
+            "category_title",
+        ]
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
+    sub_category_title = serializers.CharField(source="category.title", read_only=True)
+    main_category_id = serializers.IntegerField(source="category.category.id", read_only=True)
+    main_category_title = serializers.CharField(source="category.category.title", read_only=True)
 
     class Meta:
         model = Document
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "title",
+            "file",
+            "category_id",
+            "sub_category_title",
+            "main_category_id",
+            "main_category_title",
+            "created_at",
+        ]
 
 
-class EmployeeDocCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    docs = EmployeeDocsSerializer(many=True, read_only=True)
+class RealAssetsCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RealAssetsCategory
+        fields = ["id", "title", "description"]
+
+
+class RealAssetsSubCategorySerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", read_only=True)
+    category_title = serializers.CharField(source="category.title", read_only=True)
 
     class Meta:
-        model = DocCategory
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        model = RealAssetsSubCategory
+        fields = [
+            "id",
+            "title",
+            "description",
+            "category_id",
+            "category_title",
+        ]
 
 
-class EmployeeRealAssetsSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    category = serializers.SlugRelatedField(
-        slug_field='title',
-        queryset=RealAssetsCategory.objects.all()
+class RealAssetsSerializer(serializers.ModelSerializer):
+    sub_category_id = serializers.IntegerField(source="category.id", read_only=True)
+    sub_category_title = serializers.CharField(source="category.title", read_only=True)
+
+    main_category_id = serializers.IntegerField(
+        source="category.category.id", read_only=True
+    )
+    main_category_title = serializers.CharField(
+        source="category.category.title", read_only=True
     )
 
     class Meta:
         model = RealAssets
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
-
-
-class EmployeeRealAssetsCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    real_assets = EmployeeRealAssetsSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = RealAssetsCategory
-        fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "title",
+            "image",
+            "price",
+            "sub_category_id",
+            "sub_category_title",
+            "main_category_id",
+            "main_category_title",
+            "created_at",
+        ]
 
 
 class EmployeeCourseOrderSerializer(serializers.ModelSerializer):

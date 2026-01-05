@@ -4,7 +4,7 @@ from employees.models import EmployeeTask, EmployeeRequest
 from django_filters import rest_framework as filters
 
 from payments.models import Transaction, GameOrder, RepairOrder
-from storage.models import SonyAccount
+from storage.models import SonyAccount, Document, RealAssets
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -96,3 +96,35 @@ class SonyAccountPersonalFilter(filters.FilterSet):
     class Meta:
         model = SonyAccount
         fields = ['status']
+
+
+class DocumentFilter(django_filters.FilterSet):
+    category = django_filters.NumberFilter(
+        field_name="category__category_id"
+    )
+    sub_category = django_filters.NumberFilter(
+        field_name="category_id"
+    )
+
+    class Meta:
+        model = Document
+        fields = ["category", "sub_category"]
+
+
+class RealAssetsFilter(django_filters.FilterSet):
+    category = django_filters.NumberFilter(
+        field_name="category__category_id"
+    )
+    sub_category = django_filters.NumberFilter(
+        field_name="category_id"
+    )
+    min_price = django_filters.NumberFilter(
+        field_name="price", lookup_expr="gte"
+    )
+    max_price = django_filters.NumberFilter(
+        field_name="price", lookup_expr="lte"
+    )
+
+    class Meta:
+        model = RealAssets
+        fields = ["category", "sub_category", "min_price", "max_price"]
