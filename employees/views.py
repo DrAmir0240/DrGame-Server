@@ -16,7 +16,7 @@ from accounts.permissions import IsEmployee, restrict_access, IsMainManager, IsR
 from customers.models import Customer
 from employees.filters import EmployeeTaskFilter, TransactionFilter, GameOrderFilter, RepairOrderFilter, \
     SonyAccountFilter, SonyAccountPersonalFilter, EmployeeRequestFilter, DocumentFilter, RealAssetsFilter, \
-    EmployeeProductFilter, TelegramOrderFilter
+    EmployeeProductFilter, TelegramOrderFilter, DocumentSubCatFilter, RealAssetsSubCatFilter
 from employees.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
 from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSerializer, \
     EmployeeSonyAccountSerializer, EmployeeTransactionSerializer, EmployeeProductSerializer, \
@@ -1114,9 +1114,10 @@ class DocCategoryCreateAPIView(generics.CreateAPIView):
 
 class DocSubCategoryListAPIView(generics.ListAPIView):
     serializer_class = DocSubCategorySerializer
-    filterset_fields = ["category"]
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = DocumentSubCatFilter
     pagination_class = None
 
     def get_queryset(self):
@@ -1183,7 +1184,7 @@ class RealAssetsSubCategoryListAPIView(generics.ListAPIView):
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ["category"]
+    filterset_class = RealAssetsSubCatFilter
     pagination_class = None
 
     def get_queryset(self):
