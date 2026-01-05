@@ -7,6 +7,7 @@ from rest_framework.views import APIView
 
 from accounts.auth import CustomJWTAuthentication
 from accounts.permissions import IsCustomer
+from employees.serializers import BalanceSerializer
 from .models import Customer
 from .serializers import (
     CustomerProfileSerializer,
@@ -123,6 +124,22 @@ class CustomerCourseOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
         customer = get_object_or_404(Customer, user=self.request.user)
         return CourseOrder.objects.select_related('customer').filter(customer=customer,
                                                                      is_deleted=False).all()
+
+
+class CustomerSelfBalance(generics.GenericAPIView):
+    serializer_class = BalanceSerializer
+    permission_classes = [IsCustomer]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        # مقدار اولیه
+        balance = 0
+        # اگر کاربر دارای رابطه employee است
+        if hasattr(request.user, 'customer') and request.user.customer:
+            balance = request.user.customer.balance or 0
+        # Serialize و برگرداندن Response
+        serializer = self.get_serializer({'balance': balance})
+        return Response(serializer.data)
 
 
 class CustomerTransactionListAPIView(generics.ListAPIView):

@@ -290,6 +290,10 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
         return instance
 
 
+class BalanceSerializer(serializers.Serializer):
+    balance = serializers.IntegerField(read_only=True)
+
+
 class EmployeeTransactionSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     payment_method_id = serializers.PrimaryKeyRelatedField(
         queryset=PaymentMethod.objects.filter(is_deleted=False), source='payment_method'

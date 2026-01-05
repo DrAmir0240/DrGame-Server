@@ -28,6 +28,8 @@ urlpatterns = [
     path('personal/tasks/add/', views.EmployeePanelAddTask.as_view(), name='personal-task-add'),
 
     # -------------------- Transactions --------------------
+    path('personal/transactions/balance/', views.EmployeePanelSelfBalance.as_view(),
+         name='employee-balance'),
     path('personal/transactions/owned/out/', views.EmployeePanelOwnedOutTransactionList.as_view(),
          name='owned-transaction-list'),
     path('personal/transactions/owned/out/<int:pk>/', views.EmployeePanelOwnedOutTransactionDetail.as_view(),

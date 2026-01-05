@@ -36,7 +36,7 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer, \
     DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, RealAssetsSerializer, \
     RealAssetsSubCategorySerializer, RealAssetsCategorySerializer, RealAssetStatsSerializer, ProductStatsSerializer, \
-    EmployeeTelegramOrderSerializer
+    EmployeeTelegramOrderSerializer, BalanceSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -256,6 +256,22 @@ class EmployeePanelAddTask(generics.CreateAPIView):
 
 
 # -------------------- transactions --------------------
+class EmployeePanelSelfBalance(generics.GenericAPIView):
+    serializer_class = BalanceSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        # مقدار اولیه
+        balance = 0
+        # اگر کاربر دارای رابطه employee است
+        if hasattr(request.user, 'employee') and request.user.employee:
+            balance = request.user.employee.balance or 0
+        # Serialize و برگرداندن Response
+        serializer = self.get_serializer({'balance': balance})
+        return Response(serializer.data)
+
+
 class EmployeePanelOwnedOutTransactionList(generics.ListAPIView):
     serializer_class = EmployeeTransactionSerializer
     permission_classes = [IsEmployee]
