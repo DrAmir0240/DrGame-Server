@@ -36,7 +36,9 @@ from employees.serializers import EmployeeGameSerializer, EmployeeGameOrderSeria
     RepairOrderTypeSerializer, EmployeeRequestSerializer, EmployeeHireSerializer, RepairmanDepositSerializer, \
     DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, RealAssetsSerializer, \
     RealAssetsSubCategorySerializer, RealAssetsCategorySerializer, RealAssetStatsSerializer, ProductStatsSerializer, \
-    EmployeeTelegramOrderSerializer, BalanceSerializer
+    EmployeeTelegramOrderSerializer, BalanceSerializer, CustomerSearchSerializer, EmployeeSearchSerializer, \
+    SonyAccountSearchSerializer, GameSearchSerializer, DocumentSearchSerializer, RealAssetsSearchSerializer, \
+    TransactionSearchSerializer
 from home.models import BlogPost
 from payments.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
     DeliveryMan, TelegramOrder, RepairOrderType
@@ -53,6 +55,76 @@ class EmployeeOrganizeTaskPagination(LimitOffsetPagination):
 
 class EmployeeGameOrderPagination(LimitOffsetPagination):
     default_limit = 12  # تعداد آیتم‌ها در هر صفحه
+
+
+# ================= Global Search View =================
+class GlobalSearchAPIView(generics.GenericAPIView):
+    permission_classes = [IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request):
+        q = request.query_params.get("q", "").strip()
+
+        if not q or len(q) < 2:
+            return Response({
+                "customers": [],
+                "employees": [],
+                "games": [],
+                "sony_accounts": [],
+                "documents": [],
+                "real_assets": [],
+                "transactions": [],
+            })
+
+        customers = Customer.objects.filter(
+            is_deleted=False,
+            full_name__icontains=q
+        )[:5]
+
+        employees = Employee.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(first_name__icontains=q) | Q(last_name__icontains=q)
+        )[:5]
+
+        games = Game.objects.filter(
+            is_deleted=False,
+            title__icontains=q
+        )[:5]
+
+        sony_accounts = SonyAccount.objects.filter(
+            is_deleted=False,
+            username__icontains=q
+        )[:5]
+
+        documents = Document.objects.filter(
+            is_deleted=False,
+            title__icontains=q
+        )[:5]
+
+        real_assets = RealAssets.objects.filter(
+            is_deleted=False,
+            title__icontains=q
+        )[:5]
+
+        transactions = Transaction.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(payer_str__icontains=q) |
+            Q(receiver_str__icontains=q) |
+            Q(payer__phone__icontains=q) |
+            Q(receiver__phone__icontains=q)
+        )[:5]
+
+        return Response({
+            "customers": CustomerSearchSerializer(customers, many=True).data,
+            "employees": EmployeeSearchSerializer(employees, many=True).data,
+            "games": GameSearchSerializer(games, many=True).data,
+            "sony_accounts": SonyAccountSearchSerializer(sony_accounts, many=True).data,
+            "documents": DocumentSearchSerializer(documents, many=True).data,
+            "real_assets": RealAssetsSearchSerializer(real_assets, many=True).data,
+            "transactions": TransactionSearchSerializer(transactions, many=True).data,
+        })
 
 
 # ==================== Personal Views ====================

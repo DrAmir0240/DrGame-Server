@@ -1,8 +1,10 @@
 from django.urls import path
 from employees import views
-from employees.views import EmployeeListAdd, EmployeeDetail
+from employees.views import EmployeeListAdd, EmployeeDetail, GlobalSearchAPIView
 
 urlpatterns = [
+    # ================= Global Search View =================
+    path("search/", GlobalSearchAPIView.as_view(), name="global-search"),
     # ==================== Personal Views ====================
     # -------------------- Requests --------------------
     path('personal/requests/', views.EmployeePanelPersonalRequests.as_view(), name='personal-requests'),

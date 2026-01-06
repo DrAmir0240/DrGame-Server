@@ -1440,3 +1440,99 @@ class EmployeeRequestSerializer(serializers.ModelSerializer):
         model = EmployeeRequest
         fields = ['title', 'request_type', 'description', 'employee', 'created_at']
         read_only_fields = ['created_at', 'employee']
+
+
+# ================= Global Search View =================
+class CustomerSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'full_name', 'balance', 'type']
+
+    def get_type(self, obj):
+        return "customer"
+
+
+class EmployeeSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Employee
+        fields = ['id', 'full_name', 'role', 'type']
+
+    def get_full_name(self, obj):
+        return f"{obj.first_name or ''} {obj.last_name or ''}".strip()
+
+    def get_type(self, obj):
+        return "employee"
+
+
+class GameSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = ['id', 'title', 'type']
+
+    def get_type(self, obj):
+        return "game"
+
+
+class SonyAccountSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccount
+        fields = ['id', 'username', 'region', 'type']
+
+    def get_type(self, obj):
+        return "sony_account"
+
+
+class DocumentSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = ['id', 'title', 'type']
+
+    def get_type(self, obj):
+        return "document"
+
+
+class RealAssetsSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RealAssets
+        fields = ['id', 'title', 'price', 'type']
+
+    def get_type(self, obj):
+        return "real_asset"
+
+
+class TransactionSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+    payer_name = serializers.SerializerMethodField()
+    receiver_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Transaction
+        fields = [
+            'id',
+            'amount',
+            'payer_name',
+            'receiver_name',
+            'type'
+        ]
+
+    def get_payer_name(self, obj):
+        return obj.payer_str or (obj.payer.phone if obj.payer else None)
+
+    def get_receiver_name(self, obj):
+        return obj.receiver_str or (obj.receiver.phone if obj.receiver else None)
+
+    def get_type(self, obj):
+        return "transaction"
