@@ -117,7 +117,7 @@ class GameCartSerializer(serializers.ModelSerializer):
         read_only_fields = ['is_deleted', 'created_at', 'updated_at']
 
     def get_volume(self, obj):
-        volume = sum(game.volume for game in obj.games.all())
+        volume = sum(game.game.volume for game in obj.games.all())
         return volume
 
 

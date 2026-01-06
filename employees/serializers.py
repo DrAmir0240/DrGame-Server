@@ -1005,7 +1005,7 @@ class EmployeeTelegramOrderSerializer(serializers.ModelSerializer):
 
     def get_employee_name(self, obj):
         if obj.employee:
-            return obj.employee.name
+            return obj.employee.first_name + " " + obj.employee.last_name
         return None
 
     def get_sony_account_game_list(self, obj):
