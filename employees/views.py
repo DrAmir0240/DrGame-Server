@@ -1641,15 +1641,17 @@ class ProductsStatsAPIView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 
-        total_value = queryset.aggregate(
+        aggregates = queryset.aggregate(
             total_value=Sum(
                 F("price") * F("stock"),
                 output_field=DecimalField(max_digits=25, decimal_places=5)
-            )
-        )["total_value"] or 0
+            ),
+            total_count=Count("id")
+        )
 
         serializer = self.get_serializer({
-            "total_value": total_value
+            "total_value": aggregates["total_value"] or 0,
+            "total_count": aggregates["total_count"] or 0
         })
 
         return Response(serializer.data)

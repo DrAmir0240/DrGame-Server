@@ -1292,6 +1292,7 @@ class CustomerStatsSerializer(serializers.Serializer):
 
 class ProductStatsSerializer(serializers.Serializer):
     total_value = serializers.DecimalField(max_digits=25, decimal_places=5)
+    total_count = serializers.IntegerField(read_only=True)
 
 
 class RealAssetStatsSerializer(serializers.Serializer):
