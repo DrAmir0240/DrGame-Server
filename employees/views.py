@@ -1225,7 +1225,7 @@ class DocumentCreateAPIView(generics.CreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-class DocumentDetailAPIView(generics.RetrieveAPIView):
+class DocumentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = DocumentSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -1292,7 +1292,7 @@ class RealAssetsCreateAPIView(generics.CreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
 
-class RealAssetsDetailAPIView(generics.RetrieveAPIView):
+class RealAssetsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = RealAssetsSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
