@@ -186,5 +186,6 @@ urlpatterns = [
     path('requests/', views.EmployeePanelRequests.as_view(), name='requests'),
     path('requests/<int:pk>/', views.EmployeePanelRequestsDetail.as_view(), name='requests-detail'),
     path('requests/choices/', views.EmployeePanelRequestChoices.as_view(), name='requests-choices'),
+    # ==================== End Views ====================
 
 ]
