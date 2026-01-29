@@ -98,7 +98,7 @@ class GameOrderSerializer(serializers.ModelSerializer):
         return None
 
     def get_volume(self, obj):
-        volume = sum(game.volume for game in obj.games.all())
+        volume = sum(game.game.volume for game in obj.games.all())
         return volume
 
 
