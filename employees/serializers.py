@@ -919,73 +919,76 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
         return game_order
 
     def update(self, instance, validated_data):
-        print(instance.employee)
-        request = self.context.get('request')
-        old_amount = instance.amount  # مبلغ قبلی سفارش
+        request = self.context['request']
+        current_employee = request.user.employee
+
         old_status = instance.status
         new_status = validated_data.get('status', old_status)
 
-        # فقط وقتی status تغییر کرده
-        if old_status != new_status:
-            if new_status == 'done':
-                validated_data['employee'] = instance.recipient
-            else:
-                validated_data['employee'] = request.user.employee
+        games_data = validated_data.pop('games', [])
 
-        # مدیریت games_data
-        games_data = validated_data.pop('games', None)
+        with transaction.atomic():
 
-        if games_data:
+            # ---------- GameOrderItem logic ----------
             for item_data in games_data:
                 game = item_data['game']
-                game_item_qs = GameOrderItem.objects.filter(
-                    game_order=instance, game=game, is_deleted=False
+                item = GameOrderItem.objects.select_for_update().get(
+                    game_order=instance,
+                    game=game,
+                    is_deleted=False
                 )
-                if not game_item_qs.exists():
-                    raise serializers.ValidationError(
-                        f"آیتم مربوط به بازی '{game.title}' در این سفارش وجود ندارد."
-                    )
-                game_item = game_item_qs.first()
 
-                if 'data' in item_data:
-                    game_item.data = item_data['data']
-                    request.user.employee.balance += game_item.amount
-                    request.user.employee.save()
-                if 'account' in item_data:
-                    game_item.account = item_data['account']
-                    request.user.employee.balance += game_item.amount
-                    request.user.employee.save()
-                if 'account_setter' in item_data and item_data['account_setter'] is True:
-                    game_item.account_setter = request.user.employee
-                if 'data_uploader' in item_data and item_data['data_uploader'] is True:
-                    game_item.data_uploader = request.user.employee
+                # account setter
+                if item_data.get('account') is True and not item.account_setter:
+                    item.account = True
+                    item.account_setter = current_employee
+                    item.save()
 
-                game_item.save()
+                # data uploader
+                if item_data.get('data') is True and not item.data_uploader:
+                    item.data = True
+                    item.data_uploader = current_employee
+                    item.save()
 
-        if old_status != new_status and new_status == 'done':
-            instance.employee = instance.recipient or request.user.employee
-            instance.save()
+            # ---------- status change logic ----------
+            if old_status != new_status:
 
-            for item in instance.games.filter(is_deleted=False):
-                if item.account_setter and item.account_setter.commission_amount:
-                    item.account_setter.balance += item.amount * (item.account_setter.commission_amount / 100)
-                    item.account_setter.save()
-                if item.data_uploader and item.data_uploader.commission_amount:
-                    item.data_uploader.balance += item.amount * (item.data_uploader.commission_amount / 100)
-                    item.data_uploader.save()
+                # رسپشن: تحویل به دکتر گیم
+                if (
+                        old_status == 'delivered_to_drgame_and_in_waiting_queue'
+                        and new_status == 'delivered_to_drgame'
+                ):
+                    instance.recipient = current_employee
 
-        new_amount = sum(item.amount for item in instance.games.filter(is_deleted=False))
-        if new_amount != old_amount:
-            # برگردوندن مبلغ قبلی به مشتری
-            instance.customer.balance += old_amount * (instance.customer.discount / 100)
-            # کم کردن مبلغ جدید
-            instance.customer.balance -= new_amount * (instance.customer.discount / 100)
-            instance.customer.save()
+                # پورسانت‌ها: انتظار تحویل به مشتری
+                if new_status == 'done':
+                    for item in instance.games.filter(is_deleted=False):
+
+                        if item.account_setter and item.account_setter.has_commission:
+                            commission = (
+                                                 item.amount * item.account_setter.commission_amount
+                                         ) / 100
+                            item.account_setter.balance += commission
+                            item.account_setter.save()
+
+                        if item.data_uploader and item.data_uploader.has_commission:
+                            commission = (
+                                                 item.amount * item.data_uploader.commission_amount
+                                         ) / 100
+                            item.data_uploader.balance += commission
+                            item.data_uploader.save()
+
+            # ---------- last operator ----------
+            instance.employee = current_employee
+
+            # ---------- update amount ----------
+            new_amount = sum(
+                item.amount for item in instance.games.filter(is_deleted=False)
+            )
             instance.amount = new_amount
-            instance.save()
 
-        instance = super().update(instance, validated_data)
-        print(instance.employee)
+            instance = super().update(instance, validated_data)
+
         return instance
 
 
