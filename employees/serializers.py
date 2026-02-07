@@ -1444,8 +1444,8 @@ class EmployeeRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = EmployeeRequest
-        fields = ['title', 'request_type', 'description', 'status', 'employee', 'employee_name', 'created_at']
-        read_only_fields = ['created_at', 'employee']
+        fields = ['id', 'title', 'request_type', 'description', 'status', 'employee', 'employee_name', 'created_at']
+        read_only_fields = ['id', 'created_at', 'employee']
 
     def get_employee_name(self, obj):
         return obj.employee.__str__()
