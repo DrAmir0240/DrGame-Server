@@ -111,6 +111,11 @@ class EmployeeRequest(models.Model):
         ('miscellaneous', 'متفرقه')
     ))
     description = models.TextField(max_length=5000)
+    status = models.CharField(max_length=20, choices=(
+        ('waiting', 'در انتظار بررسی'),
+        ('accepted', 'تایید شده'),
+        ('rejected', 'رد شده')
+    ), default='waiting')
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -164,9 +164,13 @@ class EmployeePanelRequestChoices(generics.ListAPIView):
         request_type = [
             {'value': value, 'label': label} for value, label in EmployeeRequest._meta.get_field('request_type').choices
         ]
+        status = [
+            {'value': value, 'label': label} for value, label in EmployeeRequest._meta.get_field('status').choices
+        ]
         employees = Employee.objects.filter(is_deleted=False)
         data = {
             'request_type': EmployeeStatusChoicesSerializer(request_type, many=True).data,
+            'status': EmployeeStatusChoicesSerializer(status, many=True).data,
             'employees': EmployeeSerializer(employees, many=True).data,
         }
 
@@ -1819,7 +1823,7 @@ class EmployeePanelRequests(generics.ListAPIView):
     ordering_fields = ['-created_at']
 
 
-class EmployeePanelRequestsDetail(generics.RetrieveAPIView):
+class EmployeePanelRequestsDetail(generics.RetrieveUpdateAPIView):
     queryset = EmployeeRequest.objects.filter(is_deleted=False)
     serializer_class = EmployeeRequestSerializer
     permission_classes = [IsEmployee | IsMainManager]

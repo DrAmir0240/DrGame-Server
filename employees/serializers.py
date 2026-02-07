@@ -1440,13 +1440,20 @@ class CustomerReportSerializer(serializers.ModelSerializer):
 
 
 class EmployeeRequestSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = EmployeeRequest
-        fields = ['title', 'request_type', 'description', 'employee', 'created_at']
+        fields = ['title', 'request_type', 'description', 'status', 'employee', 'employee_name', 'created_at']
         read_only_fields = ['created_at', 'employee']
+
+    def get_employee_name(self, obj):
+        return obj.employee.__str__()
 
 
 # ================= Global Search View =================
+
+
 class CustomerSearchSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField()
 
