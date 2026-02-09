@@ -964,18 +964,22 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
                 if new_status == 'done':
                     for item in instance.games.filter(is_deleted=False):
 
-                        if item.account_setter and item.account_setter.has_commission:
+                        if item.account_setter and item.account_setter.has_commission == True:
+                            print(f'account setter old balance :{item.account_setter.balance}')
                             commission = (
                                                  item.amount * item.account_setter.commission_amount
                                          ) / 100
                             item.account_setter.balance += commission
+                            print(f'account setter new balance :{item.account_setter.balance}')
                             item.account_setter.save()
 
-                        if item.data_uploader and item.data_uploader.has_commission:
+                        if item.data_uploader and item.data_uploader.has_commission == True:
+                            print(f'data uploader old balance :{item.data_uploader.balance}')
                             commission = (
                                                  item.amount * item.data_uploader.commission_amount
                                          ) / 100
                             item.data_uploader.balance += commission
+                            print(f'data uploader new balance :{item.data_uploader.balance}')
                             item.data_uploader.save()
 
             # ---------- last operator ----------
