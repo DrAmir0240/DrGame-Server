@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'django_ratelimit', 'corsheaders',
-    'drf_spectacular', 'django_redis',
+    'drf_spectacular', 'drf_spectacular_sidecar', 'django_redis',
     'storages', 'django_filters',
 ]
 
@@ -122,8 +122,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
@@ -152,6 +152,9 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Docs for DrGame',
     'VERSION': 'v1',
     'SERVE_INCLUDE_SCHEMA': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
 }
 CACHES = {
     'default': {
