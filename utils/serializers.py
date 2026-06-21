@@ -1,8 +1,8 @@
 from rest_framework import serializers
 
-from employees.serializers import SoftDeleteSerializerMixin
-from payments.models import GameOrder
-from storage.models import SonyAccount
+from hr.serializers import SoftDeleteSerializerMixin
+from accounting.models import GameOrder
+from inventory.models import SonyAccount
 
 
 class Set2FAURISerializer(serializers.Serializer):

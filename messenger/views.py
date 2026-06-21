@@ -3,15 +3,15 @@ from rest_framework import generics, status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
-from accounts.auth import CustomJWTAuthentication
-from employees.models import Employee
-from employees.serializers import EmployeeSerializer
+from users.auth import CustomJWTAuthentication
+from hr.models import Employee
+from hr.serializers import EmployeeSerializer
 from messenger.models import ChatRoom, Message, Membership
 from messenger.serializers import (
     ChatRoomSerializer, ChatRoomCreateSerializer,
     MessageSerializer, MessageEditSerializer, ChatRoomUpdateSerializer
 )
-from accounts.permissions import IsMainManager, IsEmployee
+from users.permissions import IsMainManager, IsEmployee
 class ChatRoomListView(generics.ListAPIView):
     """
     لیست چت‌هایی که کاربر فعلی عضو آن است

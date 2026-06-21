@@ -4,11 +4,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets, generics
 
-from accounts.auth import CustomJWTAuthentication
-from accounts.permissions import IsMainManager, IsEmployee
-from payments.models import GameOrder
+from users.auth import CustomJWTAuthentication
+from users.permissions import IsMainManager, IsEmployee
+from accounting.models import GameOrder
 from utils.serializers import SonyAccountMatchedSerializer, GameOrderMatchedSerializer, SonyAccountAddFromFileSerializer
-from storage.models import SonyAccount
+from inventory.models import SonyAccount
 from utils.serializers import Set2FAURISerializer, OTPSerializer, SonyAccountSerializer
 from utils.crypto import encrypt_text, decrypt_text
 import urllib.parse
@@ -85,7 +85,7 @@ class SonyAccountViewSet(viewsets.ReadOnlyModelViewSet):
     """
     ViewSet نمونه برای SonyAccount.
     - list/retrieve به صورت پیش‌فرض
-    - اکشن سفارشی: POST /sony-accounts/{id}/send-to-telegram/
+    - اکشن سفارشی: POST /sony-users/{id}/send-to-telegram/
     """
     queryset = SonyAccount.objects.filter(is_deleted=False)
     serializer_class = SonyAccountSerializer  # اگر نداری، موقت یک Serializer مینیمال بنویس

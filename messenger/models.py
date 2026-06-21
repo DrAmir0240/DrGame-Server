@@ -1,7 +1,7 @@
 from django.db import models
 
 from DrGame import settings
-from accounts.models import CustomUser
+from users.models import CustomUser
 
 
 # Create your models here.

@@ -26,10 +26,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-v@c4&8=y8(u%c_690yq0d$ulwcp!zvnb#f^^t$&@jljc#!#n-e'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG')
+
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'gamedr.ir', 'www.gamedr.ir']
 # Application definition
 
@@ -41,11 +42,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # local apps
-    'accounts', 'management',
-    'employees', 'storage',
-    'payments', 'home',
-    'customers', 'messenger',
-    'utils',
+    'users', 'platform_setting',
+    'hr', 'inventory', 'task_manager',
+    'accounting', 'website',
+    'crm', 'messenger',
+    'utils', 'psn',
     # third-party apps
     'rest_framework',
     'rest_framework_simplejwt',
@@ -107,7 +108,7 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTH_USER_MODEL = 'users.CustomUser'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -135,7 +136,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'accounts.auth.CustomJWTAuthentication',
+        'users.auth.CustomJWTAuthentication',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -146,7 +147,7 @@ REST_FRAMEWORK = {
 }
 SPECTACULAR_SETTINGS = {
     'AUTHENTICATION_EXTENSIONS': [
-        'accounts.auth.CustomJWTAuthenticationExtension',
+        'users.auth.CustomJWTAuthenticationExtension',
     ],
     'TITLE': 'DrGame APIs',
     'DESCRIPTION': 'Docs for DrGame',
@@ -209,19 +210,19 @@ RATELIMIT_CACHE_BACKEND = 'default'
 # media root
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
-
-# liara bucket settings
-LIARA_ENDPOINT = os.getenv("LIARA_ENDPOINT")
-LIARA_BUCKET_NAME = os.getenv("LIARA_BUCKET_NAME")
-LIARA_ACCESS_KEY = os.getenv("LIARA_ACCESS_KEY")
-LIARA_SECRET_KEY = os.getenv("LIARA_SECRET_KEY")
-
-# S3 Settings Based on AWS (optional)
-AWS_ACCESS_KEY_ID = LIARA_ACCESS_KEY
-AWS_SECRET_ACCESS_KEY = LIARA_SECRET_KEY
-AWS_STORAGE_BUCKET_NAME = LIARA_BUCKET_NAME
-AWS_S3_ENDPOINT_URL = LIARA_ENDPOINT
-AWS_S3_REGION_NAME = 'us-east-1'
+#
+# # liara bucket settings
+# LIARA_ENDPOINT = os.getenv("LIARA_ENDPOINT")
+# LIARA_BUCKET_NAME = os.getenv("LIARA_BUCKET_NAME")
+# LIARA_ACCESS_KEY = os.getenv("LIARA_ACCESS_KEY")
+# LIARA_SECRET_KEY = os.getenv("LIARA_SECRET_KEY")
+#
+# # S3 Settings Based on AWS (optional)
+# AWS_ACCESS_KEY_ID = LIARA_ACCESS_KEY
+# AWS_SECRET_ACCESS_KEY = LIARA_SECRET_KEY
+# AWS_STORAGE_BUCKET_NAME = LIARA_BUCKET_NAME
+# AWS_S3_ENDPOINT_URL = LIARA_ENDPOINT
+# AWS_S3_REGION_NAME = 'us-east-1'
 
 # FARAZ SMS Configuration
 FARAZ_URL = os.getenv("FARAZ_URL")
@@ -237,8 +238,11 @@ ZARINPAL_CALLBACK_URL = os.getenv("ZARINPAL_CALLBACK_URL")
 
 # Django-storages configuration
 STORAGES = {
+    # "default": {
+    #     "BACKEND": "storages.backends.s3.S3Storage",
+    # },
     "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
     "staticfiles": {
         "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",

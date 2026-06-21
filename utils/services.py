@@ -5,7 +5,7 @@ from typing import Iterable
 from django.db.models import Prefetch
 from django.utils.html import escape
 
-from storage.models import SonyAccount, SonyAccountGame, Game
+from inventory.models import SonyAccount, SonyAccountGame, Game
 
 def get_game_price(game: Game) -> Decimal:
     """

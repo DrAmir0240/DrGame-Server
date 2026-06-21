@@ -3,8 +3,8 @@ from logging import lastResort
 from django.db import transaction
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from employees.models import Employee
-from .models import ChatRoom, Membership, Message
+from hr.models import Employee
+from messenger.models import ChatRoom, Membership, Message
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
