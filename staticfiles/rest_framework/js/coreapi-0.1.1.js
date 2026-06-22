@@ -1207,9 +1207,9 @@ function URL(address, location, parser) {
  *
  * @param {String} part          Property we need to adjust.
  * @param {Mixed} value          The newly assigned value.
- * @param {Boolean|Function} fn  When platform_setting the query, it will be the function
+ * @param {Boolean|Function} fn  When platform_settings the query, it will be the function
  *                               used to parse the query.
- *                               When platform_setting the protocol, double slash will be
+ *                               When platform_settings the protocol, double slash will be
  *                               removed from the final url if it is true.
  * @returns {URL}
  * @api public

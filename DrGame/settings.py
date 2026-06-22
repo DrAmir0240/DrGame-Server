@@ -31,7 +31,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG')
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'gamedr.ir', 'www.gamedr.ir']
+ALLOWED_HOSTS = ['127.0.0.1', '0.0.0.0', 'localhost', 'gamedr.ir', 'www.gamedr.ir']
 # Application definition
 
 INSTALLED_APPS = [
@@ -42,11 +42,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     # local apps
-    'users', 'platform_setting',
+    'users', 'platform_settings',
     'hr', 'inventory', 'task_manager',
     'accounting', 'website',
     'crm', 'messenger',
     'utils', 'psn',
+    'docs', 'orders', 'dashboard',
     # third-party apps
     'rest_framework',
     'rest_framework_simplejwt',

@@ -1,5 +1,5 @@
 from django.urls import path
-from platform_setting import views
+from platform_settings import views
 
 urlpatterns = [
     # read urls

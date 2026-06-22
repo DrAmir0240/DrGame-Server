@@ -4,7 +4,7 @@
 'use strict';
 {
     // Init filters.
-    let filters = JSON.parse(sessionStorage.getItem('django.platform_setting.filtersState'));
+    let filters = JSON.parse(sessionStorage.getItem('django.platform_settings.filtersState'));
 
     if (!filters) {
         filters = {};
@@ -24,7 +24,7 @@
     details.forEach(detail => {
         detail.addEventListener('toggle', event => {
             filters[`${event.target.dataset.filterTitle}`] = detail.open;
-            sessionStorage.setItem('django.platform_setting.filtersState', JSON.stringify(filters));
+            sessionStorage.setItem('django.platform_settings.filtersState', JSON.stringify(filters));
         });
     });
 }

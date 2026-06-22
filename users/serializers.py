@@ -1,5 +1,9 @@
 from rest_framework import serializers
 
+from platform_settings.serializers import SoftDeleteSerializerMixin
+from users.models import CustomUser
+
+
 class RequestOTPSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=15, help_text="شماره موبایل (مثال: 09123456789)")
 
@@ -21,3 +25,10 @@ class RefreshTokenSerializer(serializers.Serializer):
 class RefreshTokenResponseSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=100, help_text="پیام موفقیت یا خطا")
     error = serializers.CharField(max_length=100, required=False, help_text="پیام خطا (در صورت وجود)")
+
+
+class CustomUserSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['phone']
+        read_only_fields = ['is_deleted', 'is_active', 'is_staff', 'is_superuser']

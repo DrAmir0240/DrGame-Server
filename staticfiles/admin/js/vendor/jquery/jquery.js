@@ -901,7 +901,7 @@ function find( selector, context, results, seed ) {
 					// eslint-disable-next-line eqeqeq
 					if ( newContext != context || !support.scope ) {
 
-						// Capture the context ID, platform_setting it first if necessary
+						// Capture the context ID, platform_settings it first if necessary
 						if ( ( nid = context.getAttribute( "id" ) ) ) {
 							nid = jQuery.escapeSelector( nid );
 						} else {
@@ -6684,7 +6684,7 @@ function getWidthOrHeight( elem, dimension, extra ) {
 		!support.reliableTrDimensions() && nodeName( elem, "tr" ) ||
 
 		// Fall back to offsetWidth/offsetHeight when value is "auto"
-		// This happens for inline elements with no explicit platform_setting (gh-3571)
+		// This happens for inline elements with no explicit platform_settings (gh-3571)
 		val === "auto" ||
 
 		// Support: Android <=4.1 - 4.3 only
@@ -6726,7 +6726,7 @@ function getWidthOrHeight( elem, dimension, extra ) {
 jQuery.extend( {
 
 	// Add in style property hooks for overriding the default
-	// behavior of getting and platform_setting a style property
+	// behavior of getting and platform_settings a style property
 	cssHooks: {
 		opacity: {
 			get: function( elem, computed ) {
@@ -6774,7 +6774,7 @@ jQuery.extend( {
 	},
 
 	// Add in properties whose names you wish to fix before
-	// platform_setting or getting the value
+	// platform_settings or getting the value
 	cssProps: {},
 
 	// Get and set the style property on a DOM Node
@@ -6801,7 +6801,7 @@ jQuery.extend( {
 		// Gets hook for the prefixed version, then unprefixed version
 		hooks = jQuery.cssHooks[ name ] || jQuery.cssHooks[ origName ];
 
-		// Check if we're platform_setting a value
+		// Check if we're platform_settings a value
 		if ( value !== undefined ) {
 			type = typeof value;
 
@@ -7123,7 +7123,7 @@ Tween.propHooks = {
 };
 
 // Support: IE <=9 only
-// Panic based approach to platform_setting things on disconnected nodes
+// Panic based approach to platform_settings things on disconnected nodes
 Tween.propHooks.scrollTop = Tween.propHooks.scrollLeft = {
 	set: function( tween ) {
 		if ( tween.elem.nodeType && tween.elem.parentNode ) {
@@ -7631,7 +7631,7 @@ jQuery.speed = function( speed, easing, fn ) {
 jQuery.fn.extend( {
 	fadeTo: function( speed, to, easing, callback ) {
 
-		// Show any hidden elements after platform_setting opacity to 0
+		// Show any hidden elements after platform_settings opacity to 0
 		return this.filter( isHiddenWithinTree ).css( "opacity", 0 ).show()
 
 			// Animate to the value specified
@@ -8079,7 +8079,7 @@ jQuery.extend( {
 
 // Support: IE <=11 only
 // Accessing the selectedIndex property
-// forces the browser to respect platform_setting selected
+// forces the browser to respect platform_settings selected
 // on the option
 // The getter ensures a default option is selected
 // when in an optgroup
@@ -8377,7 +8377,7 @@ jQuery.fn.extend( {
 
 			hooks = jQuery.valHooks[ this.type ] || jQuery.valHooks[ this.nodeName.toLowerCase() ];
 
-			// If set returns undefined, fall back to normal platform_setting
+			// If set returns undefined, fall back to normal platform_settings
 			if ( !hooks || !( "set" in hooks ) || hooks.set( this, val, "value" ) === undefined ) {
 				this.value = val;
 			}
@@ -10669,7 +10669,7 @@ jQuery.trim = function( text ) {
 // to call noConflict to hide this version of jQuery, it will work.
 
 // Note that for maximum portability, libraries that are not jQuery should
-// declare themselves as anonymous modules, and avoid platform_setting a global if an
+// declare themselves as anonymous modules, and avoid platform_settings a global if an
 // AMD loader is present. jQuery is a special case. For more information, see
 // https://github.com/jrburke/requirejs/wiki/Updating-existing-libraries#wiki-anon
 

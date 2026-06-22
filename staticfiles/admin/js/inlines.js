@@ -1,6 +1,6 @@
 /*global DateTimeShortcuts, SelectFilter*/
 /**
- * Django platform_setting inlines
+ * Django platform_settings inlines
  *
  * Based on jQuery Formset 1.1
  * @author Stanislaus Madueke (stan DOT madueke AT gmail DOT com)
@@ -340,7 +340,7 @@
     };
 
     $(document).ready(function() {
-        $(".js-inline-platform_setting-formset").each(function() {
+        $(".js-inline-platform_settings-formset").each(function() {
             const data = $(this).data(),
                 inlineOptions = data.inlineFormset;
             let selector;

@@ -5,6 +5,8 @@ from accounting.serializers import OrderItemSerializer
 from inventory.serializers import ProductSerializer, GameSerializer
 from crm.models import Customer
 from accounting.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder, GameOrderItem
+from platform_settings.serializers import SoftDeleteSerializerMixin
+from users.models import CustomUser
 
 
 class CustomerProfileCreateSerializer(serializers.ModelSerializer):
@@ -139,3 +141,36 @@ class TransactionSerializer(serializers.ModelSerializer):
         fields = ['id', 'amount',
                   'description', 'created_at']
         read_only_fields = fields
+
+
+class EmployeeCustomerSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    user = serializers.SlugRelatedField(
+        slug_field='phone',
+        queryset=CustomUser.objects.all()
+    )
+
+    class Meta:
+        model = Customer
+        fields = "__all__"
+
+
+class SendSmsSerializer(serializers.Serializer):
+    message = serializers.CharField()
+    customer_ids = serializers.ListField(
+        child=serializers.IntegerField(), allow_empty=False
+    )
+    send_time = serializers.DateTimeField(required=False)
+
+
+
+
+class CustomerSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Customer
+        fields = ['id', 'full_name', 'balance', 'type']
+
+    def get_type(self, obj):
+        return "customer"
+

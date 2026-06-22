@@ -24,10 +24,10 @@
     $(function() {
         // Initialize all autocomplete widgets except the one in the template
         // form used when a new formset is added.
-        $('.platform_setting-autocomplete').not('[name*=__prefix__]').djangoAdminSelect2();
+        $('.platform_settings-autocomplete').not('[name*=__prefix__]').djangoAdminSelect2();
     });
 
     document.addEventListener('formset:added', (event) => {
-        $(event.target).find('.platform_setting-autocomplete').djangoAdminSelect2();
+        $(event.target).find('.platform_settings-autocomplete').djangoAdminSelect2();
     });
 }

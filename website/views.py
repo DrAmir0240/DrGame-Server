@@ -9,11 +9,12 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
+from hr.serializers import EmployeeHireSerializer
 from users.auth import CustomJWTAuthentication
 from users.permissions import IsCustomer, IsEmployee, IsMainManager
 from crm.models import Customer
 from hr.models import EmployeeHire
-from hr.serializers import EmployeeHireSerializer
+
 from accounting.models import GAME_ORDER_CONSOLE_TYPE
 from inventory.models import Game, Product, ProductCategory
 from inventory.serializers import GameSerializer, ProductSerializer, ProductCategorySerializer
@@ -21,7 +22,8 @@ from .serializers import CartSerializer, UpdateBlogPostSerializer, \
     CreateBlogPostSerializer, AboutUsSerializer, ContactUsSerializer, ContactSubmissionSerializer, \
     BlogPostDetailSerializer, BlogPostListSerializer, CourseRetrieveSerializer, \
     CourseListCreateSerializer, CourseUpdateSerializer, VideoSerializer, VideoCreateSerializer, VideoUpdateSerializer, \
-    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer, GameCartChoicesSerializer
+    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer, GameCartChoicesSerializer, \
+    EmployeeGameSerializer, GameBulkPriceUpdateSerializer, EmployeeBlogSerializer
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Course, \
     Video, HomeBanner, GameCart, GameCartItem
 
@@ -625,3 +627,59 @@ class SendResume(generics.CreateAPIView):
     serializer_class = EmployeeHireSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
+
+
+
+
+# ==================== GameStore Views ====================
+class EmployeeGameListCreate(generics.ListCreateAPIView):
+    serializer_class = EmployeeGameSerializer
+    queryset = Game.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeeGameDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeGameSerializer
+    queryset = Game.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class GameBulkPriceUpdateView(generics.GenericAPIView):
+    serializer_class = GameBulkPriceUpdateSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        price_type = serializer.get_db_field()  # تبدیل خودکار
+        price_value = serializer.validated_data['price']
+
+        updated_count = Game.objects.update(**{price_type: price_value})
+
+        return Response({
+            "message": f"Updated {updated_count} games",
+            "type": serializer.validated_data['type'],  # همون چیزی که کاربر فرستاده
+            "price": price_value
+        }, status=status.HTTP_200_OK)
+
+
+# ==================== Blog Views ====================
+class EmployeeBlogListCreate(generics.ListCreateAPIView):
+    serializer_class = EmployeeBlogSerializer
+    queryset = BlogPost.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeeBlogDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeBlogSerializer
+    queryset = BlogPost.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'slug'
+
+

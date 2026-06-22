@@ -1,12 +1,12 @@
 from rest_framework import serializers
 from slugify import slugify
 
-from hr.serializers import EmployeeGameSerializer
 from accounting.models import CourseOrder
 from inventory.serializers import GameSerializer
+from platform_settings.serializers import SoftDeleteSerializerMixin
 from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Video, \
     Course, HomeBanner, GameCart, GameCartItem
-from inventory.models import Product, ProductColor, Game
+from inventory.models import Product, ProductColor, Game, GameImage
 
 
 # cart-item
@@ -375,3 +375,106 @@ class HomeBannerSerializer(serializers.ModelSerializer):
                     {"is_chosen": "Only 3 banners can be selected"}
                 )
         return data
+
+
+class EmployeeGameImageSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    # برای اینکه بتوانیم در آپدیت، id را از ورودی بخوانیم
+    id = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = GameImage
+        # game را از ورودی حذف می‌کنیم؛ اتصال را خودمان انجام می‌دهیم
+        exclude = ['game']
+
+
+class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    game_images = EmployeeGameImageSerializer(many=True, required=False)
+
+    class Meta:
+        model = Game
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+    def create(self, validated_data):
+        images_data = validated_data.pop('game_images', [])
+        game = Game.objects.create(**validated_data)
+        # ساخت تصاویر جدید (بدون نیاز به game در ورودی)
+        for img_data in images_data:
+            img_data.pop('id', None)  # ورودی id برای ساخت لازم نیست
+            img_data.pop('game', None)  # امنیت بیشتر
+            # اگر کاربر به اشتباه is_deleted=true فرستاد، ایجاد نکن
+            if img_data.get('is_deleted'):
+                continue
+            GameImage.objects.create(game=game, **img_data)
+        return game
+
+    def update(self, instance, validated_data):
+        images_data = validated_data.pop('game_images', None)
+
+        # آپدیت فیلدهای خود Game
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if images_data is not None:
+            # حذف همه عکس‌های قبلی
+            instance.game_images.all().delete()
+            # ساخت عکس‌های جدید
+            for img_data in images_data:
+                img_data.pop('id', None)
+                img_data.pop('game', None)
+                if img_data.get('is_deleted'):
+                    continue
+                GameImage.objects.create(game=instance, **img_data)
+
+        return instance
+
+
+class GameBulkPriceUpdateSerializer(serializers.Serializer):
+    TYPE_CHOICES = [
+        ('online_ps4', 'Online PS4'),
+        ('online_ps5', 'Online PS5'),
+        ('offline_ps4', 'Offline PS4'),
+        ('offline_ps5', 'Offline PS5'),
+        ('data_ps4', 'Data PS4'),
+        ('data_ps5', 'Data PS5'),
+        ('xbox', 'Xbox'),
+        ('nintendo', 'Nintendo'),
+    ]
+
+    type = serializers.ChoiceField(choices=TYPE_CHOICES)
+    price = serializers.IntegerField(min_value=0)
+
+    def get_db_field(self):
+        """
+        تبدیل ورودی کاربر به اسم واقعی فیلد دیتابیس
+        """
+        type_map = {
+            'online_ps4': 'online_ps4_price',
+            'online_ps5': 'online_ps5_price',
+            'offline_ps4': 'offline_ps4_price',
+            'offline_ps5': 'offline_ps5_price',
+            'data_ps4': 'data_ps4_price',
+            'data_ps5': 'data_ps5_price',
+            'xbox': 'xbox_price',
+            'nintendo': 'nintendo_price',
+        }
+        return type_map[self.validated_data['type']]
+
+
+class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = BlogPost
+        fields = "__all__"
+        read_only_fields = ['created_at', 'updated_at']
+
+
+class GameSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Game
+        fields = ['id', 'title', 'type']
+
+    def get_type(self, obj):
+        return "game"

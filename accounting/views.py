@@ -1,21 +1,31 @@
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.utils.translation.trans_real import translation
-from rest_framework import generics, permissions
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import generics, permissions, filters
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from crm.models import Customer
+from crm.serializers import EmployeeCustomerSerializer
+from hr.filters import TransactionFilter
+from hr.models import Employee
+from hr.serializers import EmployeeSerializer
+from orders.serializers import EmployeePersonalGameOrderItemSerializer, EmployeeProductOrderSerializer, \
+    EmployeeGameOrderSerializer, EmployeeRepairOrderSerializer
 from users.auth import CustomJWTAuthentication
 from users.models import MainManager
-from users.permissions import IsCustomer
-from hr.serializers import EmployeeGameOrderSerializer
+from users.permissions import IsCustomer, IsEmployee, IsMainManager
+
 from accounting.models import Order, Transaction, OrderItem, GameOrder, DeliveryMan, RepairOrder, CourseOrder, \
     PaymentMethod, GameOrderItem
 from website.models import Cart, GameCart
 from accounting.serializers import OrderSerializer, TransactionSerializer, GameOrderSerializer, DeliveryManSerializer, \
-    RepairOrderSerializer, CourseOrderSerializer, GameOrderCreateSerializer
+    RepairOrderSerializer, CourseOrderSerializer, GameOrderCreateSerializer, BalanceSerializer, \
+    EmployeeTransactionSerializer, EmployeeIncomingTransactionSerializer, EmployeesOutgoingTransactionSerializer
 from django.core.exceptions import ValidationError
 from rest_framework import status
 
@@ -442,4 +452,176 @@ class RequestPaymentForCourseOrder(generics.RetrieveAPIView):
         return Response(result,
                         status=status.HTTP_200_OK if result["status"] == "success" else status.HTTP_400_BAD_REQUEST)
 
-# Account Order
+# -------------------- transactions --------------------
+
+
+
+class EmployeePanelSelfBalance(generics.GenericAPIView):
+    serializer_class = BalanceSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        # مقدار اولیه
+        balance = 0
+        # اگر کاربر دارای رابطه employee است
+        if hasattr(request.user, 'employee') and request.user.employee:
+            balance = request.user.employee.balance or 0
+        # Serialize و برگرداندن Response
+        serializer = self.get_serializer({'balance': balance})
+        return Response(serializer.data)
+
+
+class EmployeePanelOwnedOutTransactionList(generics.ListAPIView):
+    serializer_class = EmployeeTransactionSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        receiver = self.request.user
+        try:
+            return Transaction.objects.filter(receiver=receiver, is_deleted=False)
+        except AttributeError:
+            return Response(status=404)
+
+
+class EmployeePanelOwnedOutTransactionDetail(generics.RetrieveAPIView):
+    serializer_class = EmployeeTransactionSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        receiver = self.request.user
+        try:
+            return Transaction.objects.filter(receiver=receiver, is_deleted=False)
+        except AttributeError:
+            return Response(status=404)
+
+
+class EmployeePanelOwnedInTransactionList(generics.GenericAPIView):
+    serializer_class = EmployeePersonalGameOrderItemSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        employee = request.user.employee
+        game_order_items = GameOrderItem.objects.filter(
+            Q(account_setter=employee) | Q(data_uploader=employee),
+            is_deleted=False
+        )
+
+        serializer = self.get_serializer(game_order_items, many=True)
+        return Response(serializer.data)
+
+
+class EmployeePanelOwnedInTransactionDetail(generics.RetrieveAPIView):
+    queryset = GameOrderItem.objects.filter(is_deleted=False)
+    serializer_class = EmployeePersonalGameOrderItemSerializer
+    permission_classes = [IsEmployee]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        employee = self.request.user.employee
+        return GameOrderItem.objects.filter(
+            is_deleted=False
+        ).filter(
+            Q(account_setter=employee) | Q(data_uploader=employee)
+        )
+
+
+
+
+# ==================== Transactions Views ====================
+class EmployeePanelInTransactionList(generics.ListAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False, in_out=True)
+    serializer_class = EmployeeTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = TransactionFilter
+    search_fields = [
+        'description', 'category',
+        'payment_method__title',
+        'payer__customer__full_name',
+        'receiver__employee__first_name',
+        'receiver__employee__last_name',
+    ]
+    ordering_fields = ['created_at', 'amount']
+
+
+class EmployeePanelOutTransactionList(generics.ListAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False, in_out=False)
+    serializer_class = EmployeeTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = TransactionFilter
+    search_fields = [
+        'description', 'category',
+        'payment_method__title',
+        'payer__customer__full_name',
+        'receiver__employee__first_name',
+        'receiver__employee__last_name',
+    ]
+    ordering_fields = ['created_at', 'amount']
+
+
+class EmployeePanelTransactionDetail(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = EmployeeTransactionSerializer
+    queryset = Transaction.objects.filter(is_deleted=False)
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+    lookup_field = 'pk'
+
+
+
+
+
+class EmployeePanelAddIncomingTransactionView(generics.CreateAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False)
+    serializer_class = EmployeeIncomingTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelAddOutGoingTransaction(generics.CreateAPIView):
+    queryset = Transaction.objects.filter(is_deleted=False)
+    serializer_class = EmployeesOutgoingTransactionSerializer
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+
+class EmployeePanelTransactionPayerReceiverChoices(generics.ListAPIView):
+    def list(self, request, *args, **kwargs):
+        customers = Customer.objects.all()
+        employees = Employee.objects.all()
+        response_data = {
+            'crm': EmployeeCustomerSerializer(customers, many=True).data,
+            'hr': EmployeeSerializer(employees, many=True).data,
+        }
+        return Response(response_data)
+
+
+class EmployeePanelTransactionOrderChoices(generics.ListAPIView):
+    serializer_class = None
+    permission_classes = [IsEmployee | IsMainManager]
+    authentication_classes = [CustomJWTAuthentication]
+
+    def get_queryset(self):
+        customer_id = self.kwargs.get('customer_id')
+        order_type = self.kwargs.get('order_type')
+
+        if order_type == 'order':
+            self.serializer_class = EmployeeProductOrderSerializer
+            return Order.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        elif order_type == 'game_order':
+            self.serializer_class = EmployeeGameOrderSerializer
+            return GameOrder.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        elif order_type == 'repair_order':
+            self.serializer_class = EmployeeRepairOrderSerializer
+            return RepairOrder.objects.filter(customer_id=customer_id, is_deleted=False, payment_status='unpaid')
+
+        raise ValidationError(
+            {"order_type": "نوع سفارش نامعتبر است. باید یکی از [order, game_order, repair_order] باشد."})

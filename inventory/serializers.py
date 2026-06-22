@@ -1,6 +1,8 @@
 from rest_framework import serializers
 
-from inventory.models import Game, Product, ProductCategory, ProductCompany, ProductColor, ProductImage, GameImage
+from inventory.models import Game, Product, ProductCategory, ProductCompany, ProductColor, ProductImage, GameImage, \
+    RealAssetsCategory, RealAssetsSubCategory, RealAssets
+from platform_settings.serializers import SoftDeleteSerializerMixin
 
 
 class ProductColorSerializer(serializers.ModelSerializer):
@@ -93,3 +95,93 @@ class GameSerializer(serializers.ModelSerializer):
                     {"is_trend": "Only 4 games can be marked as trending."}
                 )
         return data
+
+
+
+
+class EmployeeProductColorSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductColor
+        fields = ['id', 'title']
+
+
+class EmployeeProductCategorySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductCategory
+        fields = ['id', 'title']
+
+
+class EmployeeProductCompanySerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProductCompany
+        fields = ['id', 'title']
+
+
+class EmployeeProductSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = "__all__"
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at', 'units_sold']
+
+class RealAssetsCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RealAssetsCategory
+        fields = ["id", "title", "description"]
+
+
+class RealAssetsSubCategorySerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source="category.title", read_only=True)
+
+    class Meta:
+        model = RealAssetsSubCategory
+        fields = [
+            "id",
+            "title",
+            "description",
+            "category",
+            "category_title",
+        ]
+
+
+class RealAssetsSerializer(serializers.ModelSerializer):
+    sub_category_title = serializers.CharField(source="category.title", read_only=True)
+
+    main_category_id = serializers.IntegerField(
+        source="category.category.id", read_only=True
+    )
+    main_category_title = serializers.CharField(
+        source="category.category.title", read_only=True
+    )
+    employee_name = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = RealAssets
+        fields = [
+            "id",
+            "title",
+            "image",
+            "price",
+            "category",
+            "sub_category_title",
+            "main_category_id",
+            "main_category_title",
+            "created_at",
+            "employee",
+            "employee_name"
+        ]
+
+    def get_employee_name(self, obj):
+        if obj.employee:
+            return obj.employee.first_name + " " + obj.employee.last_name
+        return ""
+
+
+class RealAssetsSearchSerializer(serializers.ModelSerializer):
+    type = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RealAssets
+        fields = ['id', 'title', 'price', 'type']
+
+    def get_type(self, obj):
+        return "real_asset"

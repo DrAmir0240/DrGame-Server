@@ -1,6 +1,6 @@
 "use strict";
 // Fallback JS for browsers which do not support :has selector used in
-// platform_setting/css/unusable_password_fields.css
+// platform_settings/css/unusable_password_fields.css
 // Remove file once all supported browsers support :has selector
 try {
     // If browser does not support :has selector this will raise an error

@@ -28,4 +28,11 @@ urlpatterns = [
     path('transactions/', views.CustomerTransactionListAPIView.as_view(), name='customer-transactions'),
     path('transactions/<int:pk>/', views.CustomerTransactionRetrieveAPIView.as_view(),
          name='customer-transactions-detail'),
+
+    # ==================== Customer Views ====================
+    path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),
+    path('customer/<int:pk>/', views.CustomerDetail.as_view(), name='customer-detail'),
+    path('customer/<int:pk>/deposit/', views.CustomerDeposit.as_view(), name='customer-deposit'),
+    path('customer/send-sms-service/', views.CustomerSendSmsService.as_view(), name='customer-send-sms-service'),
+
 ]

@@ -1,12 +1,9 @@
-FROM repo.webteamwork.ir/library/python:3.12 AS base
+FROM python:3.12 AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-RUN rm -rf /etc/apt/sources.list.d/* \
-    && echo "deb [trusted=yes] https://repo.webteamwork.ir/repository/apt-trixie trixie main contrib non-free" \
-       > /etc/apt/sources.list \
-    && apt update \
+RUN apt update \
     && apt install -y \
         gcc \
         build-essential \
@@ -24,13 +21,8 @@ WORKDIR /drgame_back
 
 COPY requirements.txt .
 
-RUN pip install --trusted-host repo.webteamwork.ir \
-        --upgrade pip \
-        --index-url https://repo.webteamwork.ir/repository/pip-package/simple/ \
-    && pip install --trusted-host repo.webteamwork.ir \
-        --no-cache-dir \
-        --index-url https://repo.webteamwork.ir/repository/pip-package/simple/ \
-        -r requirements.txt
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
 
 COPY . .
 
@@ -45,11 +37,10 @@ CMD ["sh", "-c", \
 
 FROM base AS prod
 
-# نکته: «config» رو با اسم واقعی پکیج settings جنگو پروژه‌تون جایگزین کنید (همون پوشه‌ای که wsgi.py توشه)
 CMD ["sh", "-c", \
      "python manage.py migrate && \
       python manage.py collectstatic --noinput && \
-      gunicorn config.wsgi:application \
+      gunicorn DrGame.wsgi:application \
         --bind 0.0.0.0:8000 \
         --workers 4 \
         --log-level info"]
