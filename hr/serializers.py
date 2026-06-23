@@ -1,21 +1,10 @@
-from django.core.exceptions import ValidationError, ObjectDoesNotExist
-from django.db import transaction
-from django.db.models import Sum
-from django.utils.dateparse import parse_date
 from rest_framework import serializers
-from django.db import transaction as db_transaction
 
+from accounting.models import Transaction, RepairOrder
+from accounting.serializers import DeliveryManSerializer
+from hr.models import Employee, Repairman, EmployeeFile, EmployeeRequest, EmployeeHire
 from platform_settings.serializers import SoftDeleteSerializerMixin
 from users.models import CustomUser
-from crm.models import Customer
-from hr.models import EmployeeTask, Employee, Repairman, EmployeeFile, EmployeeRequest, EmployeeHire
-from website.models import BlogPost
-from accounting.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, OrderItem, GameOrderItem, \
-    CourseOrder, RepairOrderType, TelegramOrder
-from accounting.serializers import DeliveryManSerializer
-from inventory.models import Game, SonyAccount, Product, ProductColor, ProductCategory, ProductCompany, \
-    GameImage, DocCategory, Document, RealAssetsCategory, RealAssets, SonyAccountStatus, SonyAccountBank, \
-    SonyAccountGame, DocSubCategory, RealAssetsSubCategory
 
 
 class EmployeeFileSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):

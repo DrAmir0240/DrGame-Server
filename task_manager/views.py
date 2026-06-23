@@ -4,7 +4,7 @@ from rest_framework import generics, filters
 from rest_framework.response import Response
 
 from hr.filters import EmployeeTaskFilter
-from hr.models import EmployeeTask, Employee
+from task_manager.models import PlanedTask, Employee
 from hr.serializers import EmployeeSerializer
 from hr.views import EmployeeOrganizeTaskPagination
 from task_manager.serializers import EmployeePersonalTaskSerializer, EmployeeOrganizeTaskSerializer
@@ -30,7 +30,7 @@ class EmployeePanelTaskList(
         user = self.request.user
         try:
             employee = user.employee
-            return EmployeeTask.objects.filter(employee=employee, is_deleted=False)
+            return PlanedTask.objects.filter(employee=employee, is_deleted=False)
         except AttributeError:
             return Response(status=404)
 
@@ -44,7 +44,7 @@ class EmployeePanelTaskDetail(generics.RetrieveUpdateDestroyAPIView):
         user = self.request.user
         try:
             employee = user.employee
-            return EmployeeTask.objects.filter(employee=employee)
+            return PlanedTask.objects.filter(employee=employee)
         except AttributeError:
             return Response(status=404)
 
@@ -58,7 +58,7 @@ class EmployeePanelAddTask(generics.CreateAPIView):
         user = self.request.user
         try:
             employee = user.employee
-            return EmployeeTask.objects.filter(employee=employee)
+            return PlanedTask.objects.filter(employee=employee)
         except AttributeError:
             return Response(status=404)
 
@@ -67,7 +67,7 @@ class EmployeePanelAddTask(generics.CreateAPIView):
 
 # ==================== TaskManager Views ====================
 class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
-    queryset = EmployeeTask.objects.filter(type='Organize')
+    queryset = PlanedTask.objects.filter(type='Organize')
     serializer_class = EmployeeOrganizeTaskSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -78,7 +78,7 @@ class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
 
 
 class EmployeePanelOrganizeTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = EmployeeTask.objects.filter(type='Organize')
+    queryset = PlanedTask.objects.filter(type='Organize')
     serializer_class = EmployeeOrganizeTaskSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]

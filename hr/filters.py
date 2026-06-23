@@ -1,6 +1,6 @@
 import django_filters
-
-from hr.models import EmployeeTask, EmployeeRequest
+from task_manager.models import PlanedTask
+from hr.models import EmployeeRequest
 from django_filters import rest_framework as filters
 
 from accounting.models import Transaction, GameOrder, RepairOrder, GAME_ORDER_CONSOLE_TYPE, TelegramOrder
@@ -8,13 +8,13 @@ from inventory.models import SonyAccount, Document, RealAssets, Product, RealAss
 
 
 class EmployeeTaskFilter(filters.FilterSet):
-    type = filters.ChoiceFilter(choices=EmployeeTask._meta.get_field('type').choices)
-    status = filters.ChoiceFilter(choices=EmployeeTask._meta.get_field('status').choices)
+    type = filters.ChoiceFilter(choices=PlanedTask._meta.get_field('type').choices)
+    status = filters.ChoiceFilter(choices=PlanedTask._meta.get_field('status').choices)
     deadline = filters.DateFilter(field_name='deadline', lookup_expr='exact')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
 
     class Meta:
-        model = EmployeeTask
+        model = PlanedTask
         fields = ['type', 'status', 'deadline', 'title']
 
 

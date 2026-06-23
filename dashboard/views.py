@@ -12,8 +12,8 @@ from dashboard.serializers import GameAndRepairOrderStatsSerializer, OrderStatsS
     RealAssetStatsSerializer, SellReportSerializer, FinanceReportSerializer, PerformanceReportSerializer, \
     CustomerReportSerializer
 from hr.filters import EmployeeProductFilter, RealAssetsFilter
-from hr.models import EmployeeTask, Employee, Repairman
-
+from hr.models import Employee, Repairman
+from task_manager.models import PlanedTask
 from inventory.models import Product, RealAssets
 from task_manager.serializers import EmployeeTaskStatsSerializer
 from users.auth import CustomJWTAuthentication
@@ -31,7 +31,7 @@ class TaskStatsAPIView(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         employee = request.user.employee
 
-        qs = EmployeeTask.objects.filter(employee=employee, is_deleted=False)
+        qs = PlanedTask.objects.filter(employee=employee, is_deleted=False)
 
         data = {
             "planed": qs.filter(status="planed").count(),

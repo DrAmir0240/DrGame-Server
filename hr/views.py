@@ -1,26 +1,22 @@
 import requests
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q, Count, Sum, F, DecimalField
-from django.utils.dateparse import parse_date
+from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, status, filters
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 
 from DrGame import settings
-from accounting.models import GameOrder, Transaction, Order, RepairOrder, PaymentMethod, GameOrderItem, CourseOrder, \
-    TelegramOrder, RepairOrderType
+from accounting.models import GameOrder, Transaction, RepairOrder, PaymentMethod, TelegramOrder, RepairOrderType
 from accounting.serializers import TransactionSerializer, EmployeeDepositSerializer, RepairmanDepositSerializer
 from crm.models import Customer
 from hr.filters import GameOrderFilter, RepairOrderFilter, \
-    EmployeeRequestFilter, RealAssetsFilter, \
-    EmployeeProductFilter
-from hr.models import EmployeeTask, Employee, Repairman, EmployeeRequest, EmployeeHire
+    EmployeeRequestFilter
+from hr.models import Employee, Repairman, EmployeeRequest, EmployeeHire
 from hr.serializers import EmployeeRequestSerializer, EmployeeSerializer, SendSmsToEmployeeSerializer, \
     EmployeeHireSerializer, RepairmanSerializer, RepairManRepairOrderSerializer, RepairManTransactionSerializer
 from orders.serializers import EmployeeGameOrderSerializer, EmployeeTelegramOrderSerializer, RepairOrderTypeSerializer
 from platform_settings.serializers import EmployeeStatusChoicesSerializer
-
 from users.auth import CustomJWTAuthentication
 from users.models import CustomUser
 from users.permissions import IsEmployee, IsMainManager, IsRepairman

@@ -1,12 +1,12 @@
 from rest_framework import serializers
 
-from hr.models import EmployeeTask
+from task_manager.models import PlanedTask
 from platform_settings.serializers import SoftDeleteSerializerMixin
 
 
 class EmployeePersonalTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
-        model = EmployeeTask
+        model = PlanedTask
         fields = ['id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee', 'created_at',
                   'updated_at']
         read_only_fields = ['employee', 'type', 'created_at', 'updated_at', 'is_deleted']
@@ -20,7 +20,7 @@ class EmployeePersonalTaskSerializer(SoftDeleteSerializerMixin, serializers.Mode
 
 class EmployeeOrganizeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
     class Meta:
-        model = EmployeeTask
+        model = PlanedTask
         fields = [
             'id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee',
             'created_at', 'updated_at'
