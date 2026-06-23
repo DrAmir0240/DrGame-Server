@@ -3,15 +3,26 @@ from django.urls import path
 from task_manager import views
 
 urlpatterns = [
+    # generic
+    path('stats/', views.TaskManagerDashboardAPIView.as_view(), name='task-manager-stats'),
+    # path('choices/'),
+    # path('search/'),
 
-# -------------------- Tasks --------------------
-    path('personal/tasks/', views.EmployeePanelTaskList.as_view(), name='personal-task-list'),
-    path('personal/tasks/<int:pk>/', views.EmployeePanelTaskDetail.as_view(), name='personal-task-detail'),
-    path('personal/tasks/add/', views.EmployeePanelAddTask.as_view(), name='personal-task-add'),
+    # list
+    # path('list/<str:status>/'),
+    # path('list/<int:employee_id>/'),
+    # path('list/<str:priority>/'),
+    # path('list/<str:type>/')
 
-    # ==================== TaskManager Views ====================
-    path('tasks/', views.EmployeePanelOrganizeTaskListCreateView.as_view(), name='task-list-add'),
-    path('tasks/<int:pk>/', views.EmployeePanelOrganizeTaskDetailView.as_view(), name='task-detail'),
-    path('tasks/hr/', views.EmployeePanelOrganizeTaskChoices.as_view(), name='task-employee-list'),
+    # personal
+    # path('read-delete-update/personal'),
+    # path('add/personal'),
+
+    # organize
+    # path('list/pending-approval/'),
+    # path('list/pending-approval/approve/'),
+    # path('list/pending-approval/reject/'),
+    # path('read-delete-update/<int:pk>'),
+    # path('add/'),
 
 ]

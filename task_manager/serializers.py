@@ -1,39 +1,19 @@
 from rest_framework import serializers
 
-from task_manager.models import PlanedTask
-from platform_settings.serializers import SoftDeleteSerializerMixin
+
+class TaskStatsSerializer(serializers.Serializer):
+    not_started = serializers.IntegerField()
+    in_progress = serializers.IntegerField()
+    done = serializers.IntegerField()
+    expired = serializers.IntegerField()
 
 
-class EmployeePersonalTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    class Meta:
-        model = PlanedTask
-        fields = ['id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee', 'created_at',
-                  'updated_at']
-        read_only_fields = ['employee', 'type', 'created_at', 'updated_at', 'is_deleted']
-
-    def create(self, validated_data):
-        employee = self.context['request'].user.employee
-        validated_data['employee'] = employee
-        validated_data['type'] = 'Personal'
-        return super().create(validated_data)
+class TaskManagerPermissionSerializer(serializers.Serializer):
+    can_read_task_manger = serializers.BooleanField()
+    can_write_task_manger = serializers.BooleanField()
 
 
-class EmployeeOrganizeTaskSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    class Meta:
-        model = PlanedTask
-        fields = [
-            'id', 'title', 'voice', 'type', 'description', 'status', 'deadline', 'employee',
-            'created_at', 'updated_at'
-        ]
-        read_only_fields = ['type', 'created_at', 'updated_at', 'is_deleted']
-
-    def create(self, validated_data):
-        validated_data['type'] = 'Organize'
-        return super().create(validated_data)
-
-class EmployeeTaskStatsSerializer(serializers.Serializer):
-    planed = serializers.IntegerField(read_only=True)
-    in_progress = serializers.IntegerField(read_only=True)
-    done = serializers.IntegerField(read_only=True)
-    all = serializers.IntegerField(read_only=True)
-
+class TaskManagerDashboardSerializer(serializers.Serializer):
+    permissions = TaskManagerPermissionSerializer()
+    my_tasks = TaskStatsSerializer()
+    all_tasks = TaskStatsSerializer(allow_null=True)

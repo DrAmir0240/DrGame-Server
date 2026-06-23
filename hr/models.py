@@ -3,16 +3,47 @@ from users.models import CustomUser
 
 
 # Create your models here.
+class EmployeeRole(models.Model):
+    # Base Info
+    role_name = models.CharField(max_length=100)
+    description = models.TextField(max_length=5000)
+    # Permissions
+    access_to_dashboard = models.BooleanField(default=False)
+    can_read_task_manager = models.BooleanField(default=False)
+    can_write_task_manager = models.BooleanField(default=False)
+    can_read_accounting = models.BooleanField(default=False)
+    can_write_accounting = models.BooleanField(default=False)
+    can_read_inventory = models.BooleanField(default=False)
+    can_write_inventory = models.BooleanField(default=False)
+    access_to_all_inventory = models.BooleanField(default=False)
+    can_read_orders = models.BooleanField(default=False)
+    can_write_orders = models.BooleanField(default=False)
+    can_read_account_orders = models.BooleanField(default=False)
+    can_write_account_orders = models.BooleanField(default=False)
+    access_to_all_accounts = models.BooleanField(default=False)
+    is_account_employee = models.BooleanField(default=False)
+    can_read_repairs = models.BooleanField(default=False)
+    can_write_repairs = models.BooleanField(default=False)
+    can_read_hr = models.BooleanField(default=False)
+    can_write_hr = models.BooleanField(default=False)
+    can_read_site = models.BooleanField(default=False)
+    can_write_site = models.BooleanField(default=False)
+    can_read_branch = models.BooleanField(default=False)
+    can_write_branch = models.BooleanField(default=False)
+    can_read_docs = models.BooleanField(default=False)
+    can_write_docs = models.BooleanField(default=False)
+    can_change_setting = models.BooleanField(default=False)
+    access_to_messenger = models.BooleanField(default=False)
+    can_start_chat = models.BooleanField(default=False)
+
+    def __str__(self):
+        return {self.role_name}
+
 
 class Employee(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='employee')
     profile_picture = models.ImageField(null=True, upload_to='profile_pictures/hr/')
-    role = models.CharField(max_length=14, choices=(
-        ('recipient', 'صندوق دار'),
-        ('account_setter', 'اکانت ستر'),
-        ('data_uploader', 'دیتا آپلودر'),
-        ('manager', 'مدیر داخلی')
-    ), null=True, blank=True)
+    role = models.ForeignKey(EmployeeRole, on_delete=models.SET_NULL, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     national_code = models.CharField(max_length=10, null=True)
@@ -20,30 +51,6 @@ class Employee(models.Model):
     balance = models.IntegerField(default=0)
     has_commission = models.BooleanField(default=False, null=True, blank=True)
     commission_amount = models.IntegerField(default=0, null=True, blank=True)
-    has_access_to_organize_tasks = models.BooleanField(default=False)
-    has_access_to_game_orders = models.BooleanField(default=False)
-    has_access_to_product_order = models.BooleanField(default=False)
-    has_access_to_repair_order = models.BooleanField(default=False)
-    has_access_to_personal_account = models.BooleanField(default=False)
-    has_access_to_all_accounts = models.BooleanField(default=False)
-    has_access_to_add_accounts = models.BooleanField(default=False)
-    has_access_to_transactions = models.BooleanField(default=False)
-    has_access_to_customer_read = models.BooleanField(default=False)
-    has_access_to_customer_write = models.BooleanField(default=False)
-    has_access_to_employees_read = models.BooleanField(default=False)
-    has_access_to_employees_write = models.BooleanField(default=False)
-    has_access_to_repairmen_read = models.BooleanField(default=False)
-    has_access_to_repairmen_write = models.BooleanField(default=False)
-    has_access_to_docs_read = models.BooleanField(default=False)
-    has_access_to_docs_write = models.BooleanField(default=False)
-    has_access_to_assets_read = models.BooleanField(default=False)
-    has_access_to_assets_write = models.BooleanField(default=False)
-    has_access_to_products = models.BooleanField(default=False)
-    has_access_to_game_store = models.BooleanField(default=False)
-    has_access_to_blogs = models.BooleanField(default=False)
-    has_access_to_messenger = models.BooleanField(default=False)
-    has_access_to_reports = models.BooleanField(default=False)
-    has_access_to_requests = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -77,8 +84,6 @@ class EmployeeFile(models.Model):
 
     def __str__(self):
         return f'{self.employee}: {self.title}'
-
-
 
 
 class EmployeeRequest(models.Model):

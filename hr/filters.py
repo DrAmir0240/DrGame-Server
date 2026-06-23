@@ -1,5 +1,5 @@
 import django_filters
-from task_manager.models import PlanedTask
+from task_manager.models import PlannedTask
 from hr.models import EmployeeRequest
 from django_filters import rest_framework as filters
 
@@ -8,13 +8,13 @@ from inventory.models import SonyAccount, Document, RealAssets, Product, RealAss
 
 
 class EmployeeTaskFilter(filters.FilterSet):
-    type = filters.ChoiceFilter(choices=PlanedTask._meta.get_field('type').choices)
-    status = filters.ChoiceFilter(choices=PlanedTask._meta.get_field('status').choices)
+    type = filters.ChoiceFilter(choices=PlannedTask._meta.get_field('type').choices)
+    status = filters.ChoiceFilter(choices=PlannedTask._meta.get_field('status').choices)
     deadline = filters.DateFilter(field_name='deadline', lookup_expr='exact')
     title = filters.CharFilter(field_name='title', lookup_expr='icontains')
 
     class Meta:
-        model = PlanedTask
+        model = PlannedTask
         fields = ['type', 'status', 'deadline', 'title']
 
 

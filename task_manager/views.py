@@ -1,92 +1,77 @@
-from django.shortcuts import render
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, filters
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
+from rest_framework import generics
 from rest_framework.response import Response
 
-from hr.filters import EmployeeTaskFilter
-from task_manager.models import PlanedTask, Employee
-from hr.serializers import EmployeeSerializer
-from hr.views import EmployeeOrganizeTaskPagination
-from task_manager.serializers import EmployeePersonalTaskSerializer, EmployeeOrganizeTaskSerializer
-from users.auth import CustomJWTAuthentication
-from users.permissions import IsEmployee, IsMainManager
+from task_manager.models import PlannedTask
+from .permissions import task_management_permissions
+from .serializers import TaskManagerDashboardSerializer
 
+@extend_schema(
+    tags=["Task Manager"],
+    summary="Task Manager Dashboard Stats",
+    description="""
+    برگرداندن آمار تسک‌ها برای داشبورد.
 
-# Create your views here.
+    - my_tasks : آمار تسک‌های کاربر جاری
+    - all_tasks : آمار تمام پرسنل (در صورت داشتن دسترسی)
+    - permissions : دسترسی‌های Task Manager
+    """,
+    responses=TaskManagerDashboardSerializer
+)
+class TaskManagerDashboardAPIView(generics.GenericAPIView):
+    serializer_class = TaskManagerDashboardSerializer
 
-# -------------------- tasks --------------------
-class EmployeePanelTaskList(
-    generics.ListAPIView):
-    serializer_class = EmployeePersonalTaskSerializer
-    permission_classes = [IsEmployee]
-    authentication_classes = [CustomJWTAuthentication]
-    pagination_class = EmployeeOrganizeTaskPagination
-    filter_backends = [DjangoFilterBackend]
-    filterset_class = EmployeeTaskFilter
-    ordering_fields = ['deadline', 'created_at']
-    search_fields = ['title', 'description']
+    def get_task_stats(self, queryset):
+        today = timezone.now().date()
 
-    def get_queryset(self):
-        user = self.request.user
-        try:
-            employee = user.employee
-            return PlanedTask.objects.filter(employee=employee, is_deleted=False)
-        except AttributeError:
-            return Response(status=404)
+        return {
+            "not_started": queryset.filter(
+                status="planed"
+            ).count(),
 
+            "in_progress": queryset.filter(
+                status="in_progress"
+            ).count(),
 
-class EmployeePanelTaskDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeePersonalTaskSerializer
-    permission_classes = [IsEmployee]
-    authentication_classes = [CustomJWTAuthentication]
+            "done": queryset.filter(
+                status="done"
+            ).count(),
 
-    def get_queryset(self):
-        user = self.request.user
-        try:
-            employee = user.employee
-            return PlanedTask.objects.filter(employee=employee)
-        except AttributeError:
-            return Response(status=404)
+            "expired": queryset.filter(
+                deadline__lt=today
+            ).exclude(
+                status="done"
+            ).count(),
+        }
 
+    def get(self, request, *args, **kwargs):
+        employee = request.user.employee
 
-class EmployeePanelAddTask(generics.CreateAPIView):
-    serializer_class = EmployeePersonalTaskSerializer
-    permission_classes = [IsEmployee]
-    authentication_classes = [CustomJWTAuthentication]
+        permissions = task_management_permissions(employee.role)
 
-    def get_queryset(self):
-        user = self.request.user
-        try:
-            employee = user.employee
-            return PlanedTask.objects.filter(employee=employee)
-        except AttributeError:
-            return Response(status=404)
+        my_queryset = PlannedTask.objects.filter(
+            employee=employee,
+            is_deleted=False
+        )
 
+        my_tasks = self.get_task_stats(my_queryset)
 
+        all_tasks = None
 
+        if permissions["can_read_task_manger"]:
+            all_queryset = PlannedTask.objects.filter(
+                is_deleted=False
+            )
 
-# ==================== TaskManager Views ====================
-class EmployeePanelOrganizeTaskListCreateView(generics.ListCreateAPIView):
-    queryset = PlanedTask.objects.filter(type='Organize')
-    serializer_class = EmployeeOrganizeTaskSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-    pagination_class = EmployeeOrganizeTaskPagination
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_class = EmployeeTaskFilter
-    ordering_fields = ['created_at', 'dead_line']
+            all_tasks = self.get_task_stats(all_queryset)
 
+        serializer = self.get_serializer(
+            {
+                "permissions": permissions,
+                "my_tasks": my_tasks,
+                "all_tasks": all_tasks,
+            }
+        )
 
-class EmployeePanelOrganizeTaskDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = PlanedTask.objects.filter(type='Organize')
-    serializer_class = EmployeeOrganizeTaskSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-
-class EmployeePanelOrganizeTaskChoices(generics.ListAPIView):
-    queryset = Employee.objects.filter(is_deleted=False)
-    serializer_class = EmployeeSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
+        return Response(serializer.data)

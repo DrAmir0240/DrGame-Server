@@ -4,7 +4,7 @@ from task_manager import models
 
 
 # Register your models here.
-@admin.register(models.PlanedTask)
+@admin.register(models.PlannedTask)
 class PlanedTaskAdmin(admin.ModelAdmin):
     class Meta:
         fields = '__all__'

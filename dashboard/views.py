@@ -13,9 +13,8 @@ from dashboard.serializers import GameAndRepairOrderStatsSerializer, OrderStatsS
     CustomerReportSerializer
 from hr.filters import EmployeeProductFilter, RealAssetsFilter
 from hr.models import Employee, Repairman
-from task_manager.models import PlanedTask
+from task_manager.models import PlannedTask
 from inventory.models import Product, RealAssets
-from task_manager.serializers import EmployeeTaskStatsSerializer
 from users.auth import CustomJWTAuthentication
 from users.permissions import IsMainManager, IsEmployee
 
@@ -24,14 +23,13 @@ from users.permissions import IsMainManager, IsEmployee
 
 # ==================== Stats Views ====================
 class TaskStatsAPIView(generics.GenericAPIView):
-    serializer_class = EmployeeTaskStatsSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
         employee = request.user.employee
 
-        qs = PlanedTask.objects.filter(employee=employee, is_deleted=False)
+        qs = PlannedTask.objects.filter(employee=employee, is_deleted=False)
 
         data = {
             "planed": qs.filter(status="planed").count(),
