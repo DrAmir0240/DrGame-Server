@@ -5,24 +5,21 @@ from task_manager import views
 urlpatterns = [
     # generic
     path('stats/', views.TaskManagerDashboardAPIView.as_view(), name='task-manager-stats'),
-    # path('choices/'),
-    # path('search/'),
-
-    # list
-    # path('list/<str:status>/'),
-    # path('list/<int:employee_id>/'),
-    # path('list/<str:priority>/'),
-    # path('list/<str:type>/')
+    path("choices/", views.TaskChoicesView.as_view(), name="task-choices"),
+    path("search/", views.TaskSearchView.as_view(), name="task-search"),
+    path("list/", views.TaskListView.as_view(), name="task-list"),
 
     # personal
-    # path('read-delete-update/personal'),
-    # path('add/personal'),
+    path("personal/", views.PersonalTaskRUDView.as_view(), name="personal-task-rud"),
+    path("personal/add/", views.PersonalTaskCreateView.as_view(), name="personal-task-create"),
 
     # organize
-    # path('list/pending-approval/'),
-    # path('list/pending-approval/approve/'),
-    # path('list/pending-approval/reject/'),
-    # path('read-delete-update/<int:pk>'),
-    # path('add/'),
+    path("organize/pending-approval/", views.PendingApprovalListView.as_view(), name="pending-approval-list"),
+    path("organize/pending-approval/<int:pk>/approve/", views.ApproveTaskView.as_view(), name="task-approve"),
+    path("organize/pending-approval/<int:pk>/reject/", views.RejectTaskView.as_view(), name="task-reject"),
+
+    # ── organize — CRUD ───────────────────────────────────────────────────
+    path("organize/<int:pk>/", views.OrganizeTaskRUDView.as_view(), name="organize-task-rud"),
+    path("organize/add/", views.OrganizeTaskCreateView.as_view(), name="organize-task-create"),
 
 ]

@@ -10,5 +10,4 @@ venv/
 *.sqlite3
 *.sqlite
 *.db
-DrGame.md
 AGENT.md
