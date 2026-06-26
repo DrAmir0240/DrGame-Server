@@ -7,8 +7,10 @@ from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from platform_settings.serializers import SoftDeleteSerializerMixin
 from task_manager.filters import PlannedTaskFilter
 from task_manager.helpers import get_task_stats, get_employee
+from task_manager.mixins import _PermissionFilterMixin, _TaskActionMixin
 from task_manager.models import PlannedTask
 from task_manager.permissions import task_management_permissions, has_read_permission
 from task_manager.serializers import (
@@ -80,13 +82,15 @@ class TaskManagerDashboardAPIView(generics.GenericAPIView):
     ),
     responses={200: TaskChoicesSerializer},
 )
-class TaskChoicesView(generics.GenericAPIView):
+class TaskChoicesView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
-    serializer = TaskChoicesSerializer()
+    serializer_class = TaskChoicesSerializer
 
-    def get(self, request):
-        return Response(self.serializer.data)
+    def get_object(self):
+        return {}
 
+
+# ─── 2. search ────────────────────────────────────────────────────────────────
 
 @extend_schema(
     tags=["Task Management"],
@@ -96,27 +100,23 @@ class TaskChoicesView(generics.GenericAPIView):
             "کاربران با دسترسی can_read_task_manager همه تسک‌ها را می‌بینند؛ "
             "سایرین فقط تسک‌های خودشان را."
     ),
-    parameters=[
-        OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True),
-    ],
+    parameters=[OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True)],
     responses={200: TaskSearchSerializer(many=True)},
 )
-class TaskSearchView(generics.ListAPIView):
+class TaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
     serializer_class = TaskSearchSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
     search_fields = ["title", "description"]
 
     def get_queryset(self):
-        employee = get_employee(self.request)
-        qs = PlannedTask.objects.filter(is_deleted=False)
-        if not has_read_permission(employee):
-            qs = qs.filter(employee=employee)
-        q = self.request.query_params.get("q", "")
+        qs = super().get_queryset()
+        q = self.request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-        return qs.order_by("-created_at")
+        return qs
 
+
+# ─── 3. list ──────────────────────────────────────────────────────────────────
 
 @extend_schema(
     tags=["Task Management"],
@@ -136,53 +136,38 @@ class TaskSearchView(generics.ListAPIView):
     ],
     responses={200: PlannedTaskListSerializer(many=True)},
 )
-class TaskListView(generics.ListAPIView):
+class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
     serializer_class = PlannedTaskListSerializer
-    permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlannedTaskFilter
 
-    def get_queryset(self):
-        employee = get_employee(self.request)
-        qs = PlannedTask.objects.filter(is_deleted=False).select_related("employee")
-        if not has_read_permission(employee):
-            qs = qs.filter(employee=employee)
-        return qs.order_by("-created_at")
 
+# ─── 4. personal ──────────────────────────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Personal"],
     summary="جزئیات، ویرایش و حذف تسک شخصی",
     description=(
             "کاربر جاری فقط به تسک‌های شخصی خودش دسترسی دارد. "
-            "DELETE باعث soft-delete (is_deleted=True) می‌شود نه حذف واقعی."
+            "DELETE باعث soft-delete می‌شود نه حذف واقعی."
     ),
     responses={200: PersonalTaskCreateSerializer},
 )
-class PersonalTaskRUDView(generics.RetrieveUpdateDestroyAPIView):
+class PersonalTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PersonalTaskCreateSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
 
     def get_queryset(self):
-        employee = get_employee(self.request)
         return PlannedTask.objects.filter(
-            employee=employee,
+            employee=get_employee(self.request),
             type="Personal",
             is_deleted=False,
         )
 
-    def get_object(self):
-        # تسک شخصی فقط یک رکورد دارد؛ pk از URL می‌آید
-        return generics.get_object_or_404(self.get_queryset(), pk=self.kwargs.get("pk"))
-
-    def perform_destroy(self, instance):
-        instance.is_deleted = True
-        instance.save()
-
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Personal"],
     summary="ایجاد تسک شخصی",
     description=(
             "تسک شخصی برای کاربر جاری ایجاد می‌کند. "
@@ -195,19 +180,15 @@ class PersonalTaskCreateView(generics.CreateAPIView):
     serializer_class = PersonalTaskCreateSerializer
     permission_classes = [IsAuthenticated]
 
-    def get_serializer_context(self):
-        ctx = super().get_serializer_context()
-        ctx["request"] = self.request
-        return ctx
 
+# ─── 5. organize — pending approval ──────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Organize"],
     summary="لیست تسک‌های منتظر تأیید",
     description=(
-            "تسک‌های سازمانی که پاداش دارند (has_reward=True)، "
-            "وضعیتشان «انجام شده» (done) است و هنوز تأیید نشده‌اند (approved=False) "
-            "را برمی‌گرداند."
+            "تسک‌های سازمانی که پاداش دارند، وضعیتشان done است "
+            "و هنوز تأیید نشده‌اند را برمی‌گرداند."
     ),
     responses={200: PendingApprovalSerializer(many=True)},
 )
@@ -226,33 +207,20 @@ class PendingApprovalListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Organize"],
     summary="تأیید تسک",
     description="تسک سازمانی مورد نظر را تأیید می‌کند (approved=True).",
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
 )
-class ApproveTaskView(generics.GenericAPIView):
-    serializer_class = ApproveRejectSerializer
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
-        task = generics.get_object_or_404(
-            PlannedTask,
-            pk=pk,
-            type="Organize",
-            has_reward=True,
-            status="done",
-            approva=False,
-            is_deleted=False,
-        )
+class ApproveTaskView(_TaskActionMixin):
+    def _action(self, task: PlannedTask) -> None:
         task.approved = True
         task.save()
-        return Response(PendingApprovalSerializer(task).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Organize"],
     summary="رد تسک",
     description=(
             "تسک سازمانی را رد می‌کند. "
@@ -261,27 +229,16 @@ class ApproveTaskView(generics.GenericAPIView):
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
 )
-class RejectTaskView(generics.GenericAPIView):
-    serializer_class = ApproveRejectSerializer
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, pk):
-        task = generics.get_object_or_404(
-            PlannedTask,
-            pk=pk,
-            type="Organize",
-            has_reward=True,
-            status="done",
-            approved=False,
-            is_deleted=False,
-        )
+class RejectTaskView(_TaskActionMixin):
+    def _action(self, task: PlannedTask) -> None:
         task.status = "in_progress"
         task.save()
-        return Response(PendingApprovalSerializer(task).data, status=status.HTTP_200_OK)
 
+
+# ─── 6. organize — CRUD ───────────────────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Organize"],
     summary="جزئیات، ویرایش و حذف تسک سازمانی",
     description=(
             "دریافت جزئیات، ویرایش (PATCH) یا soft-delete تسک سازمانی. "
@@ -289,7 +246,7 @@ class RejectTaskView(generics.GenericAPIView):
     ),
     responses={200: PlannedTaskDetailSerializer},
 )
-class OrganizeTaskRUDView(generics.RetrieveUpdateDestroyAPIView):
+class OrganizeTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PlannedTaskDetailSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
@@ -297,13 +254,9 @@ class OrganizeTaskRUDView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         return PlannedTask.objects.filter(type="Organize", is_deleted=False).select_related("employee")
 
-    def perform_destroy(self, instance):
-        instance.is_deleted = True
-        instance.save()
-
 
 @extend_schema(
-    tags=["Task Management"],
+    tags=["Task Management — Organize"],
     summary="ایجاد تسک سازمانی",
     description=(
             "تسک سازمانی جدید برای کارمند مشخص‌شده ایجاد می‌کند. "
