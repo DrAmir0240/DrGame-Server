@@ -148,7 +148,7 @@ class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
 
         if has_read_permission(employee):
             return qs.filter(
-                Q(employee=employee) | Q(type="organize")
+                Q(employee=employee) | Q(type="Organize")
             )
         return qs.filter(employee=employee)
 
