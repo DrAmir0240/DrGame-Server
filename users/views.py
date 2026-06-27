@@ -1,7 +1,6 @@
 # your_app/views.py
 import secrets
 from datetime import timedelta
-import requests
 from django.contrib.auth import authenticate
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
@@ -164,7 +163,11 @@ class VerifyOTPView(APIView):
         access_token = str(refresh.access_token)
         refresh_token = str(refresh)
         response = Response(
-            {"message": "Login successful"},
+            {
+                "message": "Login successful",
+                "access_token": access_token,
+                "refresh_token": refresh_token
+            },
             status=status.HTTP_200_OK
         )
         response.set_cookie(
@@ -200,7 +203,6 @@ class RefreshTokenView(APIView):
         description="رفرش توکن برای دریافت توکن دسترسی جدید"
     )
     def post(self, request):
-        # (بقیه کد همونیه که فرستادی)
         api_key = request.headers.get('X-API-Key')
         if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
             return Response(
@@ -217,7 +219,12 @@ class RefreshTokenView(APIView):
             refresh = RefreshToken(refresh_token)
             access_token = str(refresh.access_token)
             response = Response(
-                {"message": "Token refreshed successfully"},
+                {
+                    "message": "Token refreshed successfully",
+                    "access_token": access_token,
+                    "refresh_token": refresh.token,
+                },
+
                 status=status.HTTP_200_OK
             )
             response.set_cookie(

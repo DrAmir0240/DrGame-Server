@@ -145,7 +145,7 @@ class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
 # ─── 4. personal ──────────────────────────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management — Personal"],
+    tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک شخصی",
     description=(
             "کاربر جاری فقط به تسک‌های شخصی خودش دسترسی دارد. "
@@ -167,7 +167,7 @@ class PersonalTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDest
 
 
 @extend_schema(
-    tags=["Task Management — Personal"],
+    tags=["Task Management"],
     summary="ایجاد تسک شخصی",
     description=(
             "تسک شخصی برای کاربر جاری ایجاد می‌کند. "
@@ -184,7 +184,7 @@ class PersonalTaskCreateView(generics.CreateAPIView):
 # ─── 5. organize — pending approval ──────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management — Organize"],
+    tags=["Task Management"],
     summary="لیست تسک‌های منتظر تأیید",
     description=(
             "تسک‌های سازمانی که پاداش دارند، وضعیتشان done است "
@@ -207,7 +207,7 @@ class PendingApprovalListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Task Management — Organize"],
+    tags=["Task Management"],
     summary="تأیید تسک",
     description="تسک سازمانی مورد نظر را تأیید می‌کند (approved=True).",
     request=ApproveRejectSerializer,
@@ -220,7 +220,7 @@ class ApproveTaskView(_TaskActionMixin):
 
 
 @extend_schema(
-    tags=["Task Management — Organize"],
+    tags=["Task Management"],
     summary="رد تسک",
     description=(
             "تسک سازمانی را رد می‌کند. "
@@ -238,7 +238,7 @@ class RejectTaskView(_TaskActionMixin):
 # ─── 6. organize — CRUD ───────────────────────────────────────────────────────
 
 @extend_schema(
-    tags=["Task Management — Organize"],
+    tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک سازمانی",
     description=(
             "دریافت جزئیات، ویرایش (PATCH) یا soft-delete تسک سازمانی. "
@@ -256,7 +256,7 @@ class OrganizeTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDest
 
 
 @extend_schema(
-    tags=["Task Management — Organize"],
+    tags=["Task Management"],
     summary="ایجاد تسک سازمانی",
     description=(
             "تسک سازمانی جدید برای کارمند مشخص‌شده ایجاد می‌کند. "
