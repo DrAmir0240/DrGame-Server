@@ -24,14 +24,14 @@ urlpatterns = [
 
     # =======> Daily Tasks <=======#
     # generic
-    path("daily-tasks/list/", views.DailyTaskListAPIView, name='daily-task-list'),
-    path("daily-tasks/search/", views.DailyTaskSearchAPIView, name='daily-task-search'),
+    path("daily-tasks/list/", views.DailyTaskListAPIView.as_view(), name='daily-task-list'),
+    path("daily-tasks/search/", views.DailyTaskSearchAPIView.as_view(), name='daily-task-search'),
 
     # personal
-    path("daily-tasks/add/", views.PersonalDailyTaskCreateAPIView, name='personal-daily-task-add'),
-    path("daily-tasks/<int:pk>/", views.PersonalDailyTaskRUDAPIView, name='personal-daily-task-rud'),
+    path("daily-tasks/add/", views.PersonalDailyTaskCreateAPIView.as_view(), name='personal-daily-task-add'),
+    path("daily-tasks/<int:pk>/", views.PersonalDailyTaskRUDAPIView.as_view(), name='personal-daily-task-rud'),
 
     # organize
-    path("daily-tasks/organize/add/", views.OrganizeDailyTaskCreateAPIView, name='organize-daily-task-add'),
-    path("daily-tasks/organize/<int:pk>", views.OrganizeDailyTaskRUDAPIView, name='organize-daily-task-rud'),
+    path("daily-tasks/organize/add/", views.OrganizeDailyTaskCreateAPIView.as_view(), name='organize-daily-task-add'),
+    path("daily-tasks/organize/<int:pk>", views.OrganizeDailyTaskRUDAPIView.as_view(), name='organize-daily-task-rud'),
 ]
