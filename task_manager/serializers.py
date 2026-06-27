@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from hr.models import Employee
-from task_manager.models import PlannedTask
+from task_manager.models import PlannedTask, DailyTask
 
 
 class TaskStatsSerializer(serializers.Serializer):
@@ -144,3 +144,55 @@ class TaskSearchSerializer(serializers.ModelSerializer):
             "id", "employee", "employee_name", "title", "type",
             "status", "priority", "start_date", "deadline",
         ]
+
+
+class DailyTaskListSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(source="employee.user.get_full_name", read_only=True)
+
+    class Meta:
+        model = DailyTask
+        fields = (
+            "id",
+            "employee",
+            "employee_name",
+            "title",
+            "type",
+            "is_done",
+            "created_at",
+        )
+
+
+class PersonalDailyTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyTask
+        fields = (
+            "title",
+            "description",
+            "voice",
+        )
+
+    def create(self, validated_data):
+        employee = self.context["request"].user.employee
+
+        return DailyTask.objects.create(
+            employee=employee,
+            type="Personal",
+            **validated_data,
+        )
+
+
+class OrganizeDailyTaskSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DailyTask
+        fields = (
+            "employee",
+            "title",
+            "description",
+            "voice",
+        )
+
+    def create(self, validated_data):
+        return DailyTask.objects.create(
+            type="Organize",
+            **validated_data,
+        )

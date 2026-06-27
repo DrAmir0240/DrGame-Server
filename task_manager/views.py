@@ -3,16 +3,17 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics, status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from platform_settings.serializers import SoftDeleteSerializerMixin
-from task_manager.filters import PlannedTaskFilter
+from task_manager.filters import PlannedTaskFilter, DailyTaskFilter
 from task_manager.helpers import get_task_stats, get_employee
 from task_manager.mixins import _PermissionFilterMixin, _TaskActionMixin
-from task_manager.models import PlannedTask
-from task_manager.permissions import task_management_permissions, has_read_permission
+from task_manager.models import PlannedTask, DailyTask
+from task_manager.permissions import task_management_permissions, has_read_permission, has_write_permission
 from task_manager.serializers import (
     TaskManagerDashboardSerializer,
     TaskChoicesSerializer,
@@ -22,10 +23,11 @@ from task_manager.serializers import (
     OrganizeTaskCreateSerializer,
     PendingApprovalSerializer,
     ApproveRejectSerializer,
-    TaskSearchSerializer,
+    TaskSearchSerializer, DailyTaskListSerializer, PersonalDailyTaskSerializer, OrganizeDailyTaskSerializer,
 )
 
 
+# ─── 1. stats and choices ────────────────────────────────────────────────────────────────
 @extend_schema(
     tags=["Task Management"],
     summary="Task Manager Dashboard Stats",
@@ -38,7 +40,7 @@ from task_manager.serializers import (
     """,
     responses=TaskManagerDashboardSerializer
 )
-class TaskManagerDashboardAPIView(generics.GenericAPIView):
+class PlannedTaskManagerDashboardAPIView(generics.GenericAPIView):
     serializer_class = TaskManagerDashboardSerializer
 
     def get(self, request, *args, **kwargs):
@@ -91,7 +93,6 @@ class TaskChoicesView(generics.RetrieveAPIView):
 
 
 # ─── 2. search ────────────────────────────────────────────────────────────────
-
 @extend_schema(
     tags=["Task Management"],
     summary="جستجو در تسک‌ها",
@@ -103,13 +104,18 @@ class TaskChoicesView(generics.RetrieveAPIView):
     parameters=[OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True)],
     responses={200: TaskSearchSerializer(many=True)},
 )
-class TaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
+class PlannedTaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
     serializer_class = TaskSearchSerializer
     filter_backends = [SearchFilter]
     search_fields = ["title", "description"]
 
     def get_queryset(self):
         qs = super().get_queryset()
+        employee = get_employee(self.request)
+        if has_read_permission(employee):
+            qs = qs.filter(Q(employee=employee) | Q(type="Organize"))
+        else:
+            qs = qs.filter(employee=employee)
         q = self.request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
@@ -117,7 +123,6 @@ class TaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
 
 
 # ─── 3. list ──────────────────────────────────────────────────────────────────
-
 @extend_schema(
     tags=["Task Management"],
     summary="لیست تسک‌ها با فیلتر",
@@ -136,7 +141,7 @@ class TaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
     ],
     responses={200: PlannedTaskListSerializer(many=True)},
 )
-class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
+class PlannedTaskListView(_PermissionFilterMixin, generics.ListAPIView):
     serializer_class = PlannedTaskListSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlannedTaskFilter
@@ -154,7 +159,6 @@ class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
 
 
 # ─── 4. personal ──────────────────────────────────────────────────────────────
-
 @extend_schema(
     tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک شخصی",
@@ -164,7 +168,7 @@ class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
     ),
     responses={200: PersonalTaskCreateSerializer},
 )
-class PersonalTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class PersonalPlannedTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PersonalTaskCreateSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
@@ -187,13 +191,12 @@ class PersonalTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDest
     request=PersonalTaskCreateSerializer,
     responses={201: PersonalTaskCreateSerializer},
 )
-class PersonalTaskCreateView(generics.CreateAPIView):
+class PersonalPlannedTaskCreateView(generics.CreateAPIView):
     serializer_class = PersonalTaskCreateSerializer
     permission_classes = [IsAuthenticated]
 
 
 # ─── 5. organize — pending approval ──────────────────────────────────────────
-
 @extend_schema(
     tags=["Task Management"],
     summary="لیست تسک‌های منتظر تأیید",
@@ -203,7 +206,7 @@ class PersonalTaskCreateView(generics.CreateAPIView):
     ),
     responses={200: PendingApprovalSerializer(many=True)},
 )
-class PendingApprovalListView(generics.ListAPIView):
+class PendingApprovalPlannedTaskListView(generics.ListAPIView):
     serializer_class = PendingApprovalSerializer
     permission_classes = [IsAuthenticated]
 
@@ -224,7 +227,7 @@ class PendingApprovalListView(generics.ListAPIView):
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
 )
-class ApproveTaskView(_TaskActionMixin):
+class ApprovePlannedTaskView(_TaskActionMixin):
     def _action(self, task: PlannedTask) -> None:
         task.approved = True
         task.save()
@@ -240,14 +243,13 @@ class ApproveTaskView(_TaskActionMixin):
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
 )
-class RejectTaskView(_TaskActionMixin):
+class RejectPlannedTaskView(_TaskActionMixin):
     def _action(self, task: PlannedTask) -> None:
         task.status = "in_progress"
         task.save()
 
 
 # ─── 6. organize — CRUD ───────────────────────────────────────────────────────
-
 @extend_schema(
     tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک سازمانی",
@@ -257,7 +259,7 @@ class RejectTaskView(_TaskActionMixin):
     ),
     responses={200: PlannedTaskDetailSerializer},
 )
-class OrganizeTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class OrganizePlannedTaskRUDAPIView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PlannedTaskDetailSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
@@ -276,6 +278,171 @@ class OrganizeTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDest
     request=OrganizeTaskCreateSerializer,
     responses={201: OrganizeTaskCreateSerializer},
 )
-class OrganizeTaskCreateView(generics.CreateAPIView):
+class OrganizePlannedTaskCreateView(generics.CreateAPIView):
     serializer_class = OrganizeTaskCreateSerializer
     permission_classes = [IsAuthenticated]
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="جستجو در تسک‌ها",
+    description=(
+            "جستجو بر اساس عنوان یا توضیحات. "
+            "کاربران با دسترسی can_read_task_manager همه تسک‌ها را می‌بینند؛ "
+            "سایرین فقط تسک‌های خودشان را."
+    ),
+    parameters=[OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True)],
+    responses={200: DailyTaskListSerializer(many=True)},
+)
+class DailyTaskSearchAPIView(generics.ListAPIView):
+    serializer_class = TaskSearchSerializer
+    filter_backends = [SearchFilter]
+    search_fields = ["title", "description"]
+
+    def get_queryset(self):
+        qs = DailyTask.objects.filter(is_deleted=False).select_related("employee")
+        employee = get_employee(self.request)
+        if has_read_permission(employee):
+            qs = qs.filter(Q(employee=employee) | Q(type="Organize"))
+        else:
+            qs = qs.filter(employee=employee)
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        return qs
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="دریافت لیست تسک‌ها",
+    description=(
+            "لیست تسک‌ها را برمی‌گرداند. کاربران دارای دسترسی "
+            "can_read_task_manager همه تسک‌ها را مشاهده می‌کنند و سایر کاربران "
+            "فقط تسک‌های خود را مشاهده خواهند کرد."
+    ),
+    responses={200: DailyTaskListSerializer(many=True)},
+)
+class DailyTaskListAPIView(generics.ListAPIView):
+    serializer_class = DailyTaskListSerializer
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = DailyTaskFilter
+
+    def get_queryset(self):
+        employee = get_employee(self.request)
+
+        queryset = DailyTask.objects.filter(
+            is_deleted=False
+        ).order_by("-created_at")
+
+        if has_read_permission(employee):
+            return queryset
+
+        return queryset.filter(employee=employee)
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="ایجاد تسک شخصی",
+    description=(
+            "یک تسک شخصی برای کاربر جاری ایجاد می‌کند."
+    ),
+    request=PersonalTaskCreateSerializer,
+    responses={201: PersonalTaskCreateSerializer},
+)
+class PersonalDailyTaskCreateAPIView(generics.CreateAPIView):
+    serializer_class = PersonalTaskCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="دریافت، ویرایش و حذف تسک",
+    description=(
+            "جزئیات، ویرایش و حذف یک تسک."
+    ),
+)
+class PersonalDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        employee = get_employee(self.request)
+
+        queryset = DailyTask.objects.filter(
+            is_deleted=False
+        )
+
+        if has_read_permission(employee):
+            return queryset
+
+        return queryset.filter(employee=employee)
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return PersonalDailyTaskSerializer
+        elif self.request.method in ["PUT", "PATCH"]:
+            return PersonalDailyTaskSerializer
+        return PersonalDailyTaskSerializer
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="ایجاد تسک سازمانی",
+    description=(
+            "تسک سازمانی جدید برای کارمند مشخص‌شده ایجاد می‌کند. "
+            "نیازمند دسترسی can_write_task_manager."
+    ),
+    request=OrganizeTaskCreateSerializer,
+    responses={201: OrganizeTaskCreateSerializer},
+)
+class OrganizeDailyTaskCreateAPIView(generics.CreateAPIView):
+    serializer_class = OrganizeDailyTaskSerializer
+    permission_classes = [IsAuthenticated]
+
+    def perform_create(self, serializer):
+        employee = get_employee(self.request)
+
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+
+        serializer.save()
+
+
+@extend_schema(
+    tags=["Task Management"],
+    summary="مدیریت تسک سازمانی",
+    description=(
+            "دریافت، ویرایش و حذف تسک‌های سازمانی. "
+            "نیازمند دسترسی can_write_task_manager."
+    ),
+)
+class OrganizeDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrganizeDailyTaskSerializer
+
+    def get_queryset(self):
+        return DailyTask.objects.filter(
+            is_deleted=False,
+            type="Organize",
+        )
+
+    def perform_update(self, serializer):
+        employee = get_employee(self.request)
+
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        employee = get_employee(self.request)
+
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])

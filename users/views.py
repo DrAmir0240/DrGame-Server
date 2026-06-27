@@ -75,12 +75,12 @@ class RequestOTPView(APIView):
     )
     def post(self, request):
         # (بقیه کد همونیه که فرستادی)
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "API Key نامعتبر است"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "API Key نامعتبر است"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
         phone = request.data.get('phone')
         if not phone:
             return Response(
@@ -123,12 +123,12 @@ class VerifyOTPView(APIView):
     )
     def post(self, request):
         # (بقیه کد همونیه که فرستادی)
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "Invalid API Key"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "Invalid API Key"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
         phone = request.data.get('phone')
         code = request.data.get('code')
         if not phone or not code:
@@ -203,12 +203,12 @@ class RefreshTokenView(APIView):
         description="رفرش توکن برای دریافت توکن دسترسی جدید"
     )
     def post(self, request):
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "Invalid API Key"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "Invalid API Key"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
         refresh_token = request.COOKIES.get('refresh_token')
         if not refresh_token:
             return Response(
@@ -261,12 +261,12 @@ class LogoutView(APIView):
         return self.post(request)  # استفاده از منطق POST
 
     def post(self, request):
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "Invalid API Key"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "Invalid API Key"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
 
         response = Response(
             {"message": "Logout successful"},
