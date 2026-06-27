@@ -17,8 +17,6 @@ urlpatterns = [
     path("organize/pending-approval/", views.PendingApprovalListView.as_view(), name="pending-approval-list"),
     path("organize/pending-approval/<int:pk>/approve/", views.ApproveTaskView.as_view(), name="task-approve"),
     path("organize/pending-approval/<int:pk>/reject/", views.RejectTaskView.as_view(), name="task-reject"),
-
-    # ── organize — CRUD ───────────────────────────────────────────────────
     path("organize/<int:pk>/", views.OrganizeTaskRUDView.as_view(), name="organize-task-rud"),
     path("organize/add/", views.OrganizeTaskCreateView.as_view(), name="organize-task-create"),
 

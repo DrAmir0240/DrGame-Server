@@ -141,6 +141,17 @@ class TaskListView(_PermissionFilterMixin, generics.ListAPIView):
     filter_backends = [DjangoFilterBackend]
     filterset_class = PlannedTaskFilter
 
+    def get_queryset(self):
+        employee = get_employee(self.request)
+
+        qs = PlannedTask.objects.filter(is_deleted=False)
+
+        if has_read_permission(employee):
+            return qs.filter(
+                Q(employee=employee) | Q(type="organize")
+            )
+        return qs.filter(employee=employee)
+
 
 # ─── 4. personal ──────────────────────────────────────────────────────────────
 

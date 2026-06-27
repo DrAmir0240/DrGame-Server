@@ -37,7 +37,7 @@ class EmployeeRole(models.Model):
     can_start_chat = models.BooleanField(default=False)
 
     def __str__(self):
-        return {self.role_name}
+        return self.role_name
 
 
 class Employee(models.Model):
