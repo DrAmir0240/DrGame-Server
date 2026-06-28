@@ -153,11 +153,10 @@ class DailyTaskListSerializer(serializers.ModelSerializer):
         model = DailyTask
         fields = (
             "id",
-            "employee",
+            "employees",
             "employee_name",
             "title",
             "type",
-            "is_done",
             "created_at",
         )
 
@@ -168,7 +167,6 @@ class PersonalDailyTaskSerializer(serializers.ModelSerializer):
         fields = (
             "title",
             "description",
-            "voice",
         )
 
     def create(self, validated_data):
@@ -182,13 +180,14 @@ class PersonalDailyTaskSerializer(serializers.ModelSerializer):
 
 
 class OrganizeDailyTaskSerializer(serializers.ModelSerializer):
+    employees = serializers.SerializerMethodField()
+
     class Meta:
         model = DailyTask
         fields = (
-            "employee",
+            "employees",
             "title",
             "description",
-            "voice",
         )
 
     def create(self, validated_data):
@@ -196,3 +195,6 @@ class OrganizeDailyTaskSerializer(serializers.ModelSerializer):
             type="Organize",
             **validated_data,
         )
+
+    def get_employees(self):
+        return [employee.__str__() for employee in self.instance.employees.all()]

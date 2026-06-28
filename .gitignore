@@ -11,3 +11,6 @@ venv/
 *.sqlite
 *.db
 AGENT.md
+CLAUDE.md
+.agents
+skills-lock.json

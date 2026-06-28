@@ -28,8 +28,8 @@ class PlannedTask(models.Model):
     has_reward = models.BooleanField(default=False)
     reward_amount = models.PositiveIntegerField(blank=True, null=True)
     approved = models.BooleanField(default=False)
-    start_date = models.DateField(null=True, blank=True)
-    deadline = models.DateField(null=True, blank=True)
+    start_date = models.DateTimeField(null=True, blank=True)
+    deadline = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -39,15 +39,13 @@ class PlannedTask(models.Model):
 
 
 class DailyTask(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employees = models.ManyToManyField(Employee)
     title = models.CharField(max_length=100, null=True, blank=True)
-    voice = models.FileField(upload_to='employee_files/tasks/voices', null=True, blank=True)
     type = models.CharField(max_length=20, choices=(
         ('Personal', 'شخصی'),
         ('Organize', 'سازمانی')
     ))
     description = models.TextField(max_length=5000, null=True, blank=True)
-    is_done = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
