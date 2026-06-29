@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from hr.models import Employee
+from hr.serializers import EmployeeSerializer
 from task_manager.models import PlannedTask, DailyTask
 
 
@@ -12,8 +13,8 @@ class TaskStatsSerializer(serializers.Serializer):
 
 
 class TaskManagerPermissionSerializer(serializers.Serializer):
-    can_read_task_manger = serializers.BooleanField()
-    can_write_task_manger = serializers.BooleanField()
+    can_read_task_manager = serializers.BooleanField()
+    can_write_task_manager = serializers.BooleanField()
 
 
 class TaskManagerDashboardSerializer(serializers.Serializer):
@@ -29,19 +30,23 @@ class TaskChoicesSerializer(serializers.Serializer):
     priority_choices = serializers.SerializerMethodField()
     type_choices = serializers.SerializerMethodField()
 
-    def get_employees(self, obj):
+    # noinspection PyMethodMayBeStatic
+    def get_employees(self, _obj):
         return [
             {"id": emp.id, "title": str(emp)}
             for emp in Employee.objects.filter(is_deleted=False)
         ]
 
-    def get_status_choices(self, obj):
+    # noinspection PyMethodMayBeStatic
+    def get_status_choices(self, _obj):
         return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("status").choices]
 
-    def get_priority_choices(self, obj):
+    # noinspection PyMethodMayBeStatic
+    def get_priority_choices(self, _obj):
         return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("priority").choices]
 
-    def get_type_choices(self, obj):
+    # noinspection PyMethodMayBeStatic
+    def get_type_choices(self, _obj):
         return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("type").choices]
 
 
@@ -146,55 +151,89 @@ class TaskSearchSerializer(serializers.ModelSerializer):
         ]
 
 
+class DailyTaskSearchSerializer(serializers.ModelSerializer):
+    employee_names = serializers.SerializerMethodField()
+    employees = EmployeeSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DailyTask
+        fields = [
+            "id", "employees", "employee_names", "title", "type",
+            "created_at",
+        ]
+
+    # noinspection PyMethodMayBeStatic
+    def get_employee_names(self, obj):
+        return [str(emp) for emp in obj.employees.all()]
+
+
 class DailyTaskListSerializer(serializers.ModelSerializer):
-    employee_name = serializers.CharField(source="employee.user.get_full_name", read_only=True)
+    employee_names = serializers.SerializerMethodField()
+    employees = EmployeeSerializer(many=True, read_only=True)
 
     class Meta:
         model = DailyTask
         fields = (
             "id",
             "employees",
-            "employee_name",
+            "employee_names",
             "title",
             "type",
             "created_at",
         )
 
+    # noinspection PyMethodMayBeStatic
+    def get_employee_names(self, obj):
+        return [str(emp) for emp in obj.employees.all()]
+
 
 class PersonalDailyTaskSerializer(serializers.ModelSerializer):
+    employee = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.filter(is_deleted=False),
+        write_only=True,
+    )
+
     class Meta:
         model = DailyTask
         fields = (
+            "id",
+            "employee",
             "title",
             "description",
         )
+        read_only_fields = ("id",)
 
     def create(self, validated_data):
-        employee = self.context["request"].user.employee
-
-        return DailyTask.objects.create(
-            employee=employee,
+        employee = validated_data.pop("employee")
+        task = DailyTask.objects.create(
             type="Personal",
             **validated_data,
         )
+        task.employees.add(employee)
+        return task
 
 
 class OrganizeDailyTaskSerializer(serializers.ModelSerializer):
-    employees = serializers.SerializerMethodField()
+    employees = serializers.PrimaryKeyRelatedField(
+        queryset=Employee.objects.filter(is_deleted=False),
+        many=True,
+    )
 
     class Meta:
         model = DailyTask
         fields = (
+            "id",
             "employees",
             "title",
             "description",
         )
+        read_only_fields = ("id",)
 
     def create(self, validated_data):
-        return DailyTask.objects.create(
+        employees = validated_data.pop("employees")
+        task = DailyTask.objects.create(
             type="Organize",
             **validated_data,
         )
-
-    def get_employees(self):
-        return [employee.__str__() for employee in self.instance.employees.all()]
+        task.employees.set(employees)  # noqa: PyUnresolvedReferences
+        return task

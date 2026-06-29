@@ -15,7 +15,7 @@ class PlannedTaskFilter(django_filters.FilterSet):
 
 
 class DailyTaskFilter(django_filters.FilterSet):
-    employee = django_filters.NumberFilter(field_name="employee")
+    employee = django_filters.NumberFilter(field_name="employees")
     type = django_filters.CharFilter(field_name="type")
 
     class Meta:

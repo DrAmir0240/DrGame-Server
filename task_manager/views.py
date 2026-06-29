@@ -2,13 +2,12 @@ from django.db.models import Q
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import generics, status
+from rest_framework import generics
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from platform_settings.serializers import SoftDeleteSerializerMixin
 from task_manager.filters import PlannedTaskFilter, DailyTaskFilter
 from task_manager.helpers import get_task_stats, get_employee
 from task_manager.mixins import _PermissionFilterMixin, _TaskActionMixin
@@ -24,6 +23,7 @@ from task_manager.serializers import (
     PendingApprovalSerializer,
     ApproveRejectSerializer,
     TaskSearchSerializer, DailyTaskListSerializer, PersonalDailyTaskSerializer, OrganizeDailyTaskSerializer,
+    DailyTaskSearchSerializer,
 )
 
 
@@ -42,6 +42,7 @@ from task_manager.serializers import (
 )
 class PlannedTaskManagerDashboardAPIView(generics.GenericAPIView):
     serializer_class = TaskManagerDashboardSerializer
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         employee = get_employee(self.request)
@@ -168,7 +169,7 @@ class PlannedTaskListView(_PermissionFilterMixin, generics.ListAPIView):
     ),
     responses={200: PersonalTaskCreateSerializer},
 )
-class PersonalPlannedTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class PersonalPlannedTaskRUDView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PersonalTaskCreateSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
@@ -179,6 +180,10 @@ class PersonalPlannedTaskRUDView(SoftDeleteSerializerMixin, generics.RetrieveUpd
             type="Personal",
             is_deleted=False,
         )
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])
 
 
 @extend_schema(
@@ -259,13 +264,26 @@ class RejectPlannedTaskView(_TaskActionMixin):
     ),
     responses={200: PlannedTaskDetailSerializer},
 )
-class OrganizePlannedTaskRUDAPIView(SoftDeleteSerializerMixin, generics.RetrieveUpdateDestroyAPIView):
+class OrganizePlannedTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PlannedTaskDetailSerializer
     permission_classes = [IsAuthenticated]
     http_method_names = ["get", "patch", "delete"]
 
     def get_queryset(self):
         return PlannedTask.objects.filter(type="Organize", is_deleted=False).select_related("employee")
+
+    def perform_update(self, serializer):
+        employee = get_employee(self.request)
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        employee = get_employee(self.request)
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])
 
 
 @extend_schema(
@@ -282,6 +300,12 @@ class OrganizePlannedTaskCreateView(generics.CreateAPIView):
     serializer_class = OrganizeTaskCreateSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        employee = get_employee(self.request)
+        if not has_write_permission(employee):
+            raise PermissionDenied("You don't have permission.")
+        serializer.save()
+
 
 @extend_schema(
     tags=["Task Management"],
@@ -295,21 +319,22 @@ class OrganizePlannedTaskCreateView(generics.CreateAPIView):
     responses={200: DailyTaskListSerializer(many=True)},
 )
 class DailyTaskSearchAPIView(generics.ListAPIView):
-    serializer_class = TaskSearchSerializer
+    serializer_class = DailyTaskSearchSerializer
+    permission_classes = [IsAuthenticated]
     filter_backends = [SearchFilter]
     search_fields = ["title", "description"]
 
     def get_queryset(self):
-        qs = DailyTask.objects.filter(is_deleted=False).select_related("employee")
+        qs = DailyTask.objects.filter(is_deleted=False)
         employee = get_employee(self.request)
         if has_read_permission(employee):
-            qs = qs.filter(Q(employee=employee) | Q(type="Organize"))
+            qs = qs.filter(Q(employees=employee) | Q(type="Organize"))
         else:
-            qs = qs.filter(employee=employee)
+            qs = qs.filter(employees=employee)
         q = self.request.query_params.get("q", "").strip()
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-        return qs
+        return qs.distinct()
 
 
 @extend_schema(
@@ -338,7 +363,7 @@ class DailyTaskListAPIView(generics.ListAPIView):
         if has_read_permission(employee):
             return queryset
 
-        return queryset.filter(employee=employee)
+        return queryset.filter(employees=employee)
 
 
 @extend_schema(
@@ -347,11 +372,11 @@ class DailyTaskListAPIView(generics.ListAPIView):
     description=(
             "یک تسک شخصی برای کاربر جاری ایجاد می‌کند."
     ),
-    request=PersonalTaskCreateSerializer,
-    responses={201: PersonalTaskCreateSerializer},
+    request=PersonalDailyTaskSerializer,
+    responses={201: PersonalDailyTaskSerializer},
 )
 class PersonalDailyTaskCreateAPIView(generics.CreateAPIView):
-    serializer_class = PersonalTaskCreateSerializer
+    serializer_class = PersonalDailyTaskSerializer
     permission_classes = [IsAuthenticated]
 
 
@@ -363,26 +388,16 @@ class PersonalDailyTaskCreateAPIView(generics.CreateAPIView):
     ),
 )
 class PersonalDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = PersonalDailyTaskSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         employee = get_employee(self.request)
-
-        queryset = DailyTask.objects.filter(
-            is_deleted=False
+        return DailyTask.objects.filter(
+            employees=employee,
+            type="Personal",
+            is_deleted=False,
         )
-
-        if has_read_permission(employee):
-            return queryset
-
-        return queryset.filter(employee=employee)
-
-    def get_serializer_class(self):
-        if self.request.method == "GET":
-            return PersonalDailyTaskSerializer
-        elif self.request.method in ["PUT", "PATCH"]:
-            return PersonalDailyTaskSerializer
-        return PersonalDailyTaskSerializer
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
