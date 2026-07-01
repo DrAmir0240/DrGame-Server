@@ -14,3 +14,5 @@ AGENT.md
 CLAUDE.md
 .agents
 skills-lock.json
+.claude
+plan.md
