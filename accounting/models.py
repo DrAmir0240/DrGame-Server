@@ -1,378 +1,217 @@
-import requests
-from django.core.exceptions import ValidationError
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models
-from django.utils import timezone
-
-from hr.models import Employee, Repairman
-from website.models import Course
-from inventory.models import Product, Game, SonyAccount
-from users.models import CustomUser
-from crm.models import Customer
-from django.conf import settings
 
 
-# Create your models here.
-class PaymentMethod(models.Model):
+class BankAccount(models.Model):
     title = models.CharField(max_length=100)
-    balance = models.IntegerField(default=0)
-    description = models.TextField(null=True, blank=True)
-    is_online = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)
+    account_number = models.CharField(max_length=50, blank=True, null=True)
+    sheba = models.CharField(max_length=30, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        if self.is_online:
-            qs = PaymentMethod.objects.filter(is_online=True, is_deleted=False)
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
-            if qs.exists():
-                raise ValidationError("فقط یک متود پرداخت می‌تواند آنلاین باشد.")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'Payment method #{self.title}'
-
-
-class Transaction(models.Model):
-    payer = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='payer')
-    payer_str = models.CharField(max_length=100, null=True, blank=True)
-    receiver = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='receiver')
-    receiver_str = models.CharField(max_length=100, null=True, blank=True)
-    payment_method = models.ForeignKey(PaymentMethod, on_delete=models.SET_NULL, null=True, blank=True,
-                                       related_name='transactions')
-    amount = models.PositiveIntegerField()
-    authority = models.CharField(max_length=100, blank=True)
-    ref_id = models.CharField(max_length=100, blank=True, null=True)
-    status = models.CharField(max_length=20, default='pending')
-    in_out = models.BooleanField(default=True)
-    description = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def request_payment(self):
-        if self.status != 'pending':
-            raise ValidationError("این تراکنش قبلاً پردازش شده است.")
-
-        headers = {
-            'accept': 'application/json',
-            'content-type': 'application/json'
-        }
-
-        data = {
-            "merchant_id": settings.ZARINPAL_MERCHANT_ID,
-            "amount": int(self.amount),
-            "currency": "IRT",
-            "description": self.description or "پرداخت",
-            "callback_url": settings.ZARINPAL_CALLBACK_URL,
-            "metadata": {
-                "mobile": str(self.payer.phone) if self.payer and self.payer.phone else "",
-                "order_id": str(self.id)
-            }
-        }
-
-        try:
-            response = requests.post(
-                settings.ZARINPAL_REQUEST_URL, json=data, headers=headers
-            )
-            result = response.json()
-
-            if response.status_code == 200 and result.get("data", {}).get("code") == 100:
-                self.authority = result["data"]["authority"]
-                self.status = "waiting"
-                self.save()
-                return {
-                    "status": "success",
-                    "payment_url": f"{settings.ZARINPAL_START_PAY_URL}{self.authority}",
-                    "authority": self.authority
-                }
-            else:
-                self.status = "failed"
-                self.save()
-                return {
-                    "status": "error",
-                    "message": result.get("errors") or result.get("data", {}).get("message", "خطای ناشناخته")
-                }
-
-        except requests.RequestException as e:
-            self.status = "failed"
-            self.save()
-            return {
-                "status": "error",
-                "message": str(e)
-            }
-
-    def verify_payment(self):
-        if not self.authority:
-            return {"status": "error", "message": "authority وجود ندارد."}
-
-        headers = {
-            "accept": "application/json",
-            "content-type": "application/json"
-        }
-
-        data = {
-            "merchant_id": settings.ZARINPAL_MERCHANT_ID,
-            "amount": int(self.amount),
-            "authority": self.authority
-        }
-
-        try:
-            response = requests.post(settings.ZARINPAL_VERIFY_URL, json=data, headers=headers)
-            result = response.json()
-
-            code = result.get("data", {}).get("code")
-            if code in [100, 101]:
-                self.status = "paid"
-                self.ref_id = result["data"]["ref_id"]
-                self.save()
-
-                return {
-                    "status": "success",
-                    "ref_id": self.ref_id,
-                    "message": result["data"].get("message", "پرداخت موفق بود.")
-                }
-
-            else:
-                self.status = "failed"
-                self.save()
-                return {
-                    "status": "error",
-                    "code": code,
-                    "message": result.get("data", {}).get("message", "تراکنش ناموفق بود.")
-                }
-
-        except requests.RequestException as e:
-            self.status = "failed"
-            self.save()
-            return {
-                "status": "error",
-                "message": str(e)
-            }
-
-    def save(self, *args, **kwargs):
-        if self.payer and self.payer_str:
-            raise ValueError("فقط یکی از payer یا payer_str باید مقدار داشته باشد.")
-        if self.receiver and self.receiver_str:
-            raise ValueError("فقط یکی از receiver یا receiver_str باید مقدار داشته باشد.")
-
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        payer = self.payer if self.payer else self.payer_str if self.payer_str else "نامشخص"
-        receiver = self.receiver if self.receiver else self.receiver_str if self.receiver_str else "نامشخص"
-        return f'تراکنش {payer} به {receiver}'
-
-
-class Order(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
-    order_type = models.CharField(max_length=30, choices=(
-        ('customer', 'سفارش از طریق مشتری'),
-        ('employee', 'سفارش از طریق کارمند')
-    ), default='customer')
-    amount = models.DecimalField(max_digits=12, decimal_places=3)
-    payment_status = models.CharField(max_length=30,
-                                      choices=(
-                                          ('paid', 'پرداخت شده'),
-                                          ('unpaid', 'پرداخت نشده')),
-                                      default='unpaid')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='order')
-    description = models.TextField(null=True, blank=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'سفارش {self.customer.full_name}'
-
-
-class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='order_items')
-    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, related_name='order_items')
-    quantity = models.PositiveIntegerField(default=1)
-    price = models.DecimalField(max_digits=12, decimal_places=3)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    @property
-    def total_price(self):
-        return self.price * self.quantity
-
-    def __str__(self):
-        return f'{self.product.title} x {self.quantity}'
-
-
-class DeliveryMan(models.Model):
-    full_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.full_name + ' ' + self.phone_number
-
-
-GAME_ORDER_CONSOLE_TYPE = (
-    ('online_ps4', 'online_ps4'),
-    ('online_ps5', 'online_ps5'),
-    ('offline_ps4', 'offline_ps4'),
-    ('offline_ps5', 'offline_ps5'),
-    ('data_ps4', 'data_ps4'),
-    ('data_ps5', 'data_ps5'),
-    ('xbox', 'xbox'),
-    ('nintendo', 'nintendo'),
-)
-GAME_ORDER_STATUS = (
-    ('waiting_for_delivery', 'در انتظار تحویل به دکتر گیم'),
-    ('delivered_to_drgame_and_in_waiting_queue', 'تحویل شده به دکتر گیم و در لیست انتظار'),
-    ('account_setting_in_progress', 'در حال ست شدن اکانت'),
-    ('in_data_uploading_queue', 'در انتظار اپلود داده'),
-    ('data_uploading_in_progress', 'در حال اپلود داده'),
-    ('error_on_accounts', 'مشکل در اکانت ها'),
-    ('done', 'انجام شده و در انتظار پیک'),
-    ('delivered_to_customer', 'تحویل شده به مشتری'),
-)
-
-
-class GameOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
-    recipient = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                  related_name='recipient')
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                 related_name='current_employee')
-    amount = models.IntegerField(null=True, blank=True)
-    order_type = models.CharField(max_length=30, choices=(
-        ('customer', 'سفارش از طریق مشتری'),
-        ('employee', 'سفارش از طریق کارمند')
-    ), default='customer')
-    order_console_type = models.CharField(max_length=30, choices=GAME_ORDER_CONSOLE_TYPE, null=True)
-    console = models.CharField(max_length=100, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=GAME_ORDER_STATUS,
-                              default="delivered_to_drgame_and_in_waiting_queue")
-    payment_status = models.CharField(max_length=30, choices=(
-        ('paid', 'پرداخت شده'),
-        ('unpaid', 'پرداخت نشده')
-    ), default='unpaid')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, blank=True,
-                                       related_name='game_order')
-    sony_accounts = models.ManyToManyField(SonyAccount, blank=True)
-    delivery_to_drgame = models.ForeignKey(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                           related_name='delivery_console_to_drgame', blank=True)
-    dead_line = models.DateTimeField(null=True, blank=True)
-    delivery_to_customer = models.ForeignKey(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                             related_name='delivery_console_to_customer', blank=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        if self.dead_line:
-            base_time = self.created_at or timezone.now()
-
-            if self.dead_line < base_time:
-                raise ValidationError({
-                    'dead_line': 'تاریخ ددلاین نمی‌تواند قبل از تاریخ ایجاد سفارش باشد.'
-                })
-
-    def save(self, *args, **kwargs):
-        self.full_clean()  # اجرای clean()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return f'سفارش {self.customer.full_name}'
-
-
-class GameOrderItem(models.Model):
-    game_order = models.ForeignKey(GameOrder, on_delete=models.CASCADE, related_name='games')
-    game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    account_setter = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                       related_name='account_setter')
-    data_uploader = models.ForeignKey(Employee, on_delete=models.SET_NULL, blank=True, null=True,
-                                      related_name='data_uploader')
-    amount = models.IntegerField(null=True, blank=True)
-    account = models.BooleanField(default=False)
-    data = models.BooleanField(default=False)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.game_order}: {self.game}"
-
-
-class RepairOrderType(models.Model):
-    title = models.CharField(max_length=100, null=True)
-    description = models.TextField(null=True)
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
 
-class RepairOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
-    repair_man = models.ForeignKey(Repairman, on_delete=models.SET_NULL, null=True)
-    order_type = models.ForeignKey(RepairOrderType, on_delete=models.SET_NULL, null=True)
-    amount = models.DecimalField(max_digits=12, decimal_places=3, null=True)
-    repairman_fee = models.IntegerField(null=True, blank=True)
-    dead_line = models.DateTimeField(null=True, blank=True)
-    console = models.CharField(max_length=100, null=True, blank=True)
-    status = models.CharField(max_length=50, choices=(
-        ('waiting_for_delivery_to_drgame', 'در انتظار تحویل به دکترگیم'),
-        ('in_accepting_queue', 'در انتظار قبول شدن توسط تعمیرکار'),
-        ('waiting_for_repairman_fee', 'در انتظار تعیین مبلغ'),
-        ('waiting_for_amount', 'در انتظار تعیین مبلغ توسط دکتر گیم'),
-        ('waiting_for_customer_to_accept', 'در انتظار تایید توسط مشتری'),
-        ('in_progress', 'در حال پردازش'),
-        ('done', 'در انتظار تحویل به مشتری'),
-        ('delivered_to_customer', 'تحویل شده به مشتری'),
-    ), default='waiting_for_delivery_to_drgame')
-    payment_status = models.CharField(max_length=30, choices=(
-        ('پرداخت شده', 'paid'),
-        ('پرداخت نشده', 'unpaid')
-    ), default='unpaid')
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='repair')
-    delivery_to_drgame = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                              related_name='delivery_to_drgame')
-    delivery_to_customer = models.OneToOneField(DeliveryMan, on_delete=models.SET_NULL, null=True,
-                                                related_name='delivery_to_customer')
-    description = models.TextField(null=True)
-    is_deleted = models.BooleanField(default=False)
+class AccountSide(models.Model):
+    TYPE_CHOICES = (
+        ('customer', 'مشتری'),
+        ('employee', 'کارمند'),
+        ('supplier', 'تامین‌کننده'),
+        ('other', 'سایر'),
+    )
+
+    name = models.CharField(max_length=100, blank=True, null=True)
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+
+    # Generic FK — مشخص می‌کنه به کدوم مدل وصله
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="نوع مدل مرتبط (Customer، Employee، Supplier)"
+    )
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'سفارش {self.customer.full_name} بابت {self.order_type}'
+        if self.content_object:
+            return str(self.content_object)
+        if self.name:
+            return self.name
+        return f'{self.get_type_display()} #{self.object_id}'
 
 
-class CourseOrder(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, null=True)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=2000000)
-    transaction = models.OneToOneField(Transaction, on_delete=models.SET_NULL, null=True, related_name='course_order')
-    payment_status = models.CharField(max_length=30, choices=(
-        ('پرداخت شده', 'paid'),
-        ('پرداخت نشده', 'unpaid')
-    ), default='unpaid')
-    is_deleted = models.BooleanField(default=False)
+class InvoiceCategory(models.Model):
+    DIRECTION_CHOICES = (
+        ('in', 'ورودی'),
+        ('out', 'خروجی'),
+    )
+
+    title = models.CharField(max_length=100)
+    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
+    description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'Order #{self.id} - {self.customer}'
+        return f'{self.title} ({self.get_direction_display()})'
 
 
-class TelegramOrder(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.PROTECT)
-    sony_account = models.ForeignKey(SonyAccount, on_delete=models.PROTECT)
+class Invoice(models.Model):
+    STATUS_CHOICES = (
+        ('draft', 'پیش‌نویس'),
+        ('primary', 'صادر شده'),
+        ('finalize', 'نهایی'),
+    )
+
+    PAYMENT_STATUS_CHOICES = (
+        ('unpaid', 'پرداخت نشده'),
+        ('partial', 'پرداخت جزئی'),
+        ('paid', 'پرداخت شده'),
+    )
+
+    account_side = models.ForeignKey(AccountSide, on_delete=models.CASCADE, related_name='invoices')
+    category = models.ForeignKey(InvoiceCategory, on_delete=models.CASCADE, related_name='invoices')
+    discount = models.IntegerField(default=0)
     amount = models.IntegerField()
-    customer_tel_id = models.CharField(max_length=100, null=True, blank=True)
+    paid_amount = models.IntegerField(default=0, help_text="مجموع مبلغ پرداخت‌شده — از Celery آپدیت می‌شه")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
+    is_payroll = models.BooleanField(default=False, help_text="آیا این فاکتور فیش حقوقیه؟")
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+
+    @property
+    def remaining_amount(self):
+        return max(0, self.amount - self.discount - self.paid_amount)
+
+    def __str__(self):
+        return f'فاکتور #{self.id} - {self.account_side}'
+
+
+class InvoiceItem(models.Model):
+    """
+    آیتم‌های فاکتور — می‌تونه به هر مدلی وصل باشه:
+    - SonyAccountOrder
+    - RepairOrder
+    - ProductOrder
+    - یا هر مدل دیگه‌ای
+    """
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+    title = models.CharField(max_length=200)
+    quantity = models.IntegerField(default=1)
+    unit_price = models.IntegerField()
+    discount = models.IntegerField(default=0)
+
+    # Generic FK — مشخص می‌کنه این آیتم به کدوم سفارش/موجودیت وصله
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="نوع مدل مرتبط (SonyAccountOrder، RepairOrder، ProductOrder و...)"
+    )
+    object_id = models.PositiveIntegerField(null=True, blank=True)
+    content_object = GenericForeignKey('content_type', 'object_id')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    @property
+    def total_price(self):
+        return (self.unit_price * self.quantity) - self.discount
+
+    def __str__(self):
+        return f'{self.title} × {self.quantity}'
+
+
+class PayrollDetail(models.Model):
+    """
+    جزئیات فیش حقوقی — فقط وقتی invoice.is_payroll=True معنی داره
+    """
+    invoice = models.OneToOneField(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='payroll_detail',
+        limit_choices_to={'is_payroll': True}
+    )
+
+    # درآمدها
+    base_salary = models.IntegerField(default=0, help_text="حقوق پایه")
+    overtime_amount = models.IntegerField(default=0, help_text="اضافه‌کاری")
+    bonus = models.IntegerField(default=0, help_text="پاداش")
+    housing_allowance = models.IntegerField(default=0, help_text="حق مسکن")
+    food_allowance = models.IntegerField(default=0, help_text="حق خوار و بار")
+    transportation_allowance = models.IntegerField(default=0, help_text="حق ایاب و ذهاب")
+
+    # کسورات
+    insurance_deduction = models.IntegerField(default=0, help_text="کسر بیمه")
+    tax_deduction = models.IntegerField(default=0, help_text="کسر مالیات")
+    loan_deduction = models.IntegerField(default=0, help_text="کسر اقساط وام")
+    other_deductions = models.IntegerField(default=0, help_text="سایر کسورات")
+
+    work_days = models.IntegerField(default=0, help_text="روزهای کارکرد")
+    overtime_hours = models.IntegerField(default=0, help_text="ساعات اضافه‌کاری")
+    description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def gross_salary(self):
+        return (
+            self.base_salary
+            + self.overtime_amount
+            + self.bonus
+            + self.housing_allowance
+            + self.food_allowance
+            + self.transportation_allowance
+        )
+
+    @property
+    def total_deductions(self):
+        return (
+            self.insurance_deduction
+            + self.tax_deduction
+            + self.loan_deduction
+            + self.other_deductions
+        )
+
+    @property
+    def net_salary(self):
+        return self.gross_salary - self.total_deductions
+
     def __str__(self):
-        return f'Telegram Order #{self.id} - {self.employee}'
+        return f'فیش حقوقی فاکتور #{self.invoice_id}'
+
+
+class Transaction(models.Model):
+    DIRECTION_CHOICES = (
+        ('in', 'دریافت'),
+        ('out', 'پرداخت'),
+    )
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
+    account_side = models.ForeignKey(AccountSide, on_delete=models.CASCADE, related_name='transactions')
+    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transactions')
+    amount = models.IntegerField()
+    direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
+    description = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.get_direction_display()} {self.amount} — {self.account_side}'

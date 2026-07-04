@@ -1,9 +1,42 @@
 from django.core.exceptions import ValidationError
-from django.db import models
-
 from crm.models import Customer
 from hr.models import Employee
-from utils.crypto import encrypt_text, decrypt_text
+from django.db import models
+
+
+class Supplier(models.Model):
+    TYPE_CHOICES = (
+        ('real', 'حقیقی'),
+        ('legal', 'حقوقی'),
+    )
+
+    # اطلاعات پایه
+    name = models.CharField(max_length=200)
+    type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='real')
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    email = models.EmailField(blank=True, null=True)
+    address = models.TextField(blank=True, null=True)
+
+    # اطلاعات مالی
+    account_number = models.CharField(max_length=50, blank=True, null=True, help_text="شماره حساب")
+    sheba = models.CharField(max_length=30, blank=True, null=True, help_text="شماره شبا")
+
+    # اطلاعات تجاری
+    national_id = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True,
+        help_text="کد ملی (حقیقی) یا شناسه ملی (حقوقی)"
+    )
+    tax_id = models.CharField(max_length=20, blank=True, null=True, help_text="شناسه مالیاتی")
+    description = models.TextField(blank=True, null=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f'{self.name} ({self.get_type_display()})'
 
 
 # Create your models here.
