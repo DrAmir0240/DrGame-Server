@@ -1,6 +1,5 @@
 from django.contrib import admin
 
-from accounting.models import CourseOrder
 from .models import Cart, CartItem, BlogPost, ContactUs, AboutUs, ContactSubmission, Course, \
     Video, HomeBanner, GameCart, GameCartItem
 
@@ -81,8 +80,3 @@ class HomeBannerAdmin(admin.ModelAdmin):
     list_editable = ('is_chosen', 'order')
     list_filter = ('is_chosen',)
     search_fields = ('title',)
-
-
-@admin.register(CourseOrder)
-class CourseOrderAdmin(admin.ModelAdmin):
-    list_display = ['customer', 'amount', 'created_at', 'updated_at']

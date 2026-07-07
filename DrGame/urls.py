@@ -22,7 +22,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    # path('accounting/', include('accounting.urls')),
+    path('accounting/', include('accounting.urls')),
     # path('crm/', include('crm.urls')),
     # path('dashboard/', include('dashboard.urls')),
     # path('docs/', include('docs.urls')),
