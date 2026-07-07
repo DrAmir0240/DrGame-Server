@@ -6,8 +6,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounting.models import (
-    BankAccount, AccountSide, InvoiceCategory, Invoice,
-    InvoiceItem, Transaction,
+    BankAccount, AccountSide, InvoiceCategory, Invoice, Transaction,
 )
 from users.models import CustomUser
 
