@@ -74,13 +74,12 @@ class RequestOTPView(APIView):
         description="ارسال درخواست OTP با شماره موبایل"
     )
     def post(self, request):
-        # (بقیه کد همونیه که فرستادی)
-        # api_key = request.headers.get('X-API-Key')
-        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-        #     return Response(
-        #         {"error": "API Key نامعتبر است"},
-        #         status=status.HTTP_403_FORBIDDEN
-        #     )
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+            return Response(
+                {"error": "API Key نامعتبر است"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         phone = request.data.get('phone')
         if not phone:
             return Response(
@@ -95,12 +94,12 @@ class RequestOTPView(APIView):
         print(otp_code)
         expires_at = timezone.now() + timedelta(minutes=2)
         otp = OTP.objects.create(user=user, code=otp_code, expires_at=expires_at)
-        success, message = otp.send_otp(phone=phone, otp_code=otp_code)
-        if not success:
-            return Response(
-                {"error": f"خطا در ارسال OTP: {message}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+        # success, message = otp.send_otp(phone=phone, otp_code=otp_code)
+        # if not success:
+        #     return Response(
+        #         {"error": f"خطا در ارسال OTP: {message}"},
+        #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        #     )
         return Response(
             {"message": "لطفاً کد OTP را وارد کنید"},
             status=status.HTTP_200_OK
@@ -123,12 +122,12 @@ class VerifyOTPView(APIView):
     )
     def post(self, request):
         # (بقیه کد همونیه که فرستادی)
-        # api_key = request.headers.get('X-API-Key')
-        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-        #     return Response(
-        #         {"error": "Invalid API Key"},
-        #         status=status.HTTP_403_FORBIDDEN
-        #     )
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+            return Response(
+                {"error": "Invalid API Key"},
+                status=status.HTTP_403_FORBIDDEN
+            )
         phone = request.data.get('phone')
         code = request.data.get('code')
         if not phone or not code:
