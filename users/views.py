@@ -74,12 +74,12 @@ class RequestOTPView(APIView):
         description="ارسال درخواست OTP با شماره موبایل"
     )
     def post(self, request):
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "API Key نامعتبر است"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "API Key نامعتبر است"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
         phone = request.data.get('phone')
         if not phone:
             return Response(
@@ -122,12 +122,12 @@ class VerifyOTPView(APIView):
     )
     def post(self, request):
         # (بقیه کد همونیه که فرستادی)
-        api_key = request.headers.get('X-API-Key')
-        if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
-            return Response(
-                {"error": "Invalid API Key"},
-                status=status.HTTP_403_FORBIDDEN
-            )
+        # api_key = request.headers.get('X-API-Key')
+        # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
+        #     return Response(
+        #         {"error": "Invalid API Key"},
+        #         status=status.HTTP_403_FORBIDDEN
+        #     )
         phone = request.data.get('phone')
         code = request.data.get('code')
         if not phone or not code:
