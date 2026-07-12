@@ -1,69 +1,89 @@
 import django_filters
+from django.utils import timezone
 
 from accounting.models import Invoice, Transaction
 
 
-class DailyInvoiceFilter(django_filters.FilterSet):
-    date = django_filters.DateFilter(field_name='created_at', lookup_expr='date')
+class DateRangeFilter(django_filters.FilterSet):
+    start_date = django_filters.DateFilter(field_name='created_at', lookup_expr='date__gte')
+    end_date = django_filters.DateFilter(field_name='created_at', lookup_expr='date__lte')
+
+
+class TransactionFilter(DateRangeFilter):
+    direction = django_filters.ChoiceFilter(choices=Transaction.DIRECTION_CHOICES)
+    bank_account = django_filters.NumberFilter(field_name='bank_account__id')
+    account_side = django_filters.NumberFilter(field_name='account_side__id')
 
     class Meta:
-        model = Invoice
-        fields = ['date']
+        model = Transaction
+        fields = ['direction', 'bank_account', 'account_side', 'start_date', 'end_date']
 
 
 class DailyTransactionFilter(django_filters.FilterSet):
-    date = django_filters.DateFilter(field_name='created_at', lookup_expr='date')
-
+    """فقط تراکنش‌های امروز — بدون نیاز به date range از کاربر"""
     class Meta:
         model = Transaction
-        fields = ['date']
+        fields = []
+
+    @property
+    def qs(self):
+        return super().qs.filter(
+            created_at__date=timezone.localdate(),
+            is_deleted=False,
+        )
 
 
-class InvoiceFilter(django_filters.FilterSet):
-    date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='date__gte')
-    date_to = django_filters.DateFilter(field_name='created_at', lookup_expr='date__lte')
-    status = django_filters.CharFilter(field_name='status')
-    payment_status = django_filters.CharFilter(field_name='payment_status')
-    is_payroll = django_filters.BooleanFilter(field_name='is_payroll')
-    category = django_filters.NumberFilter(field_name='category__id')
+class InvoiceFilter(DateRangeFilter):
+    status = django_filters.ChoiceFilter(choices=Invoice.STATUS_CHOICES)
+    payment_status = django_filters.ChoiceFilter(choices=Invoice.PAYMENT_STATUS_CHOICES)
     account_side = django_filters.NumberFilter(field_name='account_side__id')
-    direction = django_filters.CharFilter(field_name='category__direction')
-    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
-    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
+    category = django_filters.NumberFilter(field_name='category__id')
 
     class Meta:
         model = Invoice
-        fields = [
-            'date_from', 'date_to', 'status', 'payment_status',
-            'is_payroll', 'category', 'account_side', 'direction',
-            'amount_min', 'amount_max',
-        ]
+        fields = ['status', 'payment_status', 'account_side', 'category', 'start_date', 'end_date']
 
 
-class TransactionFilter(django_filters.FilterSet):
-    date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='date__gte')
-    date_to = django_filters.DateFilter(field_name='created_at', lookup_expr='date__lte')
-    account_side = django_filters.NumberFilter(field_name='account_side__id')
-    bank_account = django_filters.NumberFilter(field_name='bank_account__id')
-    invoice = django_filters.NumberFilter(field_name='invoice__id')
-    amount_min = django_filters.NumberFilter(field_name='amount', lookup_expr='gte')
-    amount_max = django_filters.NumberFilter(field_name='amount', lookup_expr='lte')
-
+class DailyInvoiceFilter(django_filters.FilterSet):
+    """فقط فاکتورهای امروز"""
     class Meta:
-        model = Transaction
-        fields = [
-            'date_from', 'date_to', 'account_side', 'bank_account',
-            'invoice', 'amount_min', 'amount_max',
-        ]
+        model = Invoice
+        fields = []
+
+    @property
+    def qs(self):
+        return super().qs.filter(
+            created_at__date=timezone.localdate(),
+            is_deleted=False,
+        )
 
 
-class PayableReceivableFilter(django_filters.FilterSet):
-    date_from = django_filters.DateFilter(field_name='created_at', lookup_expr='date__gte')
-    date_to = django_filters.DateFilter(field_name='created_at', lookup_expr='date__lte')
+class IncomeInvoiceFilter(DateRangeFilter):
+    """فاکتورهای درآمدی — direction=in"""
+    status = django_filters.ChoiceFilter(choices=Invoice.STATUS_CHOICES)
+    payment_status = django_filters.ChoiceFilter(choices=Invoice.PAYMENT_STATUS_CHOICES)
     account_side = django_filters.NumberFilter(field_name='account_side__id')
-    category = django_filters.NumberFilter(field_name='category__id')
-    payment_status = django_filters.CharFilter(field_name='payment_status')
 
     class Meta:
         model = Invoice
-        fields = ['date_from', 'date_to', 'account_side', 'category', 'payment_status']
+        fields = ['status', 'payment_status', 'account_side', 'start_date', 'end_date']
+
+
+class ExpenseInvoiceFilter(DateRangeFilter):
+    """فاکتورهای هزینه‌ای — direction=out"""
+    status = django_filters.ChoiceFilter(choices=Invoice.STATUS_CHOICES)
+    payment_status = django_filters.ChoiceFilter(choices=Invoice.PAYMENT_STATUS_CHOICES)
+    account_side = django_filters.NumberFilter(field_name='account_side__id')
+
+    class Meta:
+        model = Invoice
+        fields = ['status', 'payment_status', 'account_side', 'start_date', 'end_date']
+
+
+class PayrollInvoiceFilter(DateRangeFilter):
+    payment_status = django_filters.ChoiceFilter(choices=Invoice.PAYMENT_STATUS_CHOICES)
+    account_side = django_filters.NumberFilter(field_name='account_side__id')
+
+    class Meta:
+        model = Invoice
+        fields = ['payment_status', 'account_side', 'start_date', 'end_date']

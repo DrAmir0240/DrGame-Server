@@ -1,469 +1,638 @@
-from django.contrib.contenttypes.models import ContentType
-from django.db.models import Prefetch
-from django.utils import timezone
-from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import generics
-from rest_framework.filters import SearchFilter
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 
-from accounting.filters import (
-    DailyInvoiceFilter, DailyTransactionFilter,
-    InvoiceFilter, TransactionFilter, PayableReceivableFilter,
+from accounting.filters import DailyTransactionFilter, DailyInvoiceFilter, IncomeInvoiceFilter, ExpenseInvoiceFilter, \
+    PayrollInvoiceFilter
+from accounting.helper import (
+    parse_date_range,
+    RepairOrderReportHelper,
+    ProductOrderReportHelper,
+    SonyAccountOrderReportHelper,
+    InvoiceDropdownHelper,
+    FinancialReportHelper,
 )
-from accounting.models import (
-    BankAccount, AccountSide, InvoiceCategory, Invoice,
-    InvoiceItem, Transaction,
-)
+from accounting.models import Transaction, Invoice, InvoiceCategory
 from accounting.serializers import (
-    InvoiceSerializer, TransactionSerializer,
-    IssueCustomerInvoiceSerializer, IssueSupplierInvoiceSerializer,
-    PayCustomerTransactionSerializer, PaySupplierTransactionSerializer,
-    InvoiceCategoryChoiceSerializer, BankAccountChoiceSerializer,
-    AccountSideChoiceSerializer,
+    DirectionSummarySerializer,
+    NetFinancialSerializer,
+    RepairOrderSummarySerializer,
+    WeeklyDaySerializer,
+    ProductOrderSummarySerializer,
+    ProductOrderByCategorySerializer,
+    SonyAccountOrderFullReportSerializer, TransactionListSerializer, TransactionDetailSerializer, InvoiceListSerializer,
+    InvoiceDetailSerializer, InvoiceWriteSerializer, PayrollInvoiceListSerializer, PayrollInvoiceDetailSerializer,
+    PayrollInvoiceWriteSerializer,
 )
 
+DATE_RANGE_PARAMS = [
+    OpenApiParameter(
+        'start_date',
+        OpenApiTypes.DATE,
+        location='query',
+        required=False,
+        description='پیش‌فرض: اول ماه جاری — فرمت: YYYY-MM-DD',
+    ),
+    OpenApiParameter(
+        'end_date',
+        OpenApiTypes.DATE,
+        location='query',
+        required=False,
+        description='پیش‌فرض: بدون محدودیت — فرمت: YYYY-MM-DD',
+    ),
+]
 
-def _invoice_queryset():
-    return Invoice.objects.filter(is_deleted=False).select_related(
-        'account_side', 'category',
-    ).prefetch_related(
-        Prefetch('items', queryset=InvoiceItem.objects.filter(is_deleted=False)),
-    ).order_by('-created_at')
+
+# ── Dropdown Choices ──────────────────────────────────────────────────────────────────
+@extend_schema(
+    tags=['حسابداری - چویسس'],
+    summary='چویسس برای بخش حسابداری',
+)
+class InvoiceDropdownView(generics.ListAPIView):
+    """
+    GET /api/accounting/invoice/dropdown/?type=account_side
+    GET /api/accounting/invoice/dropdown/?type=category
+    GET /api/accounting/invoice/dropdown/?type=status
+    GET /api/accounting/invoice/dropdown/?type=payment_status
+    """
+
+    serializer_class = None  # ← به جای override کردن get_serializer_class
+
+    HANDLERS = {
+        'account_side',
+        'category',
+        'status',
+        'payment_status',
+    }
+
+    def list(self, request, *args, **kwargs):
+        t = request.query_params.get('type')
+
+        if not t:
+            raise ValidationError({'type': 'این پارامتر الزامیه.'})
+
+        if t not in self.HANDLERS:
+            raise ValidationError(
+                {'type': f'مقدار نامعتبر. گزینه‌های مجاز: {", ".join(self.HANDLERS)}'}
+            )
+
+        handler = getattr(InvoiceDropdownHelper, f'get_{t}')
+        return Response(handler())
 
 
-def _transaction_queryset():
-    return Transaction.objects.filter(is_deleted=False).select_related(
-        'invoice', 'account_side', 'bank_account',
-    ).order_by('-created_at')
+# ── Repair Order ──────────────────────────────────────────────────────────────
+@extend_schema(
+    tags=[' حسابداری - گزارش — تعمیرات'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=RepairOrderSummarySerializer,
+    summary='گزارش کلی سفارشات تعمیر',
+)
+class RepairOrderReportView(generics.GenericAPIView):
+    serializer_class = RepairOrderSummarySerializer
 
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(RepairOrderReportHelper.get_summary(start, end))
 
-# ─── 1. Daily Ledger ────────────────────────────────────────────────────────
 
 @extend_schema(
-    tags=["Accounting"],
-    summary="دفتر روزانه — فاکتورها",
-    description="لیست فاکتورهای امروز. برای تغییر تاریخ از پارامتر date استفاده کنید.",
-    parameters=[
-        OpenApiParameter("date", OpenApiTypes.DATE, description="تاریخ (پیش‌فرض: امروز)"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
+    tags=[' حسابداری - گزارش — تعمیرات'],
+    responses=WeeklyDaySerializer(many=True),
+    summary='گزارش هفتگی سفارشات تعمیر (شنبه تا جمعه)',
 )
-class DailyInvoiceListView(generics.ListAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = DailyInvoiceFilter
-    search_fields = ['description', 'account_side__name']
+class RepairOrderWeeklyReportView(generics.GenericAPIView):
+    serializer_class = WeeklyDaySerializer
 
-    def get_queryset(self):
-        qs = _invoice_queryset()
-        if 'date' not in self.request.query_params:
-            qs = qs.filter(created_at__date=timezone.localdate())
-        return qs
+    @staticmethod
+    def get(request, *args, **kwargs):
+        return Response(RepairOrderReportHelper.get_weekly_breakdown())
+
+
+# ── Product Order ─────────────────────────────────────────────────────────────
+@extend_schema(
+    tags=[' حسابداری - گزارش — سفارش کالا'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=ProductOrderSummarySerializer,
+    summary='گزارش کلی سفارشات کالا',
+)
+class ProductOrderReportView(generics.GenericAPIView):
+    serializer_class = ProductOrderSummarySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(ProductOrderReportHelper.get_summary(start, end))
 
 
 @extend_schema(
-    tags=["Accounting"],
-    summary="دفتر روزانه — تراکنش‌ها",
-    description="لیست تراکنش‌های امروز. برای تغییر تاریخ از پارامتر date استفاده کنید.",
-    parameters=[
-        OpenApiParameter("date", OpenApiTypes.DATE, description="تاریخ (پیش‌فرض: امروز)"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
+    tags=[' حسابداری - گزارش — سفارش کالا'],
+    responses=WeeklyDaySerializer(many=True),
+    summary='گزارش هفتگی سفارشات کالا (شنبه تا جمعه)',
 )
+class ProductOrderWeeklyReportView(generics.GenericAPIView):
+    serializer_class = WeeklyDaySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        return Response(ProductOrderReportHelper.get_weekly_breakdown())
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — سفارش کالا'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=ProductOrderByCategorySerializer(many=True),
+    summary='گزارش سفارشات کالا به تفکیک دسته‌بندی',
+)
+class ProductOrderByCategoryReportView(generics.GenericAPIView):
+    serializer_class = ProductOrderByCategorySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(ProductOrderReportHelper.get_by_category(start, end))
+
+
+# ── Sony Account Order ────────────────────────────────────────────────────────
+@extend_schema(
+    tags=[' حسابداری - گزارش — اکانت سونی'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=SonyAccountOrderFullReportSerializer,
+    summary='گزارش کامل سفارشات اکانت سونی (summary + تفکیک همه فیلدها)',
+)
+class SonyAccountOrderReportView(generics.GenericAPIView):
+    serializer_class = SonyAccountOrderFullReportSerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response({
+            'summary': SonyAccountOrderReportHelper.get_summary(start, end),
+            'by_source': SonyAccountOrderReportHelper.get_by_source(start, end),
+            'by_type': SonyAccountOrderReportHelper.get_by_type(start, end),
+            'by_category': SonyAccountOrderReportHelper.get_by_category(start, end),
+            'by_stage': SonyAccountOrderReportHelper.get_by_stage(start, end),
+        })
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — اکانت سونی'],
+    responses=WeeklyDaySerializer(many=True),
+    summary='گزارش هفتگی سفارشات اکانت سونی (شنبه تا جمعه)',
+)
+class SonyAccountOrderWeeklyReportView(generics.GenericAPIView):
+    serializer_class = WeeklyDaySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        return Response(SonyAccountOrderReportHelper.get_weekly_breakdown())
+
+
+# ── Financial ─────────────────────────────────────────────────────────────────
+@extend_schema(
+    tags=[' حسابداری - گزارش — مالی'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=DirectionSummarySerializer,
+    summary='گزارش درآمدها (تراکنش‌های دریافتی)',
+)
+class IncomeReportView(generics.GenericAPIView):
+    serializer_class = DirectionSummarySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(FinancialReportHelper.get_income_summary(start, end))
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — مالی'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=DirectionSummarySerializer,
+    summary='گزارش هزینه‌ها (تراکنش‌های پرداختی)',
+)
+class ExpenseReportView(generics.GenericAPIView):
+    serializer_class = DirectionSummarySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(FinancialReportHelper.get_expense_summary(start, end))
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — مالی'],
+    parameters=DATE_RANGE_PARAMS,
+    responses=NetFinancialSerializer,
+    summary='گزارش خالص مالی (درآمد − هزینه)',
+)
+class NetFinancialReportView(generics.GenericAPIView):
+    serializer_class = NetFinancialSerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        start, end = parse_date_range(request)
+        return Response(FinancialReportHelper.get_net_summary(start, end))
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — مالی'],
+    responses=WeeklyDaySerializer(many=True),
+    summary='گزارش هفتگی درآمدها (شنبه تا جمعه)',
+)
+class IncomeWeeklyReportView(generics.GenericAPIView):
+    serializer_class = WeeklyDaySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        return Response(FinancialReportHelper.get_weekly_breakdown('in'))
+
+
+@extend_schema(
+    tags=[' حسابداری - گزارش — مالی'],
+    responses=WeeklyDaySerializer(many=True),
+    summary='گزارش هفتگی هزینه‌ها (شنبه تا جمعه)',
+)
+class ExpenseWeeklyReportView(generics.GenericAPIView):
+    serializer_class = WeeklyDaySerializer
+
+    @staticmethod
+    def get(request, *args, **kwargs):
+        return Response(FinancialReportHelper.get_weekly_breakdown('out'))
+
+
+# ── Daily Transactions ────────────────────────────────────────────────────────
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='لیست تراکنش‌های امروز')
 class DailyTransactionListView(generics.ListAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    serializer_class = (
+        TransactionListSerializer)
     filterset_class = DailyTransactionFilter
-    search_fields = ['description', 'account_side__name']
 
     def get_queryset(self):
-        qs = _transaction_queryset()
-        if 'date' not in self.request.query_params:
-            qs = qs.filter(created_at__date=timezone.localdate())
-        return qs
+        return Transaction.objects.filter(
+            is_deleted=False,
+        ).select_related('account_side', 'bank_account').order_by('-created_at')
 
 
-# ─── 2 & 3. Payments / Receipts ─────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست پرداخت‌ها",
-    description="تراکنش‌هایی با جهت خروجی (direction=out).",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("bank_account", OpenApiTypes.INT, description="شناسه حساب بانکی"),
-        OpenApiParameter("invoice", OpenApiTypes.INT, description="شناسه فاکتور"),
-        OpenApiParameter("amount_min", OpenApiTypes.INT, description="حداقل مبلغ"),
-        OpenApiParameter("amount_max", OpenApiTypes.INT, description="حداکثر مبلغ"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class PaymentListView(generics.ListAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = TransactionFilter
-    search_fields = ['description', 'account_side__name']
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='جزئیات تراکنش')
+class DailyTransactionDetailView(generics.RetrieveAPIView):
+    serializer_class = TransactionDetailSerializer
 
     def get_queryset(self):
-        return _transaction_queryset().filter(direction='out')
-
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست دریافت‌ها",
-    description="تراکنش‌هایی با جهت ورودی (direction=in).",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("bank_account", OpenApiTypes.INT, description="شناسه حساب بانکی"),
-        OpenApiParameter("invoice", OpenApiTypes.INT, description="شناسه فاکتور"),
-        OpenApiParameter("amount_min", OpenApiTypes.INT, description="حداقل مبلغ"),
-        OpenApiParameter("amount_max", OpenApiTypes.INT, description="حداکثر مبلغ"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class ReceiptListView(generics.ListAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = TransactionFilter
-    search_fields = ['description', 'account_side__name']
-
-    def get_queryset(self):
-        return _transaction_queryset().filter(direction='in')
-
-
-# ─── 4 & 5. Payable / Receivable ────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="حساب‌های پرداختنی",
-    description="فاکتورهای خروجی که هنوز کامل پرداخت نشده‌اند.",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("category", OpenApiTypes.INT, description="شناسه دسته‌بندی"),
-        OpenApiParameter("payment_status", OpenApiTypes.STR, description="وضعیت پرداخت: unpaid | partial"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class PayableListView(generics.ListAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = PayableReceivableFilter
-    search_fields = ['description', 'account_side__name']
-
-    def get_queryset(self):
-        return _invoice_queryset().filter(
-            category__direction='out',
-            payment_status__in=['unpaid', 'partial'],
+        return Transaction.objects.filter(is_deleted=False).select_related(
+            'account_side', 'bank_account'
         )
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="حساب‌های دریافتنی",
-    description="فاکتورهای ورودی که هنوز کامل دریافت نشده‌اند.",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("category", OpenApiTypes.INT, description="شناسه دسته‌بندی"),
-        OpenApiParameter("payment_status", OpenApiTypes.STR, description="وضعیت پرداخت: unpaid | partial"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class ReceivableListView(generics.ListAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = PayableReceivableFilter
-    search_fields = ['description', 'account_side__name']
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='ویرایش تراکنش')
+class DailyTransactionUpdateView(generics.UpdateAPIView):
+    serializer_class = TransactionDetailSerializer
 
     def get_queryset(self):
-        return _invoice_queryset().filter(
+        return Transaction.objects.filter(is_deleted=False)
+
+
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='حذف تراکنش (soft delete)')
+class DailyTransactionDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Transaction.objects.filter(is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
+
+
+# ── Daily Invoices ────────────────────────────────────────────────────────────
+
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='لیست فاکتورهای امروز')
+class DailyInvoiceListView(generics.ListAPIView):
+    serializer_class = InvoiceListSerializer
+    filterset_class = DailyInvoiceFilter
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+        ).select_related('account_side', 'category').order_by('-created_at')
+
+
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='جزئیات فاکتور')
+class DailyInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = InvoiceDetailSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False).select_related(
+            'account_side', 'category'
+        ).prefetch_related('items')
+
+
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='ویرایش فاکتور')
+class DailyInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = InvoiceDetailSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False)
+
+
+@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='حذف فاکتور (soft delete)')
+class DailyInvoiceDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False)
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
+
+
+def get_income_category():
+    category, _ = InvoiceCategory.objects.get_or_create(
+        direction='in',
+        defaults={'title': 'درآمد'},
+    )
+    return category
+
+
+@extend_schema(tags=['حسابداری — درآمد'], summary='لیست فاکتورهای درآمدی')
+class IncomeInvoiceListView(generics.ListAPIView):
+    serializer_class = InvoiceListSerializer
+    filterset_class = IncomeInvoiceFilter
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
             category__direction='in',
-            payment_status__in=['unpaid', 'partial'],
+            is_payroll=False,
+        ).select_related('account_side', 'category').order_by('-created_at')
+
+
+@extend_schema(tags=['حسابداری — درآمد'], summary='جزئیات فاکتور درآمدی')
+class IncomeInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = InvoiceDetailSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__direction='in',
+        ).select_related('account_side', 'category').prefetch_related('items')
+
+
+@extend_schema(tags=['حسابداری — درآمد'], summary='ثبت فاکتور درآمدی')
+class IncomeInvoiceCreateView(generics.CreateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            category=get_income_category(),
+            is_payroll=False,
         )
 
 
-# ─── 6. Invoice CRUD ────────────────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست و ایجاد فاکتور",
-    description="لیست تمام فاکتورها با امکان فیلتر و جستجو. POST برای ایجاد فاکتور جدید.",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("status", OpenApiTypes.STR, description="وضعیت: draft | primary | finalize"),
-        OpenApiParameter("payment_status", OpenApiTypes.STR, description="وضعیت پرداخت: unpaid | partial | paid"),
-        OpenApiParameter("is_payroll", OpenApiTypes.BOOL, description="فیش حقوقی؟"),
-        OpenApiParameter("category", OpenApiTypes.INT, description="شناسه دسته‌بندی"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("direction", OpenApiTypes.STR, description="جهت دسته‌بندی: in | out"),
-        OpenApiParameter("amount_min", OpenApiTypes.INT, description="حداقل مبلغ"),
-        OpenApiParameter("amount_max", OpenApiTypes.INT, description="حداکثر مبلغ"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class InvoiceListCreateView(generics.ListCreateAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = InvoiceFilter
-    search_fields = ['description', 'account_side__name']
+@extend_schema(tags=['حسابداری — درآمد'], summary='ویرایش فاکتور درآمدی')
+class IncomeInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = InvoiceWriteSerializer
 
     def get_queryset(self):
-        return _invoice_queryset()
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__direction='in',
+        )
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="جزئیات، ویرایش و حذف فاکتور",
-    description="GET: جزئیات فاکتور. PUT/PATCH: ویرایش. DELETE: حذف نرم.",
-)
-class InvoiceDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = InvoiceSerializer
-    permission_classes = [IsAuthenticated]
-
+@extend_schema(tags=['حسابداری — درآمد'], summary='حذف فاکتور درآمدی (soft delete)')
+class IncomeInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
-        return _invoice_queryset()
+        return Invoice.objects.filter(is_deleted=False, category__direction='in')
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
         instance.save(update_fields=['is_deleted'])
 
 
-# ─── 7. Transaction CRUD ────────────────────────────────────────────────────
+def get_expense_category():
+    category, _ = InvoiceCategory.objects.get_or_create(
+        direction='out',
+        defaults={'title': 'هزینه'},
+    )
+    return category
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست و ایجاد تراکنش",
-    description="لیست تمام تراکنش‌ها با امکان فیلتر و جستجو. POST برای ایجاد تراکنش جدید.",
-    parameters=[
-        OpenApiParameter("date_from", OpenApiTypes.DATE, description="از تاریخ"),
-        OpenApiParameter("date_to", OpenApiTypes.DATE, description="تا تاریخ"),
-        OpenApiParameter("account_side", OpenApiTypes.INT, description="شناسه طرف حساب"),
-        OpenApiParameter("bank_account", OpenApiTypes.INT, description="شناسه حساب بانکی"),
-        OpenApiParameter("invoice", OpenApiTypes.INT, description="شناسه فاکتور"),
-        OpenApiParameter("amount_min", OpenApiTypes.INT, description="حداقل مبلغ"),
-        OpenApiParameter("amount_max", OpenApiTypes.INT, description="حداکثر مبلغ"),
-        OpenApiParameter("search", OpenApiTypes.STR, description="جستجو در توضیحات"),
-    ],
-)
-class TransactionListCreateView(generics.ListCreateAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_class = TransactionFilter
-    search_fields = ['description', 'account_side__name']
+
+@extend_schema(tags=['حسابداری — هزینه'], summary='لیست فاکتورهای هزینه‌ای')
+class ExpenseInvoiceListView(generics.ListAPIView):
+    serializer_class = InvoiceListSerializer
+    filterset_class = ExpenseInvoiceFilter
 
     def get_queryset(self):
-        return _transaction_queryset()
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__direction='out',
+            is_payroll=False,
+        ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="جزئیات، ویرایش و حذف تراکنش",
-    description="GET: جزئیات تراکنش. PUT/PATCH: ویرایش. DELETE: حذف نرم.",
-)
-class TransactionDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsAuthenticated]
+@extend_schema(tags=['حسابداری — هزینه'], summary='جزئیات فاکتور هزینه‌ای')
+class ExpenseInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = InvoiceDetailSerializer
 
     def get_queryset(self):
-        return _transaction_queryset()
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__direction='out',
+        ).select_related('account_side', 'category').prefetch_related('items')
+
+
+@extend_schema(tags=['حسابداری — هزینه'], summary='ثبت فاکتور هزینه‌ای')
+class ExpenseInvoiceCreateView(generics.CreateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            category=get_expense_category(),
+            is_payroll=False,
+        )
+
+
+@extend_schema(tags=['حسابداری — هزینه'], summary='ویرایش فاکتور هزینه‌ای')
+class ExpenseInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__direction='out',
+        )
+
+
+@extend_schema(tags=['حسابداری — هزینه'], summary='حذف فاکتور هزینه‌ای (soft delete)')
+class ExpenseInvoiceDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, category__direction='out')
 
     def perform_destroy(self, instance):
         instance.is_deleted = True
         instance.save(update_fields=['is_deleted'])
 
 
-# ─── 8. Issue Customer Invoice ──────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="صدور فاکتور برای مشتری",
-    description=(
-            "فاکتور خروجی با آیتم‌ها ایجاد می‌کند. "
-            "دسته‌بندی باید direction=out باشد."
-    ),
-    request=IssueCustomerInvoiceSerializer,
-    responses={201: InvoiceSerializer},
-)
-class IssueCustomerInvoiceView(generics.CreateAPIView):
-    serializer_class = IssueCustomerInvoiceSerializer
-    permission_classes = [IsAuthenticated]
-
-
-# ─── 9. Issue Supplier Invoice ──────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="صدور فاکتور خرید از تامین‌کننده",
-    description=(
-            "فاکتور ورودی با آیتم‌ها ایجاد می‌کند. "
-            "دسته‌بندی باید direction=in و طرف حساب باید supplier باشد."
-    ),
-    request=IssueSupplierInvoiceSerializer,
-    responses={201: InvoiceSerializer},
-)
-class IssueSupplierInvoiceView(generics.CreateAPIView):
-    serializer_class = IssueSupplierInvoiceSerializer
-    permission_classes = [IsAuthenticated]
-
-
-# ─── 10. Pay Customer ───────────────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="صدور پرداخت به مشتری",
-    description=(
-            "تراکنش خروجی برای مشتری ایجاد می‌کند. "
-            "طرف حساب باید type=customer باشد."
-    ),
-    request=PayCustomerTransactionSerializer,
-    responses={201: TransactionSerializer},
-)
-class PayCustomerView(generics.CreateAPIView):
-    serializer_class = PayCustomerTransactionSerializer
-    permission_classes = [IsAuthenticated]
-
-
-# ─── 11. Pay Supplier ───────────────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="صدور پرداخت به تامین‌کننده",
-    description=(
-            "تراکنش خروجی برای تامین‌کننده ایجاد می‌کند. "
-            "طرف حساب باید type=supplier باشد."
-    ),
-    request=PaySupplierTransactionSerializer,
-    responses={201: TransactionSerializer},
-)
-class PaySupplierView(generics.CreateAPIView):
-    serializer_class = PaySupplierTransactionSerializer
-    permission_classes = [IsAuthenticated]
-
-
-# ─── 12. Choices Endpoints ──────────────────────────────────────────────────
-
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست دسته‌بندی فاکتورها",
-    description="برای dropdown فرانت‌اند.",
-    responses={200: InvoiceCategoryChoiceSerializer(many=True)},
-)
-class InvoiceCategoryChoicesView(generics.ListAPIView):
-    serializer_class = InvoiceCategoryChoiceSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
+@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='لیست فیش‌های حقوقی')
+class PayrollInvoiceListView(generics.ListAPIView):
+    serializer_class = PayrollInvoiceListSerializer
+    filterset_class = PayrollInvoiceFilter
 
     def get_queryset(self):
-        return InvoiceCategory.objects.filter(is_deleted=False)
+        return Invoice.objects.filter(
+            is_deleted=False,
+            is_payroll=True,
+        ).select_related('account_side', 'payroll_detail').order_by('-created_at')
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست حساب‌های بانکی",
-    description="برای dropdown فرانت‌اند.",
-    responses={200: BankAccountChoiceSerializer(many=True)},
-)
-class BankAccountChoicesView(generics.ListAPIView):
-    serializer_class = BankAccountChoiceSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
+@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='جزئیات فیش حقوقی')
+class PayrollInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = PayrollInvoiceDetailSerializer
 
     def get_queryset(self):
-        return BankAccount.objects.filter(is_deleted=False)
+        return Invoice.objects.filter(
+            is_deleted=False,
+            is_payroll=True,
+        ).select_related('account_side', 'payroll_detail')
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="لیست طرف حساب‌ها",
-    description="برای dropdown فرانت‌اند.",
-    responses={200: AccountSideChoiceSerializer(many=True)},
-)
-class AccountSideChoicesView(generics.ListAPIView):
-    serializer_class = AccountSideChoiceSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = None
+@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='ثبت فیش حقوقی')
+class PayrollInvoiceCreateView(generics.CreateAPIView):
+    serializer_class = PayrollInvoiceWriteSerializer
+
+
+@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='ویرایش فیش حقوقی')
+class PayrollInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = PayrollInvoiceWriteSerializer
 
     def get_queryset(self):
-        return AccountSide.objects.filter(is_deleted=False)
+        return Invoice.objects.filter(is_deleted=False, is_payroll=True)
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="وضعیت‌های فاکتور",
-    description="لیست ثابت وضعیت‌های فاکتور.",
-)
-class InvoiceStatusChoicesView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='حذف فیش حقوقی (soft delete)')
+class PayrollInvoiceDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, is_payroll=True)
 
-    def get(self, request):
-        choices = [{'value': k, 'label': v} for k, v in Invoice.STATUS_CHOICES]
-        return Response(choices)
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="وضعیت‌های پرداخت",
-    description="لیست ثابت وضعیت‌های پرداخت فاکتور.",
-)
-class PaymentStatusChoicesView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        choices = [{'value': k, 'label': v} for k, v in Invoice.PAYMENT_STATUS_CHOICES]
-        return Response(choices)
+def get_purchase_category():
+    category, _ = InvoiceCategory.objects.get_or_create(
+        title='خرید',
+        defaults={'direction': 'out'},
+    )
+    return category
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="جهت تراکنش‌ها",
-    description="لیست ثابت جهت تراکنش‌ها.",
-)
-class TransactionDirectionChoicesView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='لیست فاکتورهای خرید')
+class PurchaseInvoiceListView(generics.ListAPIView):
+    serializer_class = InvoiceListSerializer
+    filterset_class = ExpenseInvoiceFilter
 
-    def get(self, request):
-        choices = [{'value': k, 'label': v} for k, v in Transaction.DIRECTION_CHOICES]
-        return Response(choices)
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__title='خرید',
+        ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(
-    tags=["Accounting"],
-    summary="انواع محتوا برای آیتم فاکتور",
-    description="لیست content type هایی که می‌توانند به آیتم فاکتور وصل شوند.",
-)
-class ContentTypeChoicesView(generics.GenericAPIView):
-    permission_classes = [IsAuthenticated]
+@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='جزئیات فاکتور خرید')
+class PurchaseInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = InvoiceDetailSerializer
 
-    def get(self, request):
-        linkable_models = [
-            ('orders', 'sonyaccountorder'),
-            ('orders', 'repairorder'),
-            ('orders', 'productorder'),
-        ]
-        result = []
-        for app_label, model in linkable_models:
-            try:
-                ct = ContentType.objects.get(app_label=app_label, model=model)
-                result.append({'id': ct.id, 'app_label': ct.app_label, 'model': ct.model})
-            except ContentType.DoesNotExist:
-                pass
-        return Response(result)
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__title='خرید',
+        ).select_related('account_side', 'category').prefetch_related('items')
+
+
+@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='ثبت فاکتور خرید')
+class PurchaseInvoiceCreateView(generics.CreateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            category=get_purchase_category(),
+            is_payroll=False,
+        )
+
+
+@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='ویرایش فاکتور خرید')
+class PurchaseInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, category__title='خرید')
+
+
+@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='حذف فاکتور خرید (soft delete)')
+class PurchaseInvoiceDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, category__title='خرید')
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])
+
+
+def get_sales_category():
+    category, _ = InvoiceCategory.objects.get_or_create(
+        title='فروش',
+        defaults={'direction': 'in'},
+    )
+    return category
+
+
+@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='لیست فاکتورهای فروش')
+class SalesInvoiceListView(generics.ListAPIView):
+    serializer_class = InvoiceListSerializer
+    filterset_class = IncomeInvoiceFilter
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__title='فروش',
+        ).select_related('account_side', 'category').order_by('-created_at')
+
+
+@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='جزئیات فاکتور فروش')
+class SalesInvoiceDetailView(generics.RetrieveAPIView):
+    serializer_class = InvoiceDetailSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(
+            is_deleted=False,
+            category__title='فروش',
+        ).select_related('account_side', 'category').prefetch_related('items')
+
+
+@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='ثبت فاکتور فروش')
+class SalesInvoiceCreateView(generics.CreateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(
+            category=get_sales_category(),
+            is_payroll=False,
+        )
+
+
+@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='ویرایش فاکتور فروش')
+class SalesInvoiceUpdateView(generics.UpdateAPIView):
+    serializer_class = InvoiceWriteSerializer
+
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, category__title='فروش')
+
+
+@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='حذف فاکتور فروش (soft delete)')
+class SalesInvoiceDeleteView(generics.DestroyAPIView):
+    def get_queryset(self):
+        return Invoice.objects.filter(is_deleted=False, category__title='فروش')
+
+    def perform_destroy(self, instance):
+        instance.is_deleted = True
+        instance.save(update_fields=['is_deleted'])

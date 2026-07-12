@@ -3,38 +3,76 @@ from django.urls import path
 from accounting import views
 
 urlpatterns = [
+    # choices for invoices and transaction and account sides
+    path('choices/', views.InvoiceDropdownView.as_view(), name="choices-view"),
 
-    # ==================== Daily Ledger ====================
-    path('daily-invoices/', views.DailyInvoiceListView.as_view(), name='daily-invoices'),
-    path('daily-transactions/', views.DailyTransactionListView.as_view(), name='daily-transactions'),
+    # repair order report
+    path('repair/report/', views.RepairOrderReportView.as_view()),
+    path('repair/report/weekly/', views.RepairOrderWeeklyReportView.as_view()),
 
-    # ==================== Payments & Receipts ====================
-    path('payments/', views.PaymentListView.as_view(), name='payments'),
-    path('receipts/', views.ReceiptListView.as_view(), name='receipts'),
+    # product order report
+    path('product/report/', views.ProductOrderReportView.as_view()),
+    path('product/report/weekly/', views.ProductOrderWeeklyReportView.as_view()),
+    path('product/report/by-category/', views.ProductOrderByCategoryReportView.as_view()),
 
-    # ==================== Payable & Receivable ====================
-    path('payable/', views.PayableListView.as_view(), name='payable'),
-    path('receivable/', views.ReceivableListView.as_view(), name='receivable'),
+    # sony account report filtered by type and amount
+    path('sony/report/', views.SonyAccountOrderReportView.as_view()),
+    path('sony/report/weekly/', views.SonyAccountOrderWeeklyReportView.as_view()),
 
-    # ==================== Invoice CRUD ====================
-    path('invoices/issue-customer/', views.IssueCustomerInvoiceView.as_view(), name='issue-customer-invoice'),
-    path('invoices/issue-supplier/', views.IssueSupplierInvoiceView.as_view(), name='issue-supplier-invoice'),
-    path('invoices/', views.InvoiceListCreateView.as_view(), name='invoice-list-create'),
-    path('invoices/<int:pk>/', views.InvoiceDetailView.as_view(), name='invoice-detail'),
+    # financial reports base on graph and pi chart
+    path('report/income/', views.IncomeReportView.as_view()),
+    path('report/income/weekly/', views.IncomeWeeklyReportView.as_view()),
+    path('report/expense/', views.ExpenseReportView.as_view()),
+    path('report/expense/weekly/', views.ExpenseWeeklyReportView.as_view()),
+    path('report/net/', views.NetFinancialReportView.as_view()),
 
-    # ==================== Transaction CRUD ====================
-    path('transactions/pay-customer/', views.PayCustomerView.as_view(), name='pay-customer'),
-    path('transactions/pay-supplier/', views.PaySupplierView.as_view(), name='pay-supplier'),
-    path('transactions/', views.TransactionListCreateView.as_view(), name='transaction-list-create'),
-    path('transactions/<int:pk>/', views.TransactionDetailView.as_view(), name='transaction-detail'),
+    # daily notebook : daily invoice and transaction and account side crud payable and receivable
+    # دفتر روزانه
+    path('daily/transactions/', views.DailyTransactionListView.as_view()),
+    path('daily/transactions/<int:pk>/', views.DailyTransactionDetailView.as_view()),
+    path('daily/transactions/<int:pk>/edit/', views.DailyTransactionUpdateView.as_view()),
+    path('daily/transactions/<int:pk>/delete/', views.DailyTransactionDeleteView.as_view()),
 
-    # ==================== Choices ====================
-    path('choices/invoice-categories/', views.InvoiceCategoryChoicesView.as_view(), name='choices-invoice-categories'),
-    path('choices/bank-accounts/', views.BankAccountChoicesView.as_view(), name='choices-bank-accounts'),
-    path('choices/account-sides/', views.AccountSideChoicesView.as_view(), name='choices-account-sides'),
-    path('choices/invoice-statuses/', views.InvoiceStatusChoicesView.as_view(), name='choices-invoice-statuses'),
-    path('choices/payment-statuses/', views.PaymentStatusChoicesView.as_view(), name='choices-payment-statuses'),
-    path('choices/transaction-directions/', views.TransactionDirectionChoicesView.as_view(), name='choices-transaction-directions'),
-    path('choices/content-types/', views.ContentTypeChoicesView.as_view(), name='choices-content-types'),
+    path('daily/invoices/', views.DailyInvoiceListView.as_view()),
+    path('daily/invoices/<int:pk>/', views.DailyInvoiceDetailView.as_view()),
+    path('daily/invoices/<int:pk>/edit/', views.DailyInvoiceUpdateView.as_view()),
+    path('daily/invoices/<int:pk>/delete/', views.DailyInvoiceDeleteView.as_view()),
+
+
+    # accounting : all incomes and all outcomes and salary part and invoice lists
+    # درآمد
+    path('income/', views.IncomeInvoiceListView.as_view()),
+    path('income/<int:pk>/', views.IncomeInvoiceDetailView.as_view()),
+    path('income/create/', views.IncomeInvoiceCreateView.as_view()),
+    path('income/<int:pk>/edit/', views.IncomeInvoiceUpdateView.as_view()),
+    path('income/<int:pk>/delete/', views.IncomeInvoiceDeleteView.as_view()),
+
+    # هزینه
+    path('expense/', views.ExpenseInvoiceListView.as_view()),
+    path('expense/<int:pk>/', views.ExpenseInvoiceDetailView.as_view()),
+    path('expense/create/', views.ExpenseInvoiceCreateView.as_view()),
+    path('expense/<int:pk>/edit/', views.ExpenseInvoiceUpdateView.as_view()),
+    path('expense/<int:pk>/delete/', views.ExpenseInvoiceDeleteView.as_view()),
+
+    # فیش حقوقی
+    path('payroll/', views.PayrollInvoiceListView.as_view()),
+    path('payroll/<int:pk>/', views.PayrollInvoiceDetailView.as_view()),
+    path('payroll/create/', views.PayrollInvoiceCreateView.as_view()),
+    path('payroll/<int:pk>/edit/', views.PayrollInvoiceUpdateView.as_view()),
+    path('payroll/<int:pk>/delete/', views.PayrollInvoiceDeleteView.as_view()),
+
+    # فاکتور خرید
+    path('purchase/', views.PurchaseInvoiceListView.as_view()),
+    path('purchase/<int:pk>/', views.PurchaseInvoiceDetailView.as_view()),
+    path('purchase/create/', views.PurchaseInvoiceCreateView.as_view()),
+    path('purchase/<int:pk>/edit/', views.PurchaseInvoiceUpdateView.as_view()),
+    path('purchase/<int:pk>/delete/', views.PurchaseInvoiceDeleteView.as_view()),
+
+    # فاکتور فروش
+    path('sales/', views.SalesInvoiceListView.as_view()),
+    path('sales/<int:pk>/', views.SalesInvoiceDetailView.as_view()),
+    path('sales/create/', views.SalesInvoiceCreateView.as_view()),
+    path('sales/<int:pk>/edit/', views.SalesInvoiceUpdateView.as_view()),
+    path('sales/<int:pk>/delete/', views.SalesInvoiceDeleteView.as_view()),
 
 ]
