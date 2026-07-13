@@ -3,7 +3,7 @@ from django.db import models
 from accounting.models import Invoice
 from crm.models import Customer
 from hr.models import Employee, EmployeeRole
-from inventory.models import SonyAccount
+from psn.models import SonyAccount
 
 
 class ProductOrderStage(models.Model):

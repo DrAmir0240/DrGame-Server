@@ -5,10 +5,53 @@ from django.db import models
 from uuid import uuid4
 from django.utils import timezone
 from slugify import slugify
-
 from users.models import CustomUser
 from crm.models import Customer
-from inventory.models import Product, ProductColor, Game
+from inventory.models import Product
+
+
+class Game(models.Model):
+    title = models.CharField(max_length=100, unique=True, null=True)
+    main_img = models.ImageField(null=True, blank=True, upload_to="main_img/game/")
+    volume = models.PositiveIntegerField(null=True, blank=True)
+    online_ps4_price = models.IntegerField(null=True, blank=True)
+    online_ps5_price = models.IntegerField(null=True, blank=True)
+    offline_ps4_price = models.IntegerField(null=True, blank=True)
+    offline_ps5_price = models.IntegerField(null=True, blank=True)
+    data_ps4_price = models.IntegerField(null=True, blank=True)
+    data_ps5_price = models.IntegerField(null=True, blank=True)
+    xbox_price = models.IntegerField(null=True, blank=True)
+    nintendo_price = models.IntegerField(null=True, blank=True)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    is_trend = models.BooleanField(default=False)
+    units_sold = models.PositiveIntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.is_trend:
+            games_count = Game.objects.filter(is_trend=True).exclude(pk=self.pk).count()
+            if games_count >= 4:
+                raise ValidationError("حداکثر ۴ بازی می‌توانند ترند باشند")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
+class GameImage(models.Model):
+    img = models.ImageField(null=True, blank=True, upload_to='images/games/')
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, null=True, related_name='game_images')
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.game.title
 
 
 # Shopping
@@ -55,6 +98,7 @@ GAME_CART_TYPE = (
     ('xbox', 'xbox'),
     ('nintendo', 'nintendo'),
 )
+
 
 class GameCart(models.Model):
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
