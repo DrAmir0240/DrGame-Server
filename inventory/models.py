@@ -12,7 +12,6 @@ class Supplier(models.Model):
     name = models.CharField(max_length=200)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='real')
     phone = models.CharField(max_length=20, blank=True, null=True)
-    email = models.EmailField(blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
     # اطلاعات مالی
@@ -28,7 +27,6 @@ class Supplier(models.Model):
     )
     tax_id = models.CharField(max_length=20, blank=True, null=True, help_text="شناسه مالیاتی")
     description = models.TextField(blank=True, null=True)
-    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
@@ -56,6 +54,7 @@ class Product(models.Model):
     category = models.ForeignKey(ProductCategory, on_delete=models.SET_NULL, null=True, related_name='products')
     price = models.DecimalField(decimal_places=5, max_digits=20)
     stock = models.IntegerField(default=0)
+    min_stock = models.PositiveIntegerField(default=0, help_text="حداقل موجودی")
     supplier = models.ManyToManyField(Supplier, related_name='products')
     units_sold = models.PositiveIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
@@ -94,12 +93,12 @@ class InventoryMovement(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='movements')
     product_entity = models.ForeignKey(ProductEntity, on_delete=models.SET_NULL, null=True, blank=True,
                                        related_name='inventory_movements')
-    direction = models.CharField(max_length=10, choices=(('in', 'ورودی'), ('out', 'خروجی')))
+    direction = models.CharField(max_length=10, choices=(('in', 'ورودی'), ('out', 'خروجی'), ('rejected', 'برگشتی')))
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         if self.product_entity:
-            return self.product_entity
+            return self.product_entity.uni_id
         return self.product.title
