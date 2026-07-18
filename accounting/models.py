@@ -2,6 +2,8 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
+from users.models import CustomUser
+
 
 class BankAccount(models.Model):
     title = models.CharField(max_length=100)
@@ -172,21 +174,21 @@ class PayrollDetail(models.Model):
     @property
     def gross_salary(self):
         return (
-            self.base_salary
-            + self.overtime_amount
-            + self.bonus
-            + self.housing_allowance
-            + self.food_allowance
-            + self.transportation_allowance
+                self.base_salary
+                + self.overtime_amount
+                + self.bonus
+                + self.housing_allowance
+                + self.food_allowance
+                + self.transportation_allowance
         )
 
     @property
     def total_deductions(self):
         return (
-            self.insurance_deduction
-            + self.tax_deduction
-            + self.loan_deduction
-            + self.other_deductions
+                self.insurance_deduction
+                + self.tax_deduction
+                + self.loan_deduction
+                + self.other_deductions
         )
 
     @property
@@ -215,3 +217,14 @@ class Transaction(models.Model):
 
     def __str__(self):
         return f'{self.get_direction_display()} {self.amount} — {self.account_side}'
+
+
+class Wallet(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    balance = models.IntegerField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.user.full_name()}: {self.balance}"

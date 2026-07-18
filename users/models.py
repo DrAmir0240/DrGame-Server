@@ -1,6 +1,4 @@
 import secrets
-import uuid
-from datetime import timedelta
 
 import requests
 from django.db import models
@@ -15,6 +13,8 @@ from users.manager import CustomUserManager
 # Create your models here.
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    first_name = models.CharField(max_length=100, blank=True, null=True)
+    last_name = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=11, unique=True, verbose_name="phone")
     is_active = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
@@ -28,6 +28,9 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.phone
+
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class MainManager(models.Model):

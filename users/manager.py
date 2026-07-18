@@ -1,4 +1,6 @@
 from django.contrib.auth.models import BaseUserManager
+
+
 class CustomUserManager(BaseUserManager):
     def create_user(self, phone, password=None, **extra_fields):
         if not phone:

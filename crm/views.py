@@ -1,239 +1,224 @@
 import requests
-from django.shortcuts import get_object_or_404
+from django.db.models import Q, Sum
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, permissions
+from rest_framework import generics, status
+from rest_framework.filters import SearchFilter
 from rest_framework.permissions import IsAuthenticated
+from drf_spectacular.utils import extend_schema
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 
 from DrGame import settings
-from accounting.serializers import BalanceSerializer, CustomerDepositSerializer
-from users.auth import CustomJWTAuthentication
-from users.permissions import IsCustomer, IsEmployee, IsMainManager
-from .models import Customer
-from .serializers import (
-    CustomerProfileSerializer,
-    OrderSerializer,
-    GameOrderSerializer,
-    RepairOrderSerializer,
-    TransactionSerializer, CustomerProfileCreateSerializer, CourseOrderSerializer, EmployeeCustomerSerializer,
-    SendSmsSerializer
+from accounting.models import Invoice, Transaction
+from platform_settings.views import SoftDeleteViewMixin
+from crm.models import Customer, B2BProfile
+from crm.serializers import (
+    CustomerListSerializer,
+    CustomerCreateUpdateSerializer,
+    B2BProfileSerializer, CustomerSummarySerializer, CustomerInvoiceListSerializer, CustomerTransactionListSerializer,
+    SendSmsSerializer,
 )
 
-from accounting.models import Order, GameOrder, RepairOrder, Transaction, CourseOrder, PaymentMethod
-from django.db.models import Q
+
+# ─────────────────────────────────────────
+# Customer List Views
+# ─────────────────────────────────────────
+@extend_schema(tags=['باشگاه مشتریان - لیست مشتریان'],
+               summary='لیست مشتریان عادی', )
+class CustomerListView(generics.ListAPIView):
+    """لیست مشتری‌های معمولی (بدون پروفایل B2B)"""
+    serializer_class = CustomerListSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = [
+        'user__first_name',
+        'user__last_name',
+        'user__phone',
+        'user__email',
+        'address',
+        'postal_code',
+        'b2b_profile__business_title',
+    ]
+
+    def get_queryset(self):
+        return (
+            Customer.objects
+            .filter(is_deleted=False)
+            .exclude(b2b_profile__is_deleted=False)
+            .select_related('user')
+        )
 
 
-class CustomerProfileCreateAPIView(generics.CreateAPIView):
-    serializer_class = CustomerProfileCreateSerializer
-    queryset = Customer.objects.select_related('user').filter(is_deleted=False).all()
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [CustomJWTAuthentication]
+@extend_schema(tags=['باشگاه مشتریان - لیست مشتریان'],
+               summary='لیست مشتریان تجاری', )
+class B2BCustomerListView(generics.ListAPIView):
+    """لیست مشتری‌هایی که پروفایل B2B فعال دارن"""
+    serializer_class = CustomerListSerializer
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = [
+        'user__first_name',
+        'user__last_name',
+        'user__phone',
+        'user__email',
+        'address',
+        'postal_code',
+        'b2b_profile__business_title',
+    ]
+
+    def get_queryset(self):
+        return (
+            Customer.objects
+            .filter(is_deleted=False, b2b_profile__is_deleted=False)
+            .select_related('user', 'b2b_profile')
+        )
 
 
-class CustomerProfileRetrieveAPIView(generics.RetrieveUpdateAPIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [CustomJWTAuthentication]
-    serializer_class = CustomerProfileSerializer
+# ─────────────────────────────────────────
+# Customer CRUD
+# ─────────────────────────────────────────
+@extend_schema(tags=['باشگاه مشتریان - کراد مشتریان'],
+               summary='افزودن مشتریان عادی', )
+class CustomerCreateView(generics.CreateAPIView):
+    """ایجاد مشتری جدید"""
+    serializer_class = CustomerCreateUpdateSerializer
+    queryset = Customer.objects.filter(is_deleted=False)
+
+
+@extend_schema(tags=['باشگاه مشتریان - کراد مشتریان'],
+               summary='جزعیات، حذف و ویرایش مشتریان عادی', )
+class CustomerRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
+    """دریافت، ویرایش و حذف نرم مشتری"""
+    serializer_class = CustomerCreateUpdateSerializer
+
+    def get_queryset(self):
+        return Customer.objects.filter(is_deleted=False).select_related('user')
+
+
+# ─────────────────────────────────────────
+# B2B Profile CRUD
+# ─────────────────────────────────────────
+@extend_schema(tags=['باشگاه مشتریان - کراد پروفایل مشرتیان تجاری'],
+               summary='افزودن مشتریان تجاری', )
+class B2BProfileCreateView(generics.CreateAPIView):
+    """ایجاد پروفایل B2B برای مشتری"""
+    serializer_class = B2BProfileSerializer
+
+    def perform_create(self, serializer):
+        customer = get_object_or_404(Customer, pk=self.kwargs['customer_id'], is_deleted=False)
+        serializer.save(customer=customer)
+
+
+@extend_schema(tags=['باشگاه مشتریان - کراد پروفایل مشتریان تجاری'],
+               summary='جزعیات، حذف و ویرایش مشتریان تجاری', )
+class B2BProfileRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
+    """دریافت، ویرایش و حذف نرم پروفایل B2B — با customer_id"""
+    serializer_class = B2BProfileSerializer
 
     def get_object(self):
-        customer, created = Customer.objects.get_or_create(
-            user=self.request.user,
-            defaults={'full_name': ''}  # می‌تونی مقادیر اولیه هم بدی
-        )
-        return customer
-
-
-class CustomerOrderListAPIView(generics.ListAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return Order.objects.filter(customer=customer, is_deleted=False)
-
-
-class CustomerOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
-    serializer_class = OrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return Order.objects.filter(customer=customer, is_deleted=False)
-
-
-class CustomerGameOrderListAPIView(generics.ListAPIView):
-    serializer_class = GameOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return GameOrder.objects.filter(customer=customer, is_deleted=False)
-
-
-class CustomerGameOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
-    serializer_class = GameOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return GameOrder.objects.select_related('customer').filter(customer=customer,
-                                                                   is_deleted=False)
-
-
-class CustomerRepairOrderListAPIView(generics.ListAPIView):
-    serializer_class = RepairOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('customer').filter(customer=customer,
-                                                                     is_deleted=False)
-
-
-class CustomerRepairOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
-    serializer_class = RepairOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return RepairOrder.objects.select_related('customer').filter(customer=customer,
-                                                                     is_deleted=False)
-
-
-class CustomerCourseOrderListAPIView(generics.ListAPIView):
-    serializer_class = CourseOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return CourseOrder.objects.select_related('customer').filter(customer=customer,
-                                                                     is_deleted=False).all()
-
-
-class CustomerCourseOrderRetrieveAPIView(generics.RetrieveUpdateAPIView):
-    serializer_class = CourseOrderSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        customer = get_object_or_404(Customer, user=self.request.user)
-        return CourseOrder.objects.select_related('customer').filter(customer=customer,
-                                                                     is_deleted=False).all()
-
-
-class CustomerSelfBalance(generics.GenericAPIView):
-    serializer_class = BalanceSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get(self, request, *args, **kwargs):
-        # مقدار اولیه
-        balance = 0
-        # اگر کاربر دارای رابطه employee است
-        if hasattr(request.user, 'customer') and request.user.customer:
-            balance = request.user.customer.balance or 0
-        # Serialize و برگرداندن Response
-        serializer = self.get_serializer({'balance': balance})
-        return Response(serializer.data)
-
-
-class CustomerTransactionListAPIView(generics.ListAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['status']
-
-    def get_queryset(self):
-        return Transaction.objects.filter(
-            (Q(payer=self.request.user) | Q(receiver=self.request.user)),
+        return get_object_or_404(
+            B2BProfile,
+            customer_id=self.kwargs['customer_id'],
             is_deleted=False
-        ).distinct()
-
-
-class CustomerTransactionRetrieveAPIView(generics.RetrieveAPIView):
-    serializer_class = TransactionSerializer
-    permission_classes = [IsCustomer]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def get_queryset(self):
-        return Transaction.objects.filter(
-            (Q(payer=self.request.user) | Q(receiver=self.request.user)),
-            is_deleted=False
-        ).distinct()
-
-
-
-
-# ==================== Customer Views ====================
-class CustomerListCreate(generics.ListCreateAPIView):
-    serializer_class = EmployeeCustomerSerializer
-    queryset = Customer.objects.filter(is_deleted=False)
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-
-class CustomerDetail(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = EmployeeCustomerSerializer
-    queryset = Customer.objects.filter(is_deleted=False)
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-
-class CustomerDeposit(generics.GenericAPIView):
-    """
-    ایدی در یو ار ال ایدی کاستومر است
-    """
-    serializer_class = CustomerDepositSerializer
-    permission_classes = [IsEmployee | IsMainManager]
-    authentication_classes = [CustomJWTAuthentication]
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        customer_id = self.kwargs.get('pk')
-        payment_method_id = serializer.validated_data['payment_method_id']
-        amount = serializer.validated_data['amount']
-        description = serializer.validated_data.get('description', '')
-
-        try:
-            payment_method = PaymentMethod.objects.get(id=payment_method_id)
-            customer = Customer.objects.get(id=customer_id)
-        except PaymentMethod.DoesNotExist:
-            return Response({"error": "Payment method not found."}, status=404)
-        except Customer.DoesNotExist:
-            return Response({"error": "Customer not found."}, status=404)
-
-        # ایجاد تراکنش
-        transaction = Transaction.objects.create(
-            payer=customer.user,
-            receiver_str='دکترگیم',
-            amount=amount,
-            payment_method=payment_method,
-            in_out=True,
-            description=description
         )
 
-        # بروزرسانی موجودی‌ها
-        customer.balance += amount
-        customer.save()
-        payment_method.balance += amount
-        payment_method.save()
 
-        # بازگرداندن تراکنش
-        transaction_serializer = TransactionSerializer(transaction)
-        return Response(transaction_serializer.data, status=201)
+# ─────────────────────────────────────────
+# Customer Report Stats
+# ─────────────────────────────────────────
+@extend_schema(tags=['باشگاه مشتریان - جزعیات'],
+               summary='لیست تراکنش‌های مشتری', )
+class CustomerTransactionListView(generics.ListAPIView):
+    serializer_class = CustomerTransactionListSerializer
+
+    def get_queryset(self):
+        customer = get_object_or_404(Customer, pk=self.kwargs['customer_id'], is_deleted=False)
+        return (
+            Transaction.objects
+            .filter(
+                account_side__object_id=customer.id,
+                account_side__content_type__model='customer',
+                is_deleted=False,
+            )
+            .select_related('bank_account', 'invoice', 'account_side')
+            .order_by('-created_at')
+        )
 
 
+@extend_schema(tags=['باشگاه مشتریان - جزعیات'],
+               summary='لیست فاکتورهای مشتری', )
+class CustomerInvoiceListView(generics.ListAPIView):
+    serializer_class = CustomerInvoiceListSerializer
+
+    def get_queryset(self):
+        customer = get_object_or_404(Customer, pk=self.kwargs['customer_id'], is_deleted=False)
+        return (
+            Invoice.objects
+            .filter(
+                Q(product_orders__customer=customer, product_orders__is_deleted=False) |
+                Q(repair_orders__customer=customer, repair_orders__is_deleted=False) |
+                Q(sony_account_orders__customer=customer, sony_account_orders__is_deleted=False),
+                is_deleted=False,
+            )
+            .distinct()
+            .prefetch_related('items', 'transactions')
+            .order_by('-created_at')
+        )
+
+
+@extend_schema(tags=['باشگاه مشتریان - جزعیات'],
+               summary='خلاصه سفارشات و مالی مشتری', )
+class CustomerSummaryView(generics.GenericAPIView):
+    serializer_class = CustomerSummarySerializer
+
+    def get(self, request, customer_id):
+        customer = get_object_or_404(Customer, pk=customer_id, is_deleted=False)
+
+        product_orders_count = customer.product_orders.filter(is_deleted=False).count()
+        repair_orders_count = customer.repair_orders.filter(is_deleted=False).count()
+        sony_account_orders_count = customer.sony_account_orders.filter(is_deleted=False).count()
+
+        total_transactions_amount = (
+                Transaction.objects
+                .filter(
+                    account_side__object_id=customer.id,
+                    account_side__content_type__model='customer',
+                    is_deleted=False,
+                    direction='in',
+                )
+                .aggregate(total=Sum('amount'))['total'] or 0
+        )
+
+        invoices = Invoice.objects.filter(
+            Q(product_orders__customer=customer, product_orders__is_deleted=False) |
+            Q(repair_orders__customer=customer, repair_orders__is_deleted=False) |
+            Q(sony_account_orders__customer=customer, sony_account_orders__is_deleted=False),
+            is_deleted=False,
+        ).distinct().prefetch_related('items')
+
+        total_invoices_amount = sum(
+            sum(item.total_price for item in inv.items.filter(is_deleted=False))
+            for inv in invoices
+        )
+
+        data = {
+            'customer_id': customer.id,
+            'full_name': customer.user.full_name(),
+            'product_orders_count': product_orders_count,
+            'repair_orders_count': repair_orders_count,
+            'sony_account_orders_count': sony_account_orders_count,
+            'total_orders_count': product_orders_count + repair_orders_count + sony_account_orders_count,
+            'total_transactions_amount': total_transactions_amount,
+            'total_invoices_amount': total_invoices_amount,
+        }
+
+        serializer = self.get_serializer(data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+# ─────────────────────────────────────────
+# SMS Services
+# ─────────────────────────────────────────
+@extend_schema(tags=['باشگاه مشتریان - سرویس SMS'],
+               summary='ارسال اس ام اس', )
 class CustomerSendSmsService(generics.GenericAPIView):
     serializer_class = SendSmsSerializer
 
@@ -282,4 +267,3 @@ class CustomerSendSmsService(generics.GenericAPIView):
             return Response(response.json(), status=status.HTTP_200_OK)
         return Response({"detail": "خطا در ارسال پیامک", "response": response.text},
                         status=response.status_code)
-

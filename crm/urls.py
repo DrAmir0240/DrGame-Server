@@ -1,38 +1,20 @@
 from django.urls import path
 
-from . import views
+from crm import views
 
 urlpatterns = [
-    path('profile/complete/', views.CustomerProfileCreateAPIView.as_view(), name='create-customer-profile'),
-    path('profile/', views.CustomerProfileRetrieveAPIView.as_view(), name='profile'),
-
-    # order list & retrieve urls
-    path('orders/', views.CustomerOrderListAPIView.as_view(), name='customer-orders'),
-    path('orders/<int:pk>/', views.CustomerOrderRetrieveAPIView.as_view(), name='customer-order-detail'),
-
-    # game order list & retrieve urls
-    path('orders/game/', views.CustomerGameOrderListAPIView.as_view(), name='game-orders'),
-    path('orders/game/<int:pk>/', views.CustomerGameOrderRetrieveAPIView.as_view(), name='game-order-detail'),
-
-    # repair order list & retrieve urls
-    path('orders/repair/', views.CustomerRepairOrderListAPIView.as_view(), name='repair-orders'),
-    path('orders/repair/<int:pk>/', views.CustomerRepairOrderRetrieveAPIView.as_view(), name='repair-order-detail'),
-
-    # course order list & retrieve urls
-    path('orders/course/', views.CustomerCourseOrderListAPIView.as_view(), name='course-orders'),
-    path('orders/course/<int:pk>/', views.CustomerCourseOrderRetrieveAPIView.as_view(), name='course-order-detail'),
-
-    # transactions
-    path('transactions/balance/', views.CustomerSelfBalance.as_view(),
-         name='customer-balance'),
-    path('transactions/', views.CustomerTransactionListAPIView.as_view(), name='customer-transactions'),
-    path('transactions/<int:pk>/', views.CustomerTransactionRetrieveAPIView.as_view(),
-         name='customer-transactions-detail'),
-
-    # ==================== Customer Views ====================
-    path('customer/list-add/', views.CustomerListCreate.as_view(), name='customer-list-add'),
-    path('customer/<int:pk>/', views.CustomerDetail.as_view(), name='customer-detail'),
-    path('customer/<int:pk>/deposit/', views.CustomerDeposit.as_view(), name='customer-deposit'),
+    path('customers/', views.CustomerListView.as_view(), name='customer-list'),
+    path('customers/b2b/', views.B2BCustomerListView.as_view(), name='b2b-customer-list'),
+    # Customer CRUD
+    path('customers/create/', views.CustomerCreateView.as_view(), name='customer-create'),
+    path('customers/<int:pk>/', views.CustomerRetrieveUpdateDestroyView.as_view(), name='customer-detail'),
+    path('customers/<int:customer_id>/b2b/', views.B2BProfileCreateView.as_view(), name='b2b-create'),
+    path('customers/<int:customer_id>/b2b/detail/', views.B2BProfileRetrieveUpdateDestroyView.as_view(),
+         name='b2b-detail'),
+    path('customers/<int:customer_id>/transactions/', views.CustomerTransactionListView.as_view(),
+         name='customer-transactions'),
+    path('customers/<int:customer_id>/invoices/', views.CustomerInvoiceListView.as_view(), name='customer-invoices'),
+    path('customers/<int:customer_id>/summary/', views.CustomerSummaryView.as_view(), name='customer-summary'),
     path('customer/send-sms-service/', views.CustomerSendSmsService.as_view(), name='customer-send-sms-service'),
 
 ]
