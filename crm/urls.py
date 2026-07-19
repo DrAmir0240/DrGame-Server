@@ -17,4 +17,7 @@ urlpatterns = [
     path('customers/<int:customer_id>/summary/', views.CustomerSummaryView.as_view(), name='customer-summary'),
     path('customer/send-sms-service/', views.CustomerSendSmsService.as_view(), name='customer-send-sms-service'),
 
+    # discount logic
+    # tbc
+
 ]
