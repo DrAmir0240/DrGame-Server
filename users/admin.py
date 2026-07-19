@@ -7,10 +7,10 @@ from .models import CustomUser, APIKey, MainManager, OTP
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
     model = CustomUser
-    list_display = ['phone', 'is_staff', 'is_active']
+    list_display = ['phone', 'is_staff', 'is_active', 'first_name', 'last_name']
     list_filter = ['is_staff', 'is_active']
     fieldsets = (
-        (None, {'fields': ('phone', 'password')}),
+        (None, {'fields': ('phone', 'password','first_name', 'last_name')}),
         ('Permissions', {'fields': ('is_staff', 'is_active', 'is_superuser', 'groups', 'user_permissions')}),
     )
     add_fieldsets = (

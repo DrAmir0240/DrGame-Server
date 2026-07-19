@@ -15,7 +15,9 @@ class Customer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.user.full_name()
+        if self.user.first_name and self.user.last_name:
+            return self.user.full_name()
+        return f"customer :{self.id}"
 
 
 class B2BProfile(models.Model):
