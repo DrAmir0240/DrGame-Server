@@ -296,59 +296,59 @@ class UserStatusView(APIView):
         user_name = None
         employee_permissions = {}
         if hasattr(user, 'customer'):
-            if user.customer.full_name and user.customer.address:
+            if user.customer.full_name() and user.customer.address:
                 is_completed = True
 
         if MainManager.objects.filter(user=user).exists():
             main_manager = get_object_or_404(MainManager, user=user)
             user_type = "main_manager"
-            user_name = main_manager.name
+            user_name = user.full_name()
 
         elif Employee.objects.filter(user=user).exists():
             user_type = "employee"
             employee = get_object_or_404(Employee, user=user)
-            employee_role = employee.role
+            employee_role = employee.roles
             if employee.profile_picture:
                 user_pic = employee.profile_picture.url
-            user_name = f"{employee.first_name} {employee.last_name}"
+            user_name = user.full_name()
 
-            permission_fields = [
-                "has_access_to_organize_tasks",
-                "has_access_to_game_orders",
-                "has_access_to_product_order",
-                "has_access_to_repair_order",
-                "has_access_to_personal_account",
-                "has_access_to_all_accounts",
-                "has_access_to_add_accounts",
-                "has_access_to_transactions",
-                "has_access_to_customer_read",
-                "has_access_to_customer_write",
-                "has_access_to_employees_read",
-                "has_access_to_employees_write",
-                "has_access_to_repairmen_read",
-                "has_access_to_repairmen_write",
-                "has_access_to_docs_read",
-                "has_access_to_docs_write",
-                "has_access_to_assets_read",
-                "has_access_to_assets_write",
-                "has_access_to_products",
-                "has_access_to_game_store",
-                "has_access_to_blogs",
-                "has_access_to_messenger",
-                "has_access_to_reports",
-                "has_access_to_requests"
-            ]
+            # permission_fields = [
+            #     "has_access_to_organize_tasks",
+            #     "has_access_to_game_orders",
+            #     "has_access_to_product_order",
+            #     "has_access_to_repair_order",
+            #     "has_access_to_personal_account",
+            #     "has_access_to_all_accounts",
+            #     "has_access_to_add_accounts",
+            #     "has_access_to_transactions",
+            #     "has_access_to_customer_read",
+            #     "has_access_to_customer_write",
+            #     "has_access_to_employees_read",
+            #     "has_access_to_employees_write",
+            #     "has_access_to_repairmen_read",
+            #     "has_access_to_repairmen_write",
+            #     "has_access_to_docs_read",
+            #     "has_access_to_docs_write",
+            #     "has_access_to_assets_read",
+            #     "has_access_to_assets_write",
+            #     "has_access_to_products",
+            #     "has_access_to_game_store",
+            #     "has_access_to_blogs",
+            #     "has_access_to_messenger",
+            #     "has_access_to_reports",
+            #     "has_access_to_requests"
+            # ]
 
             # پر کردن دیکشنری پرمیشن‌ها به صورت True/False
-            for field in permission_fields:
-                employee_permissions[field] = getattr(employee, field, False)
+            # for field in permission_fields:
+            #     employee_permissions[field] = getattr(employee, field, False)
 
         # NOTE: Repairman model no longer exists in hr.models. Branch stubbed out
         # to unblock startup; restore once the Repairman model is reintroduced.
         elif Customer.objects.filter(user=user).exists():
             user_type = "customer"
             customer = get_object_or_404(Customer, user=user)
-            user_name = customer.full_name
+            user_name = user.full_name()
             if user.customer.profile_pic:
                 user_pic = user.customer.profile_pic.url
         else:
