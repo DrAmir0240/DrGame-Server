@@ -26,7 +26,7 @@ urlpatterns = [
     path('crm/', include('crm.urls')),
     # path('dashboard/', include('dashboard.urls')),
     # path('docs/', include('docs.urls')),
-    # path('hr/', include('hr.urls')),
+    path('hr/', include('hr.urls')),
     path('inventory/', include('inventory.urls')),
     # path('messenger/', include('messenger.urls')),
     # path('orders/', include('orders.urls')),

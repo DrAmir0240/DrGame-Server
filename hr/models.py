@@ -146,7 +146,7 @@ class EmploymentResume(models.Model):
 
 
 class EmployeeArrival(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='arrivals')
     check_in = models.DateTimeField()
     check_out = models.DateTimeField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)

@@ -18,7 +18,7 @@ from users.serializers import VerifyOTPSerializer, VerifyOTPResponseSerializer, 
     RefreshTokenResponseSerializer, RequestOTPSerializer, RequestOTPResponseSerializer
 from users.throttles import PhoneRateThrottle
 from crm.models import Customer
-from hr.models import Employee, Repairman
+from hr.models import Employee
 
 
 class CreateAPIKeyView(APIView):
@@ -343,11 +343,8 @@ class UserStatusView(APIView):
             for field in permission_fields:
                 employee_permissions[field] = getattr(employee, field, False)
 
-        elif Repairman.objects.filter(user=user).exists():
-            user_type = "repairman"
-            repairman = get_object_or_404(Repairman, user=user)
-            user_name = f"{repairman.first_name} {repairman.last_name}"
-
+        # NOTE: Repairman model no longer exists in hr.models. Branch stubbed out
+        # to unblock startup; restore once the Repairman model is reintroduced.
         elif Customer.objects.filter(user=user).exists():
             user_type = "customer"
             customer = get_object_or_404(Customer, user=user)

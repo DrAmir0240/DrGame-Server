@@ -17,11 +17,13 @@ class EmployeeAdmin(admin.ModelAdmin):
         search_fields = '__all__'
 
 
-@admin.register(models.Repairman)
-class RepairmanAdmin(admin.ModelAdmin):
-    class Meta:
-        fields = '__all__'
-        search_fields = '__all__'
+# NOTE: models.Repairman does not exist in hr.models — registration removed to
+# unblock Django startup. Restore once the Repairman model is added.
+# @admin.register(models.Repairman)
+# class RepairmanAdmin(admin.ModelAdmin):
+#     class Meta:
+#         fields = '__all__'
+#         search_fields = '__all__'
 
 
 @admin.register(models.EmployeeFile)

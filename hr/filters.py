@@ -1,10 +1,13 @@
 import django_filters
-from task_manager.models import PlannedTask
-from hr.models import EmployeeRequest
 from django_filters import rest_framework as filters
 
-from accounting.models import Transaction, GameOrder, RepairOrder, GAME_ORDER_CONSOLE_TYPE, TelegramOrder
-from inventory.models import SonyAccount, Document, RealAssets, Product, RealAssetsSubCategory, DocSubCategory
+from task_manager.models import PlannedTask
+from hr.models import (
+    EmployeeRequest,
+    Employee,
+    EmployeeOvertime,
+    EmployeeArrival,
+)
 
 
 class EmployeeTaskFilter(filters.FilterSet):
@@ -19,206 +22,43 @@ class EmployeeTaskFilter(filters.FilterSet):
 
 
 class EmployeeRequestFilter(filters.FilterSet):
-    request_type = filters.ChoiceFilter(choices=EmployeeRequest._meta.get_field('request_type').choices)
-    employee = filters.NumberFilter(field_name='employee__id')
+    employee = django_filters.NumberFilter(field_name='employee__id')
+    status = django_filters.ChoiceFilter(choices=EmployeeRequest._meta.get_field('status').choices)
+    request_type = django_filters.NumberFilter(field_name='request_type__id')
 
     class Meta:
         model = EmployeeRequest
-        fields = ['employee', 'request_type']
+        fields = ['employee', 'status', 'request_type']
 
 
-class GameOrderFilter(django_filters.FilterSet):
-    order_type = django_filters.CharFilter(field_name='order_type', lookup_expr='exact')
-    order_console_type = django_filters.CharFilter(field_name='order_console_type', lookup_expr='exact')
-    status = django_filters.CharFilter(field_name='status', lookup_expr='exact')
-    payment_status = django_filters.CharFilter(field_name='payment_status', lookup_expr='exact')
-
-    class Meta:
-        model = GameOrder
-        fields = ['order_type', 'order_console_type', 'status', 'payment_status']
-
-
-class RepairOrderFilter(django_filters.FilterSet):
-    order_type = django_filters.CharFilter(field_name='order_type', lookup_expr='exact')
-    status = django_filters.CharFilter(field_name='status', lookup_expr='exact')
+class EmployeeFilter(django_filters.FilterSet):
+    role = django_filters.NumberFilter(field_name='roles__id')
+    first_name = django_filters.CharFilter(lookup_expr='icontains')
+    last_name = django_filters.CharFilter(lookup_expr='icontains')
+    national_code = django_filters.CharFilter(lookup_expr='exact')
+    employee_id = django_filters.CharFilter(lookup_expr='exact')
 
     class Meta:
-        model = RepairOrder
-        fields = ['order_type', 'status']
+        model = Employee
+        fields = ['role', 'first_name', 'last_name', 'national_code', 'employee_id']
 
 
-class TransactionFilter(filters.FilterSet):
-    payer = filters.NumberFilter(field_name='payer__id')
-    payer_str = filters.CharFilter(field_name='payer_str', lookup_expr='icontains')
-    receiver = filters.NumberFilter(field_name='receiver__id')
-    receiver_str = filters.CharFilter(field_name='receiver_str', lookup_expr='icontains')
-    payment_method = filters.NumberFilter(field_name='payment_method__id')
-    in_out = filters.BooleanFilter(field_name='in_out')
-    order_type = filters.CharFilter(method='filter_by_order_type')
-    game_console_type = filters.ChoiceFilter(
-        method='filter_by_game_console_type',
-        choices=GAME_ORDER_CONSOLE_TYPE
-    )
-    created_at_after = filters.DateFilter(field_name='created_at', lookup_expr='gte')
-    created_at_before = filters.DateFilter(field_name='created_at', lookup_expr='lte')
+class EmployeeOvertimeFilter(django_filters.FilterSet):
+    employee = django_filters.NumberFilter(field_name='employee__id')
+    date_from = django_filters.DateFilter(field_name='date', lookup_expr='gte')
+    date_to = django_filters.DateFilter(field_name='date', lookup_expr='lte')
+    is_approved = django_filters.BooleanFilter()
 
     class Meta:
-        model = Transaction
-        fields = [
-            'payer', 'payer_str',
-            'receiver', 'receiver_str',
-            'payment_method', 'in_out',
-            'order_type',
-            'game_console_type',
-            'created_at_after', 'created_at_before'
-        ]
-
-    def filter_by_order_type(self, queryset, name, value):
-        if value == 'game':
-            return queryset.filter(game_order__isnull=False)
-        elif value == 'repair':
-            return queryset.filter(repair_order__isnull=False)
-        elif value == 'course':
-            return queryset.filter(course_order__isnull=False)
-        elif value == 'normal':
-            return queryset.filter(order__isnull=False)
-        return queryset
-
-    def filter_by_game_console_type(self, queryset, name, value):
-        """
-        فیلتر تراکنش‌هایی که مربوط به GameOrder هستند
-        و order_console_type مشخص دارند
-        """
-        return queryset.filter(
-            game_order__isnull=False,
-            game_order__order_console_type=value
-        )
+        model = EmployeeOvertime
+        fields = ['employee', 'date_from', 'date_to', 'is_approved']
 
 
-class SonyAccountFilter(filters.FilterSet):
-    employee = filters.NumberFilter(field_name='employee__id')
-    status = filters.NumberFilter(field_name='status__id')
-    is_owned = filters.BooleanFilter(field_name='is_owned')
+class EmployeeArrivalFilter(django_filters.FilterSet):
+    employee = django_filters.NumberFilter(field_name='employee__id')
+    date_from = django_filters.DateFilter(field_name='check_in', lookup_expr='date__gte')
+    date_to = django_filters.DateFilter(field_name='check_in', lookup_expr='date__lte')
 
     class Meta:
-        model = SonyAccount
-        fields = ['employee', 'status', 'is_owned']
-
-
-class SonyAccountPersonalFilter(filters.FilterSet):
-    status = filters.NumberFilter(field_name='status__id')
-
-    class Meta:
-        model = SonyAccount
-        fields = ['status']
-
-
-class DocumentFilter(django_filters.FilterSet):
-    category = django_filters.NumberFilter(
-        field_name="category__category_id"
-    )
-    sub_category = django_filters.NumberFilter(
-        field_name="category_id"
-    )
-
-    class Meta:
-        model = Document
-        fields = ["category", "sub_category"]
-
-
-class DocumentSubCatFilter(django_filters.FilterSet):
-    category = django_filters.NumberFilter(
-        field_name="category_id"
-    )
-
-    class Meta:
-        model = DocSubCategory
-        fields = ["category"]
-
-
-class RealAssetsFilter(django_filters.FilterSet):
-    category = django_filters.NumberFilter(
-        field_name="category__category_id"
-    )
-    sub_category = django_filters.NumberFilter(
-        field_name="category_id"
-    )
-    min_price = django_filters.NumberFilter(
-        field_name="price", lookup_expr="gte"
-    )
-    max_price = django_filters.NumberFilter(
-        field_name="price", lookup_expr="lte"
-    )
-    employee = django_filters.NumberFilter(
-        field_name="employee__id"
-    )
-
-    class Meta:
-        model = RealAssets
-        fields = ["category", "sub_category", "employee", "min_price", "max_price"]
-
-
-class RealAssetsSubCatFilter(django_filters.FilterSet):
-    category = django_filters.NumberFilter(
-        field_name="category_id"
-    )
-
-    class Meta:
-        model = RealAssetsSubCategory
-        fields = ["category"]
-
-
-class EmployeeProductFilter(django_filters.FilterSet):
-    # --- Relation Filters ---
-    category = django_filters.NumberFilter(field_name="category_id")
-    company = django_filters.NumberFilter(field_name="company_id")
-    color = django_filters.NumberFilter(field_name="color_id")
-
-    # --- Price Range ---
-    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
-    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
-
-    # --- Stock / Sales ---
-    min_stock = django_filters.NumberFilter(field_name="stock", lookup_expr="gte")
-    max_stock = django_filters.NumberFilter(field_name="stock", lookup_expr="lte")
-    min_units_sold = django_filters.NumberFilter(field_name="units_sold", lookup_expr="gte")
-    max_units_sold = django_filters.NumberFilter(field_name="units_sold", lookup_expr="lte")
-
-    # --- Date Filters ---
-    created_from = django_filters.DateFilter(field_name="created_at", lookup_expr="gte")
-    created_to = django_filters.DateFilter(field_name="created_at", lookup_expr="lte")
-
-    # --- Boolean Logic ---
-    in_stock = django_filters.BooleanFilter(method="filter_in_stock")
-
-    def filter_in_stock(self, queryset, name, value):
-        if value is True:
-            return queryset.filter(stock__gt=0)
-        if value is False:
-            return queryset.filter(stock=0)
-        return queryset
-
-    class Meta:
-        model = Product
-        fields = [
-            "category",
-            "company",
-            "color",
-            "min_price",
-            "max_price",
-            "min_stock",
-            "max_stock",
-            "min_units_sold",
-            "max_units_sold",
-            "created_from",
-            "created_to",
-            "in_stock",
-        ]
-
-
-class TelegramOrderFilter(django_filters.FilterSet):
-    employee = django_filters.NumberFilter(field_name="employee_id")
-
-    class Meta:
-        model = TelegramOrder
-        fields = ["employee"]
+        model = EmployeeArrival
+        fields = ['employee', 'date_from', 'date_to']
