@@ -27,17 +27,23 @@ class BaseOrderStage(models.Model):
 
 
 class BaseOrderStageAction(models.Model):
-    """کلاس پایه برای تمام Action ها"""
     ACTION_TYPE_CHOICES = (
-        ('assign_sony_account', 'اختصاص اکانت سونی'),
-        ('change_item_status', 'تغییر وضعیت آیتم'),
-        ('receive_console', 'دریافت کنسول'),
-        ('deliver_console', 'تحویل کنسول'),
-        ('verify_payment', 'تایید پرداخت'),
-        ('issue_invoice', 'صدور فاکتور'),
+        ('update_order_field', 'آپدیت فیلد سفارش'),
+        ('update_order_item_field', 'آپدیت فیلد آیتم سفارش'),
         ('manual_confirm', 'تایید دستی'),
         ('add_note', 'افزودن یادداشت'),
-        ('upload_file', 'آپلود فایل'),
+    )
+
+    # فیلدهای Order که مجاز به آپدیت هستن
+    ORDER_FIELD_CHOICES = (
+        ('stage', 'مرحله سفارش'),
+        ('description', 'توضیحات'),
+    )
+
+    # فیلدهای OrderItem که مجاز به آپدیت هستن — per order type
+    SONY_ORDER_ITEM_FIELD_CHOICES = (
+        ('sony_account', 'اکانت سونی'),
+        ('is_done', 'انجام شد'),
     )
 
     title = models.CharField(max_length=100)
@@ -45,6 +51,8 @@ class BaseOrderStageAction(models.Model):
     description = models.TextField(blank=True)
     is_required = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
+    # فقط وقتی action_type == update_*  معنی دارن
+    target_field = models.CharField(max_length=50, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
