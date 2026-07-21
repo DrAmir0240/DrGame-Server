@@ -77,6 +77,8 @@ class BaseOrderStageLog(models.Model):
 class BaseOrderActionLog(models.Model):
     """کلاس پایه برای لاگ اکشن‌ها"""
     performed_by = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
+    # آیتمی که اکشن روی آن اجرا شده (برای update_order_item_field)؛ برای بقیه null
+    item_id = models.IntegerField(null=True, blank=True)
     note = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -90,6 +92,7 @@ class BaseOrderActionLog(models.Model):
 class ProductOrderCategory(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.title
@@ -186,6 +189,7 @@ class SonyAccountOrderCategory(models.Model):
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     rent_time_days = models.IntegerField(default=1, null=True, blank=True)
     account_capacity = models.CharField(max_length=10, choices=ACCOUNT_CAPACITY_CHOICES)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return f'{self.title} ({self.get_type_display()})'

@@ -2,6 +2,10 @@ from django.core.exceptions import ValidationError
 from django.db import transaction as db_transaction
 from rest_framework import serializers
 
+''' LEGACY — commented out after the accounting restructure removed these models
+(Order, GameOrder, OrderItem, GameOrderItem, TelegramOrder, RepairOrder, CourseOrder,
+RepairOrderType). Dead code: nothing imports these classes and their URLs are disabled.
+
 from accounting.models import GameOrderItem, OrderItem, Order, GameOrder, TelegramOrder, RepairOrder, CourseOrder, \
     RepairOrderType
 from crm.models import Customer
@@ -341,4 +345,686 @@ class RepairOrderTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = RepairOrderType
         fields = '__all__'
+'''  # END LEGACY
+
+
+# =============================================================================
+# =============================================================================
+# ORDERS WORKFLOW (stage/action engine) — Sony Account / Repair / Product
+# =============================================================================
+# =============================================================================
+
+from drf_spectacular.utils import extend_schema_field
+from hr.serializers import EmployeeRoleListSerializer
+from crm.serializers import CustomerListSerializer
+from orders.models import (
+    SonyAccountOrderCategory, SonyAccountOrderStage, SonyAccountOrderStageAction,
+    SonyAccountOrder, SonyAccountOrderItem, SonyAccountOrderConsole,
+    SonyAccountOrderActionLog, SonyAccountOrderStageLog,
+    RepairOrderCategory, RepairOrderStage, RepairOrderStageAction,
+    RepairOrder, RepairOrderDevice, RepairOrderActionLog, RepairOrderStageLog,
+    ProductOrderCategory, ProductOrderStage, ProductOrderStageAction,
+    ProductOrder, ProductOrderItem, ProductOrderActionLog, ProductOrderStageLog,
+)
+
+
+def _employee_name(employee):
+    if employee:
+        return f'{employee.first_name} {employee.last_name}'
+    return None
+
+
+# =============================================================================
+# SECTION 1 — SONY ACCOUNT ORDER
+# =============================================================================
+
+# --- 1.a Category ---
+class SonyAccountOrderCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderCategory
+        fields = ['id', 'title', 'type', 'account_capacity', 'rent_time_days']
+
+
+class SonyAccountOrderCategoryDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderCategory
+        fields = '__all__'
+
+
+# --- 1.b Stage Action ---
+class SonyAccountOrderStageActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderStageAction
+        fields = [
+            'id', 'stage', 'title', 'action_type', 'description',
+            'is_required', 'order', 'target_field'
+        ]
+
+    def validate(self, attrs):
+        action_type = attrs.get('action_type', getattr(self.instance, 'action_type', None))
+        target_field = attrs.get('target_field', getattr(self.instance, 'target_field', ''))
+
+        if action_type in ('update_order_field', 'update_order_item_field') and not target_field:
+            raise serializers.ValidationError(
+                {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+            )
+
+        # مطابق مدل‌های فعلی پروژه — is_done روی آیتم وجود ندارد
+        VALID_ORDER_FIELDS = {'description'}
+        VALID_ITEM_FIELDS = {'sony_account'}
+
+        if action_type == 'update_order_field' and target_field not in VALID_ORDER_FIELDS:
+            raise serializers.ValidationError(
+                {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+            )
+
+        if action_type == 'update_order_item_field' and target_field not in VALID_ITEM_FIELDS:
+            raise serializers.ValidationError(
+                {'target_field': f'مقدار مجاز: {VALID_ITEM_FIELDS}'}
+            )
+
+        return attrs
+
+
+# --- 1.c Stage ---
+class SonyAccountOrderStageListSerializer(serializers.ModelSerializer):
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = SonyAccountOrderStage
+        fields = [
+            'id', 'title', 'order', 'is_start', 'is_end',
+            'employee_role', 'employee_role_detail'
+        ]
+
+
+class SonyAccountOrderStageDetailSerializer(serializers.ModelSerializer):
+    actions = serializers.SerializerMethodField()
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = SonyAccountOrderStage
+        fields = [
+            'id', 'category', 'title', 'description', 'order',
+            'is_start', 'is_end',
+            'employee_role', 'employee_role_detail',
+            'actions', 'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(SonyAccountOrderStageActionSerializer(many=True))
+    def get_actions(self, obj):
+        actions = obj.actions.filter(is_deleted=False)
+        return SonyAccountOrderStageActionSerializer(actions, many=True).data
+
+
+# --- 1.d Nested (items / consoles / logs) ---
+class SonyAccountOrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderItem
+        fields = ['id', 'sony_account_order', 'sony_account', 'employee', 'created_at']
+
+
+class SonyAccountOrderConsoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderConsole
+        fields = ['id', 'customer', 'sony_account_order', 'serial_number', 'created_at']
+
+
+class SonyAccountOrderActionLogSerializer(serializers.ModelSerializer):
+    action_title = serializers.CharField(source='action.title', read_only=True)
+    performed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccountOrderActionLog
+        fields = ['id', 'action', 'action_title', 'performed_by', 'performed_by_name', 'note', 'created_at']
+
+    def get_performed_by_name(self, obj) -> str:
+        return _employee_name(obj.performed_by)
+
+
+class SonyAccountOrderStageLogSerializer(serializers.ModelSerializer):
+    from_stage_title = serializers.CharField(source='from_stage.title', read_only=True)
+    to_stage_title = serializers.CharField(source='to_stage.title', read_only=True)
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccountOrderStageLog
+        fields = [
+            'id', 'from_stage', 'from_stage_title', 'to_stage', 'to_stage_title',
+            'changed_by', 'changed_by_name', 'note', 'created_at'
+        ]
+
+    def get_changed_by_name(self, obj) -> str:
+        return _employee_name(obj.changed_by)
+
+
+# --- 1.e Worker panel ---
+class SonyAccountOrderStageQueueSerializer(serializers.ModelSerializer):
+    category_id    = serializers.IntegerField(source='category.id', read_only=True)
+    category_title = serializers.CharField(source='category.title', read_only=True)
+
+    class Meta:
+        model  = SonyAccountOrderStage
+        fields = ['id', 'title', 'order', 'category_id', 'category_title']
+
+
+class SonyAccountOrderCardSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    category_title = serializers.CharField(source='category.title', read_only=True)
+    stage_title = serializers.CharField(source='stage.title', read_only=True)
+    pending_actions_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccountOrder
+        fields = [
+            'id', 'customer_name', 'category_title',
+            'stage_title', 'source', 'type',
+            'amount', 'pending_actions_count', 'created_at'
+        ]
+
+    def get_customer_name(self, obj) -> str:
+        return obj.customer.user.full_name() if obj.customer else None
+
+    def get_pending_actions_count(self, obj) -> int:
+        if not obj.stage:
+            return 0
+        completed_ids = obj.action_logs.filter(
+            action__stage=obj.stage
+        ).values_list('action_id', flat=True)
+        return obj.stage.actions.filter(
+            is_required=True, is_deleted=False
+        ).exclude(id__in=completed_ids).count()
+
+
+class SonyAccountOrderDetailSerializer(serializers.ModelSerializer):
+    customer_detail = CustomerListSerializer(source='customer', read_only=True)
+    category_detail = SonyAccountOrderCategoryListSerializer(source='category', read_only=True)
+    stage_detail = SonyAccountOrderStageDetailSerializer(source='stage', read_only=True)
+    items = serializers.SerializerMethodField()
+    consoles = serializers.SerializerMethodField()
+    action_logs = serializers.SerializerMethodField()
+    stage_logs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccountOrder
+        fields = [
+            'id', 'customer', 'customer_detail',
+            'category', 'category_detail',
+            'stage', 'stage_detail',
+            'source', 'type', 'amount',
+            'items', 'consoles',
+            'action_logs', 'stage_logs',
+            'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(SonyAccountOrderItemSerializer(many=True))
+    def get_items(self, obj):
+        qs = obj.items.filter(is_deleted=False)
+        return SonyAccountOrderItemSerializer(qs, many=True).data
+
+    @extend_schema_field(SonyAccountOrderConsoleSerializer(many=True))
+    def get_consoles(self, obj):
+        qs = obj.consoles.filter(is_deleted=False)
+        return SonyAccountOrderConsoleSerializer(qs, many=True).data
+
+    @extend_schema_field(SonyAccountOrderActionLogSerializer(many=True))
+    def get_action_logs(self, obj):
+        qs = obj.action_logs.filter(is_deleted=False).order_by('-created_at')
+        return SonyAccountOrderActionLogSerializer(qs, many=True).data
+
+    @extend_schema_field(SonyAccountOrderStageLogSerializer(many=True))
+    def get_stage_logs(self, obj):
+        qs = obj.stage_logs.filter(is_deleted=False).order_by('-created_at')
+        return SonyAccountOrderStageLogSerializer(qs, many=True).data
+
+
+class SonyAccountOrderActionSerializer(serializers.ModelSerializer):
+    is_done = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccountOrderStageAction
+        fields = [
+            'id', 'title', 'action_type',
+            'target_field', 'is_required',
+            'order', 'is_done'
+        ]
+
+    def get_is_done(self, obj) -> bool:
+        order_id = self.context.get('order_id')
+        if not order_id:
+            return False
+        return SonyAccountOrderActionLog.objects.filter(
+            order_id=order_id, action=obj
+        ).exists()
+
+
+# =============================================================================
+# SECTION 2 — REPAIR ORDER
+# =============================================================================
+
+# --- 2.a Category ---
+class RepairOrderCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrderCategory
+        fields = ['id', 'title', 'description']
+
+
+class RepairOrderCategoryDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrderCategory
+        fields = '__all__'
+        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+
+
+# --- 2.b Stage Action ---
+class RepairOrderStageActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrderStageAction
+        fields = [
+            'id', 'stage', 'title', 'action_type', 'description',
+            'is_required', 'order', 'target_field'
+        ]
+
+    def validate(self, attrs):
+        action_type = attrs.get('action_type', getattr(self.instance, 'action_type', None))
+        target_field = attrs.get('target_field', getattr(self.instance, 'target_field', ''))
+
+        # is_done روی RepairOrderDevice وجود ندارد → update_order_item_field بدون فیلد مجاز است
+        VALID_ORDER_FIELDS = {'description', 'repair_fee', 'final_amount'}
+        VALID_ITEM_FIELDS = set()
+
+        if action_type == 'update_order_item_field':
+            raise serializers.ValidationError(
+                {'action_type': 'برای سفارش تعمیر آپدیت فیلد آیتم پشتیبانی نمی‌شود.'}
+            )
+
+        if action_type == 'update_order_field':
+            if not target_field:
+                raise serializers.ValidationError(
+                    {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+                )
+            if target_field not in VALID_ORDER_FIELDS:
+                raise serializers.ValidationError(
+                    {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+                )
+
+        return attrs
+
+
+# --- 2.c Stage ---
+class RepairOrderStageListSerializer(serializers.ModelSerializer):
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = RepairOrderStage
+        fields = [
+            'id', 'title', 'order', 'is_start', 'is_end',
+            'employee_role', 'employee_role_detail'
+        ]
+
+
+class RepairOrderStageDetailSerializer(serializers.ModelSerializer):
+    actions = serializers.SerializerMethodField()
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = RepairOrderStage
+        fields = [
+            'id', 'category', 'title', 'description', 'order',
+            'is_start', 'is_end',
+            'employee_role', 'employee_role_detail',
+            'actions', 'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(RepairOrderStageActionSerializer(many=True))
+    def get_actions(self, obj):
+        actions = obj.actions.filter(is_deleted=False)
+        return RepairOrderStageActionSerializer(actions, many=True).data
+
+
+# --- 2.d Nested (devices / logs) ---
+class RepairOrderDeviceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RepairOrderDevice
+        fields = ['id', 'customer', 'repair_order', 'title', 'serial_number', 'created_at']
+
+
+class RepairOrderActionLogSerializer(serializers.ModelSerializer):
+    action_title = serializers.CharField(source='action.title', read_only=True)
+    performed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairOrderActionLog
+        fields = ['id', 'action', 'action_title', 'performed_by', 'performed_by_name', 'note', 'created_at']
+
+    def get_performed_by_name(self, obj) -> str:
+        return _employee_name(obj.performed_by)
+
+
+class RepairOrderStageLogSerializer(serializers.ModelSerializer):
+    from_stage_title = serializers.CharField(source='from_stage.title', read_only=True)
+    to_stage_title = serializers.CharField(source='to_stage.title', read_only=True)
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairOrderStageLog
+        fields = [
+            'id', 'from_stage', 'from_stage_title', 'to_stage', 'to_stage_title',
+            'changed_by', 'changed_by_name', 'note', 'created_at'
+        ]
+
+    def get_changed_by_name(self, obj) -> str:
+        return _employee_name(obj.changed_by)
+
+
+# --- 2.e Worker panel ---
+class RepairOrderStageQueueSerializer(serializers.ModelSerializer):
+    category_id    = serializers.IntegerField(source='category.id', read_only=True)
+    category_title = serializers.CharField(source='category.title', read_only=True)
+
+    class Meta:
+        model  = RepairOrderStage
+        fields = ['id', 'title', 'order', 'category_id', 'category_title']
+
+
+class RepairOrderCardSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    category_title = serializers.CharField(source='category.title', read_only=True)
+    stage_title = serializers.CharField(source='stage.title', read_only=True)
+    pending_actions_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairOrder
+        fields = [
+            'id', 'customer_name', 'category_title', 'stage_title',
+            'repair_fee', 'final_amount', 'pending_actions_count', 'created_at'
+        ]
+
+    def get_customer_name(self, obj) -> str:
+        return obj.customer.user.full_name() if obj.customer else None
+
+    def get_pending_actions_count(self, obj) -> int:
+        if not obj.stage:
+            return 0
+        completed_ids = obj.action_logs.filter(
+            action__stage=obj.stage
+        ).values_list('action_id', flat=True)
+        return obj.stage.actions.filter(
+            is_required=True, is_deleted=False
+        ).exclude(id__in=completed_ids).count()
+
+
+class RepairOrderDetailSerializer(serializers.ModelSerializer):
+    customer_detail = CustomerListSerializer(source='customer', read_only=True)
+    category_detail = RepairOrderCategoryListSerializer(source='category', read_only=True)
+    stage_detail = RepairOrderStageDetailSerializer(source='stage', read_only=True)
+    devices = serializers.SerializerMethodField()
+    action_logs = serializers.SerializerMethodField()
+    stage_logs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairOrder
+        fields = [
+            'id', 'customer', 'customer_detail',
+            'category', 'category_detail',
+            'stage', 'stage_detail',
+            'repair_fee', 'final_amount',
+            'devices', 'action_logs', 'stage_logs',
+            'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(RepairOrderDeviceSerializer(many=True))
+    def get_devices(self, obj):
+        qs = obj.devices.filter(is_deleted=False)
+        return RepairOrderDeviceSerializer(qs, many=True).data
+
+    @extend_schema_field(RepairOrderActionLogSerializer(many=True))
+    def get_action_logs(self, obj):
+        qs = obj.action_logs.filter(is_deleted=False).order_by('-created_at')
+        return RepairOrderActionLogSerializer(qs, many=True).data
+
+    @extend_schema_field(RepairOrderStageLogSerializer(many=True))
+    def get_stage_logs(self, obj):
+        qs = obj.stage_logs.filter(is_deleted=False).order_by('-created_at')
+        return RepairOrderStageLogSerializer(qs, many=True).data
+
+
+class RepairOrderActionSerializer(serializers.ModelSerializer):
+    is_done = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairOrderStageAction
+        fields = [
+            'id', 'title', 'action_type',
+            'target_field', 'is_required',
+            'order', 'is_done'
+        ]
+
+    def get_is_done(self, obj) -> bool:
+        order_id = self.context.get('order_id')
+        if not order_id:
+            return False
+        return RepairOrderActionLog.objects.filter(
+            order_id=order_id, action=obj
+        ).exists()
+
+
+# =============================================================================
+# SECTION 3 — PRODUCT ORDER
+# =============================================================================
+
+# --- 3.a Category ---
+class ProductOrderCategoryListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductOrderCategory
+        fields = ['id', 'title', 'description']
+
+
+class ProductOrderCategoryDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductOrderCategory
+        fields = '__all__'
+
+
+# --- 3.b Stage Action ---
+class ProductOrderStageActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductOrderStageAction
+        fields = [
+            'id', 'stage', 'title', 'action_type', 'description',
+            'is_required', 'order', 'target_field'
+        ]
+
+    def validate(self, attrs):
+        action_type = attrs.get('action_type', getattr(self.instance, 'action_type', None))
+        target_field = attrs.get('target_field', getattr(self.instance, 'target_field', ''))
+
+        # is_done روی ProductOrderItem وجود ندارد → update_order_item_field بدون فیلد مجاز است
+        VALID_ORDER_FIELDS = {'description'}
+
+        if action_type == 'update_order_item_field':
+            raise serializers.ValidationError(
+                {'action_type': 'برای سفارش محصول آپدیت فیلد آیتم پشتیبانی نمی‌شود.'}
+            )
+
+        if action_type == 'update_order_field':
+            if not target_field:
+                raise serializers.ValidationError(
+                    {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+                )
+            if target_field not in VALID_ORDER_FIELDS:
+                raise serializers.ValidationError(
+                    {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+                )
+
+        return attrs
+
+
+# --- 3.c Stage ---
+class ProductOrderStageListSerializer(serializers.ModelSerializer):
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = ProductOrderStage
+        fields = [
+            'id', 'title', 'order', 'is_start', 'is_end',
+            'employee_role', 'employee_role_detail'
+        ]
+
+
+class ProductOrderStageDetailSerializer(serializers.ModelSerializer):
+    actions = serializers.SerializerMethodField()
+    employee_role_detail = EmployeeRoleListSerializer(source='employee_role', read_only=True)
+
+    class Meta:
+        model = ProductOrderStage
+        fields = [
+            'id', 'category', 'title', 'description', 'order',
+            'is_start', 'is_end',
+            'employee_role', 'employee_role_detail',
+            'actions', 'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(ProductOrderStageActionSerializer(many=True))
+    def get_actions(self, obj):
+        actions = obj.actions.filter(is_deleted=False)
+        return ProductOrderStageActionSerializer(actions, many=True).data
+
+
+# --- 3.d Nested (items / logs) ---
+class ProductOrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductOrderItem
+        fields = ['id', 'product_order', 'product', 'title', 'unit_price', 'amount', 'created_at']
+
+
+class ProductOrderActionLogSerializer(serializers.ModelSerializer):
+    action_title = serializers.CharField(source='action.title', read_only=True)
+    performed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductOrderActionLog
+        fields = ['id', 'action', 'action_title', 'performed_by', 'performed_by_name', 'note', 'created_at']
+
+    def get_performed_by_name(self, obj) -> str:
+        return _employee_name(obj.performed_by)
+
+
+class ProductOrderStageLogSerializer(serializers.ModelSerializer):
+    from_stage_title = serializers.CharField(source='from_stage.title', read_only=True)
+    to_stage_title = serializers.CharField(source='to_stage.title', read_only=True)
+    changed_by_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductOrderStageLog
+        fields = [
+            'id', 'from_stage', 'from_stage_title', 'to_stage', 'to_stage_title',
+            'changed_by', 'changed_by_name', 'note', 'created_at'
+        ]
+
+    def get_changed_by_name(self, obj) -> str:
+        return _employee_name(obj.changed_by)
+
+
+# --- 3.e Worker panel ---
+class ProductOrderStageQueueSerializer(serializers.ModelSerializer):
+    category_id    = serializers.IntegerField(source='category.id', read_only=True)
+    category_title = serializers.CharField(source='category.title', read_only=True)
+
+    class Meta:
+        model  = ProductOrderStage
+        fields = ['id', 'title', 'order', 'category_id', 'category_title']
+
+
+class ProductOrderCardSerializer(serializers.ModelSerializer):
+    customer_name = serializers.SerializerMethodField()
+    stage_title = serializers.CharField(source='stage.title', read_only=True)
+    pending_actions_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductOrder
+        fields = [
+            'id', 'customer_name', 'stage_title',
+            'amount', 'pending_actions_count', 'created_at'
+        ]
+
+    def get_customer_name(self, obj) -> str:
+        return obj.customer.user.full_name() if obj.customer else None
+
+    def get_pending_actions_count(self, obj) -> int:
+        if not obj.stage:
+            return 0
+        completed_ids = obj.action_logs.filter(
+            action__stage=obj.stage
+        ).values_list('action_id', flat=True)
+        return obj.stage.actions.filter(
+            is_required=True, is_deleted=False
+        ).exclude(id__in=completed_ids).count()
+
+
+class ProductOrderDetailSerializer(serializers.ModelSerializer):
+    customer_detail = CustomerListSerializer(source='customer', read_only=True)
+    stage_detail = ProductOrderStageDetailSerializer(source='stage', read_only=True)
+    items = serializers.SerializerMethodField()
+    action_logs = serializers.SerializerMethodField()
+    stage_logs = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductOrder
+        fields = [
+            'id', 'customer', 'customer_detail',
+            'stage', 'stage_detail',
+            'description', 'amount',
+            'items', 'action_logs', 'stage_logs',
+            'created_at', 'updated_at'
+        ]
+
+    @extend_schema_field(ProductOrderItemSerializer(many=True))
+    def get_items(self, obj):
+        qs = obj.items.filter(is_deleted=False)
+        return ProductOrderItemSerializer(qs, many=True).data
+
+    @extend_schema_field(ProductOrderActionLogSerializer(many=True))
+    def get_action_logs(self, obj):
+        qs = obj.action_logs.filter(is_deleted=False).order_by('-created_at')
+        return ProductOrderActionLogSerializer(qs, many=True).data
+
+    @extend_schema_field(ProductOrderStageLogSerializer(many=True))
+    def get_stage_logs(self, obj):
+        qs = obj.stage_logs.filter(is_deleted=False).order_by('-created_at')
+        return ProductOrderStageLogSerializer(qs, many=True).data
+
+
+class ProductOrderActionSerializer(serializers.ModelSerializer):
+    is_done = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductOrderStageAction
+        fields = [
+            'id', 'title', 'action_type',
+            'target_field', 'is_required',
+            'order', 'is_done'
+        ]
+
+    def get_is_done(self, obj) -> bool:
+        order_id = self.context.get('order_id')
+        if not order_id:
+            return False
+        return ProductOrderActionLog.objects.filter(
+            order_id=order_id, action=obj
+        ).exists()
+
+
+# =============================================================================
+# SHARED — Execute Action / Advance Stage input serializers
+# =============================================================================
+class ExecuteActionSerializer(serializers.Serializer):
+    action_id = serializers.IntegerField()
+    value = serializers.JSONField(required=False, allow_null=True)
+    item_id = serializers.IntegerField(required=False, allow_null=True)
+    note = serializers.CharField(required=False, allow_blank=True)
+
+
+class AdvanceStageSerializer(serializers.Serializer):
+    note = serializers.CharField(required=False, allow_blank=True)
 

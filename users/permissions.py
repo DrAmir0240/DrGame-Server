@@ -10,7 +10,11 @@ class IsCustomer(BasePermission):
 
 class IsEmployee(BasePermission):
     def has_permission(self, request, view):
-        return request.user.is_authenticated and hasattr(request.user, 'employee')
+        return (
+            request.user.is_authenticated
+            and hasattr(request.user, 'employee')
+            and not request.user.employee.is_deleted
+        )
 
 
 class IsRepairman(BasePermission):

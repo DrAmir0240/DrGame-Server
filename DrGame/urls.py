@@ -29,7 +29,7 @@ urlpatterns = [
     path('hr/', include('hr.urls')),
     path('inventory/', include('inventory.urls')),
     # path('messenger/', include('messenger.urls')),
-    # path('orders/', include('orders.urls')),
+    path('orders/', include('orders.urls')),
     # path('platform-settings/', include('platform_settings.urls')),
     # path('psn/', include('psn.urls')),
     path('task-manager/', include('task_manager.urls')),
