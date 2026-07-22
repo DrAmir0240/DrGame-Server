@@ -1,16 +1,15 @@
-from django.shortcuts import render
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics, filters
 
-from docs.serializers import DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer
-from hr.filters import DocumentFilter, DocumentSubCatFilter
-from inventory.models import Document, DocSubCategory, DocCategory
+from docs.serializers import DocCategorySerializer, DocSubCategorySerializer, DocumentSerializer, \
+    RealAssetsCategorySerializer, RealAssetsSubCategorySerializer, RealAssetsSerializer
+from docs.filters import DocumentFilter, DocumentSubCatFilter, RealAssetsSubCatFilter, RealAssetsFilter
+from docs.models import Document, DocSubCategory, DocCategory, RealAssetsCategory, RealAssetsSubCategory, RealAssets
 from users.auth import CustomJWTAuthentication
 from users.permissions import IsMainManager, IsEmployee
 
 
 # Create your views here.
-
 # ==================== Docs Views ====================
 class DocCategoryListAPIView(generics.ListAPIView):
     queryset = DocCategory.objects.filter(is_deleted=False)
@@ -76,7 +75,6 @@ class DocumentDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         .filter(is_deleted=False)
         .select_related("category", "category__category")
     )
-
 
 
 # ==================== Real Assets Views ====================
@@ -145,5 +143,3 @@ class RealAssetsDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
         .filter(is_deleted=False)
         .select_related("category", "category__category")
     )
-
-
