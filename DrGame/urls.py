@@ -35,7 +35,9 @@ urlpatterns = [
     # path('psn/', include('psn.urls')),
     path("task-manager/", include("task_manager.urls")),
     path("users/", include("users.urls")),
-    # path('website/', include('website.urls')),
+    path("website/", include("website.urls")),
+    # Customer-facing API
+    path("customer/", include("customer.urls")),
     # path('sonyaccount/', include('utils.urls')),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

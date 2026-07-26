@@ -9,26 +9,71 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 
-from hr.serializers import EmployeeHireSerializer
+from hr.serializers import EmploymentResumeSerializer
 from users.auth import CustomJWTAuthentication
 from users.permissions import IsCustomer, IsEmployee, IsMainManager
 from crm.models import Customer
-from hr.models import EmployeeHire
+from hr.models import EmploymentResume
 
-from accounting.models import GAME_ORDER_CONSOLE_TYPE
-from inventory.models import Game, Product, ProductCategory
-from inventory.serializers import GameSerializer, ProductSerializer, ProductCategorySerializer
-from .serializers import CartSerializer, UpdateBlogPostSerializer, \
-    CreateBlogPostSerializer, AboutUsSerializer, ContactUsSerializer, ContactSubmissionSerializer, \
-    BlogPostDetailSerializer, BlogPostListSerializer, CourseRetrieveSerializer, \
-    CourseListCreateSerializer, CourseUpdateSerializer, VideoSerializer, VideoCreateSerializer, VideoUpdateSerializer, \
-    HomeBannerSerializer, CartItemWriteSerializer, GameCartSerializer, GameCartChoicesSerializer, \
-    EmployeeGameSerializer, GameBulkPriceUpdateSerializer, EmployeeBlogSerializer
-from .models import Cart, CartItem, BlogPost, AboutUs, ContactUs, ContactSubmission, Course, \
-    Video, HomeBanner, GameCart, GameCartItem
+GAME_ORDER_CONSOLE_TYPE = [
+    ("online_ps4", "Online PS4"),
+    ("online_ps5", "Online PS5"),
+    ("offline_ps4", "Offline PS4"),
+    ("offline_ps5", "Offline PS5"),
+    ("data_ps4", "Data PS4"),
+    ("data_ps5", "Data PS5"),
+    ("xbox", "Xbox"),
+    ("nintendo", "Nintendo"),
+]
+from inventory.models import Product, ProductCategory
+from .models import Game
+from inventory.serializers import (
+    ProductSerializer,
+    ProductCategorySerializer,
+)
+from .serializers import (
+    CartSerializer,
+    UpdateBlogPostSerializer,
+    CreateBlogPostSerializer,
+    AboutUsSerializer,
+    ContactUsSerializer,
+    ContactSubmissionSerializer,
+    BlogPostDetailSerializer,
+    BlogPostListSerializer,
+    CourseRetrieveSerializer,
+    CourseListCreateSerializer,
+    CourseUpdateSerializer,
+    VideoSerializer,
+    VideoCreateSerializer,
+    VideoUpdateSerializer,
+    HomeBannerSerializer,
+    CartItemWriteSerializer,
+    GameCartSerializer,
+    GameCartChoicesSerializer,
+    GameSerializer,
+    EmployeeGameSerializer,
+    GameBulkPriceUpdateSerializer,
+    EmployeeBlogSerializer,
+    StoreProductSerializer,
+    StoreGameSerializer,
+)
+from .models import (
+    Cart,
+    CartItem,
+    BlogPost,
+    AboutUs,
+    ContactUs,
+    ContactSubmission,
+    Course,
+    Video,
+    HomeBanner,
+    GameCart,
+    GameCartItem,
+)
 
 
 # trending games
+
 
 class GameTrendListAPIView(generics.ListAPIView):
     serializer_class = GameSerializer
@@ -44,60 +89,89 @@ class GameTrendRetrieveAPIView(generics.RetrieveAPIView):
 
 # store
 
+
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
-    queryset = Product.objects.select_related('color', 'category', 'company').prefetch_related('images').filter(
-        is_deleted=False).order_by('-created_at').all()
+    queryset = (
+        Product.objects.select_related("color", "category", "company")
+        .prefetch_related("images")
+        .filter(is_deleted=False)
+        .order_by("-created_at")
+        .all()
+    )
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['category', 'color', 'company', 'is_deleted']
-    search_fields = ['title', 'description']
-    ordering_fields = ['price', 'created_at', 'stock']
-    ordering = ['-created_at']
+    filterset_fields = ["category", "color", "company", "is_deleted"]
+    search_fields = ["title", "description"]
+    ordering_fields = ["price", "created_at", "stock"]
+    ordering = ["-created_at"]
 
 
 class ProductRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
-    queryset = Product.objects.select_related('color', 'category', 'company').prefetch_related('images').filter(
-        is_deleted=False).all()
+    queryset = (
+        Product.objects.select_related("color", "category", "company")
+        .prefetch_related("images")
+        .filter(is_deleted=False)
+        .all()
+    )
     permission_classes = [AllowAny]
 
 
 # Game products
 class GameListAPIView(generics.ListAPIView):
     serializer_class = GameSerializer
-    queryset = Game.objects.filter(is_deleted=False).prefetch_related('game_images').order_by('-created_at').all()
+    queryset = (
+        Game.objects.filter(is_deleted=False)
+        .prefetch_related("game_images")
+        .order_by("-created_at")
+        .all()
+    )
     filter_backends = [SearchFilter, OrderingFilter]
-    search_fields = ['title', 'description']
-    ordering_fields = ['created_at', 'is_trend']
-    ordering = ['-created_at']
+    search_fields = ["title", "description"]
+    ordering_fields = ["created_at", "is_trend"]
+    ordering = ["-created_at"]
     permission_classes = [AllowAny]
 
 
 class GameRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = GameSerializer
-    queryset = Game.objects.filter(is_deleted=False).prefetch_related('game_images').all()
+    queryset = (
+        Game.objects.filter(is_deleted=False).prefetch_related("game_images").all()
+    )
     permission_classes = [AllowAny]
 
 
 # category
 class ProductCategoryListAPIView(generics.ListAPIView):
     serializer_class = ProductCategorySerializer
-    queryset = ProductCategory.objects.filter(is_deleted=False).prefetch_related(
-        Prefetch('products',
-                 queryset=Product.objects.select_related('company', 'color', 'category'))
-    ).all()
+    queryset = (
+        ProductCategory.objects.filter(is_deleted=False)
+        .prefetch_related(
+            Prefetch(
+                "products",
+                queryset=Product.objects.select_related("company", "color", "category"),
+            )
+        )
+        .all()
+    )
     filter_backends = [SearchFilter]
-    search_fields = ['title', 'products__title']
+    search_fields = ["title", "products__title"]
     permission_classes = [AllowAny]
 
 
 class ProductCategoryRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = ProductCategorySerializer
-    queryset = ProductCategory.objects.filter(is_deleted=False).prefetch_related(
-        Prefetch('products',
-                 queryset=Product.objects.select_related('company', 'color', 'category'))
-    ).all()
+    queryset = (
+        ProductCategory.objects.filter(is_deleted=False)
+        .prefetch_related(
+            Prefetch(
+                "products",
+                queryset=Product.objects.select_related("company", "color", "category"),
+            )
+        )
+        .all()
+    )
     permission_classes = [AllowAny]
 
 
@@ -106,20 +180,29 @@ class ProductByCategoryRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        cat_id = self.kwargs.get('pro_category')
-        return Product.objects.select_related('color', 'category', 'company').prefetch_related('images').filter(
-            is_deleted=False, category_id=cat_id).all()
+        cat_id = self.kwargs.get("pro_category")
+        return (
+            Product.objects.select_related("color", "category", "company")
+            .prefetch_related("images")
+            .filter(is_deleted=False, category_id=cat_id)
+            .all()
+        )
 
 
 # The most sold games and products
+
 
 class MostSoldProductsListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Product.objects.select_related('color', 'category', 'company').prefetch_related('images').filter(
-            is_deleted=False).order_by('-units_sold')[:10]
+        return (
+            Product.objects.select_related("color", "category", "company")
+            .prefetch_related("images")
+            .filter(is_deleted=False)
+            .order_by("-units_sold")[:10]
+        )
 
 
 class MostSoldGamesListAPIView(generics.ListAPIView):
@@ -127,7 +210,11 @@ class MostSoldGamesListAPIView(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     def get_queryset(self):
-        return Game.objects.filter(is_deleted=False).prefetch_related('game_images').order_by('-units_sold')[:2]
+        return (
+            Game.objects.filter(is_deleted=False)
+            .prefetch_related("game_images")
+            .order_by("-units_sold")[:2]
+        )
 
 
 # cart
@@ -137,8 +224,9 @@ class CartAPIView(generics.RetrieveAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        return Cart.objects.filter(user=self.request.user.customer, is_deleted=False).prefetch_related(
-            'cart_items__product__color')
+        return Cart.objects.filter(
+            user=self.request.user.customer, is_deleted=False
+        ).prefetch_related("cart_items__product__color")
 
     def get_object(self):
         cart = self.get_queryset().first()
@@ -149,27 +237,33 @@ class CartAPIView(generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
         cart = self.get_object()
         if not cart.cart_items.exists():
-            return Response({"detail": "سبد خرید شما خالی است."}, status=status.HTTP_200_OK)
+            return Response(
+                {"detail": "سبد خرید شما خالی است."}, status=status.HTTP_200_OK
+            )
         serializer = self.get_serializer(cart)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class AddToCartAPIView(generics.CreateAPIView):
     serializer_class = CartItemWriteSerializer
-    queryset = CartItem.objects.select_related('cart', 'product__color').none()
+    queryset = CartItem.objects.select_related("cart", "product__color").none()
     permission_classes = [IsCustomer]
     authentication_classes = [CustomJWTAuthentication]
 
     def create(self, request, *args, **kwargs):
         cart, _ = Cart.objects.get_or_create(
-            user=request.user.customer,
-            is_deleted=False
+            user=request.user.customer, is_deleted=False
         )
-        serializer = self.get_serializer(data=request.data, context={'cart': cart})
+        serializer = self.get_serializer(data=request.data, context={"cart": cart})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({"detail": "محصول با موفقیت به سبد خرید اضافه شد.", "data": serializer.data},
-                        status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "detail": "محصول با موفقیت به سبد خرید اضافه شد.",
+                "data": serializer.data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class RemoveFromCartAPIView(generics.DestroyAPIView):
@@ -184,40 +278,43 @@ class RemoveFromCartAPIView(generics.DestroyAPIView):
         if not cart:
             return Response(
                 {"detail": "هیچ سبد خرید فعالی پیدا نشد."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
-        product_id = kwargs.get('product_id')
+        product_id = kwargs.get("product_id")
         if not product_id:
             return Response(
                 {"detail": "شناسه محصول معتبر نیست."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         try:
-            cart_item = CartItem.objects.get(
-                cart=cart,
-                product_id=product_id
-            )
+            cart_item = CartItem.objects.get(cart=cart, product_id=product_id)
 
             if cart_item.quantity > 1:
                 cart_item.quantity -= 1
                 cart_item.save()
-                return Response({"detail": "محصول با موفقیت از سبد خرید کم شد."}, status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"detail": "محصول با موفقیت از سبد خرید کم شد."},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
 
             else:
                 cart_item.delete()
-                return Response({"detail": "محصول با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
+                return Response(
+                    {"detail": "محصول با موفقیت از سبد خرید حذف شد."},
+                    status=status.HTTP_204_NO_CONTENT,
+                )
 
         except CartItem.DoesNotExist:
             return Response(
                 {"detail": "محصولی در سبد خرید یافت نشد."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
             return Response(
                 {"detail": "یک خطا رخ داده است.", "error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -228,7 +325,7 @@ class GameCartTypeChoices(generics.GenericAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
-        data = [{'key': k, 'value': v} for k, v in GAME_ORDER_CONSOLE_TYPE]
+        data = [{"key": k, "value": v} for k, v in GAME_ORDER_CONSOLE_TYPE]
         serializer = self.get_serializer(data, many=True)
         return Response(serializer.data)
 
@@ -266,21 +363,29 @@ class AddGameToCartView(generics.UpdateAPIView):
         return cart
 
     def update(self, request, *args, **kwargs):
-        game_id = kwargs.get('game_id')
+        game_id = kwargs.get("game_id")
 
         if not game_id:
-            return Response({'detail': 'شناسه بازی نامعتبر است.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "شناسه بازی نامعتبر است."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
             game = Game.objects.get(id=game_id, is_deleted=False)
         except Game.DoesNotExist:
-            return Response({'detail': 'بازی یافت نشد.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "بازی یافت نشد."}, status=status.HTTP_404_NOT_FOUND
+            )
 
         cart = self.get_object()
 
         # بررسی تکراری نبودن آیتم
         if GameCartItem.objects.filter(game_cart=cart, game=game).exists():
-            return Response({'detail': 'بازی قبلاً به سبد خرید اضافه شده است.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "بازی قبلاً به سبد خرید اضافه شده است."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # افزودن آیتم به کارت
         GameCartItem.objects.create(
@@ -299,56 +404,77 @@ class RemoveGameFromCartView(generics.DestroyAPIView):
 
     def delete(self, request, *args, **kwargs):
         customer = request.user.customer
-        game_id = kwargs.get('game_id')
+        game_id = kwargs.get("game_id")
 
         if not game_id:
-            return Response({"detail": "شناسه بازی نامعتبر است."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "شناسه بازی نامعتبر است."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         cart = GameCart.objects.filter(user=customer, is_deleted=False).first()
         if not cart:
-            return Response({"detail": "سبد خریدی برای کاربر یافت نشد."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "سبد خریدی برای کاربر یافت نشد."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         try:
             game = Game.objects.get(id=game_id)
         except Game.DoesNotExist:
-            return Response({"detail": "بازی مورد نظر وجود ندارد."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "بازی مورد نظر وجود ندارد."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # حذف رکورد از جدول میانی (GameCartItem)
         cart_item = GameCartItem.objects.filter(game_cart=cart, game=game).first()
         if cart_item:
             cart_item.delete()
-            return Response({"detail": "بازی با موفقیت از سبد خرید حذف شد."}, status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"detail": "بازی با موفقیت از سبد خرید حذف شد."},
+                status=status.HTTP_204_NO_CONTENT,
+            )
         else:
-            return Response({"detail": "این بازی در سبد خرید وجود ندارد."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "این بازی در سبد خرید وجود ندارد."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 # blog-post
 
+
 class BlogPostListAPIView(generics.ListAPIView):
-    queryset = BlogPost.objects.select_related('author').filter(
-        status='published').all()
+    queryset = (
+        BlogPost.objects.select_related("author").filter(status="published").all()
+    )
     serializer_class = BlogPostListSerializer
     filter_backends = [SearchFilter, DjangoFilterBackend, OrderingFilter]
-    search_fields = ['title']
-    ordering_fields = ['created_at']
+    search_fields = ["title"]
+    ordering_fields = ["created_at"]
     permission_classes = [AllowAny]
 
 
 class BlogPostRetrieveAPIView(generics.RetrieveAPIView):
-    queryset = BlogPost.objects.select_related('author').filter(
-        status='published').all()
+    queryset = (
+        BlogPost.objects.select_related("author").filter(status="published").all()
+    )
     serializer_class = BlogPostDetailSerializer
-    lookup_field = 'slug'
+    lookup_field = "slug"
     permission_classes = [AllowAny]
 
 
 class BlogPostCreateAPIView(generics.CreateAPIView):
-    queryset = BlogPost.objects.select_related('author').filter(
-        status='published').all()
+    queryset = (
+        BlogPost.objects.select_related("author").filter(status="published").all()
+    )
     serializer_class = CreateBlogPostSerializer
 
     def post(self, request, *args, **kwargs):
-        created_serializer = self.serializer_class(data=request.data, context={'user': self.request.user})
+        created_serializer = self.serializer_class(
+            data=request.data, context={"user": self.request.user}
+        )
         created_serializer.is_valid(raise_exception=True)
         created_item = created_serializer.save()
         serializer = BlogPostDetailSerializer(created_item)
@@ -356,13 +482,13 @@ class BlogPostCreateAPIView(generics.CreateAPIView):
 
 
 class BlogPostUpdateAPIView(generics.UpdateAPIView):
-    queryset = BlogPost.objects.select_related('author').all()
+    queryset = BlogPost.objects.select_related("author").all()
     serializer_class = UpdateBlogPostSerializer
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
     # http_method_names = ['patch']
     def put(self, request, *args, **kwargs):
-        post_slug = self.kwargs.get('slug')
+        post_slug = self.kwargs.get("slug")
         post = BlogPost.objects.get(slug=post_slug)
         updated_serializer = self.serializer_class(post, data=request.data)
         updated_serializer.is_valid(raise_exception=True)
@@ -372,12 +498,13 @@ class BlogPostUpdateAPIView(generics.UpdateAPIView):
 
 
 class BlogPostDeleteAPIView(generics.DestroyAPIView):
-    queryset = BlogPost.objects.select_related('author').all()
+    queryset = BlogPost.objects.select_related("author").all()
     serializer_class = BlogPostDetailSerializer
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
 
 # contact us & about us
+
 
 class AboutUsRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = AboutUsSerializer
@@ -396,8 +523,10 @@ class AboutUsCreateAPIView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         if AboutUs.objects.count() >= 1:
             return Response(
-                {'error': 'Only one AboutUs entry allowed. Please delete existing entries first.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Only one AboutUs entry allowed. Please delete existing entries first."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return super().create(request, *args, **kwargs)
 
@@ -412,7 +541,7 @@ class AboutUsDeleteAPIView(generics.DestroyAPIView):
 
 class AboutUsUpdateAPIView(generics.UpdateAPIView):
     serializer_class = AboutUsSerializer
-    http_method_names = ['put']
+    http_method_names = ["put"]
 
     def get_object(self):
         obj = get_object_or_404(AboutUs.objects.filter(is_deleted=False))
@@ -435,15 +564,17 @@ class ContactUsCreateAPIView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         if ContactUs.objects.count() >= 1:
             return Response(
-                {'error': 'Only one ContactUs entry allowed. Please delete existing entries first.'},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": "Only one ContactUs entry allowed. Please delete existing entries first."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
         return super().create(request, *args, **kwargs)
 
 
 class ContactUsUpdateAPIView(generics.UpdateAPIView):
     serializer_class = ContactUsSerializer
-    http_method_names = ['put']
+    http_method_names = ["put"]
 
     def get_object(self):
         obj = get_object_or_404(ContactUs.objects.filter(is_deleted=False))
@@ -462,27 +593,34 @@ class ContactSubmissionCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
     serializer_class = ContactSubmissionSerializer
-    queryset = ContactSubmission.objects.select_related('user').all()
+    queryset = ContactSubmission.objects.select_related("user").all()
 
     def get_serializer_context(self):
-        return {'user_id': self.request.user.id}
+        return {"user_id": self.request.user.id}
 
 
 # Video Course
 
+
 class CourseListAPIView(generics.ListAPIView):
     serializer_class = CourseListCreateSerializer
-    queryset = Course.objects.filter(status='published').prefetch_related('videos')
+    queryset = Course.objects.filter(status="published").prefetch_related("videos")
     permission_classes = [AllowAny]
 
 
 class CourseRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = CourseRetrieveSerializer
-    queryset = Course.objects.filter(status='published').prefetch_related(Prefetch(
-        'videos',
-        queryset=Video.objects.filter(status='published').order_by('priority')
-    )).all()
-    lookup_field = 'slug'
+    queryset = (
+        Course.objects.filter(status="published")
+        .prefetch_related(
+            Prefetch(
+                "videos",
+                queryset=Video.objects.filter(status="published").order_by("priority"),
+            )
+        )
+        .all()
+    )
+    lookup_field = "slug"
     permission_classes = [AllowAny]
 
 
@@ -498,7 +636,7 @@ class CourseUpdateAPIView(generics.UpdateAPIView):
     queryset = Course.objects.all()
     permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
 
 class CourseDeleteAPIView(generics.DestroyAPIView):
@@ -506,24 +644,26 @@ class CourseDeleteAPIView(generics.DestroyAPIView):
     queryset = Course.objects.all()
     permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
 
 # Video
+
 
 class VideoListAPIView(generics.ListAPIView):
     serializer_class = VideoSerializer
 
     def get_queryset(self):
-        course_slug = self.kwargs.get('course_slug')
-        queryset = Video.objects.filter(
-            course__slug=course_slug,
-            status='published'
-        ).select_related('course').order_by('priority')
+        course_slug = self.kwargs.get("course_slug")
+        queryset = (
+            Video.objects.filter(course__slug=course_slug, status="published")
+            .select_related("course")
+            .order_by("priority")
+        )
 
         user = self.request.user
         # بررسی اگر کاربر لاگین کرده و Customer هست
-        if hasattr(user, 'customer'):
+        if hasattr(user, "customer"):
             customer = user.customer
             if not customer.has_access_to_course:
                 return queryset.filter(priority=1)
@@ -532,17 +672,18 @@ class VideoListAPIView(generics.ListAPIView):
 
 class VideoRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = VideoSerializer
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
     def get_queryset(self):
-        course_slug = self.kwargs.get('course_slug')
-        queryset = Video.objects.filter(
-            course__slug=course_slug,
-            status='published'
-        ).select_related('course').order_by('priority')
+        course_slug = self.kwargs.get("course_slug")
+        queryset = (
+            Video.objects.filter(course__slug=course_slug, status="published")
+            .select_related("course")
+            .order_by("priority")
+        )
 
         user = self.request.user
-        if hasattr(user, 'customer'):
+        if hasattr(user, "customer"):
             customer = user.customer
             if not customer.has_access_to_course:
                 return queryset.filter(priority=1)
@@ -555,47 +696,60 @@ class VideoCreateAPIView(generics.CreateAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        course_slug = self.kwargs.get('course_slug')
-        return Video.objects.select_related('course').filter(course__slug=course_slug).all()
+        course_slug = self.kwargs.get("course_slug")
+        return (
+            Video.objects.select_related("course")
+            .filter(course__slug=course_slug)
+            .all()
+        )
 
     def get_serializer_context(self):
-        course_slug = self.kwargs.get('course_slug')
-        return {'course': Course.objects.get(slug=course_slug)}
+        course_slug = self.kwargs.get("course_slug")
+        return {"course": Course.objects.get(slug=course_slug)}
 
 
 class VideoUpdateAPIView(generics.UpdateAPIView):
     serializer_class = VideoUpdateSerializer
     permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
     def get_queryset(self):
-        course_slug = self.kwargs.get('course_slug')
-        return Video.objects.select_related('course').filter(course__slug=course_slug).all()
+        course_slug = self.kwargs.get("course_slug")
+        return (
+            Video.objects.select_related("course")
+            .filter(course__slug=course_slug)
+            .all()
+        )
 
 
 class VideoDeleteAPIView(generics.DestroyAPIView):
     serializer_class = VideoSerializer
     permission_classes = [IsEmployee, IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
     def get_queryset(self):
-        course_slug = self.kwargs.get('course_slug')
-        return Video.objects.select_related('course').filter(course__slug=course_slug).all()
+        course_slug = self.kwargs.get("course_slug")
+        return (
+            Video.objects.select_related("course")
+            .filter(course__slug=course_slug)
+            .all()
+        )
 
 
 # Banners
 
+
 class HomeBannerListView(generics.ListAPIView):
     serializer_class = HomeBannerSerializer
-    queryset = HomeBanner.objects.all().order_by('order')
+    queryset = HomeBanner.objects.all().order_by("order")
     permission_classes = [AllowAny]
 
 
 class HomeBannerCreateView(generics.CreateAPIView):
     serializer_class = HomeBannerSerializer
-    queryset = HomeBanner.objects.all().order_by('order')
+    queryset = HomeBanner.objects.all().order_by("order")
 
     def perform_create(self, serializer):
         instance = serializer.save()
@@ -604,13 +758,13 @@ class HomeBannerCreateView(generics.CreateAPIView):
 
 class HomeBannerDetailView(generics.RetrieveAPIView):
     serializer_class = HomeBannerSerializer
-    queryset = HomeBanner.objects.all().order_by('order')
+    queryset = HomeBanner.objects.all().order_by("order")
     permission_classes = [AllowAny]
 
 
 class HomeBannerUpdateView(generics.UpdateAPIView):
     serializer_class = HomeBannerSerializer
-    queryset = HomeBanner.objects.all().order_by('order')
+    queryset = HomeBanner.objects.all().order_by("order")
 
     def perform_update(self, serializer):
         instance = serializer.save()
@@ -619,16 +773,14 @@ class HomeBannerUpdateView(generics.UpdateAPIView):
 
 class HomeBannerDeleteView(generics.DestroyAPIView):
     serializer_class = HomeBannerSerializer
-    queryset = HomeBanner.objects.all().order_by('order')
+    queryset = HomeBanner.objects.all().order_by("order")
 
 
 class SendResume(generics.CreateAPIView):
-    queryset = EmployeeHire.objects.all()
-    serializer_class = EmployeeHireSerializer
+    queryset = EmploymentResume.objects.all()
+    serializer_class = EmploymentResumeSerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
-
-
 
 
 # ==================== GameStore Views ====================
@@ -656,15 +808,18 @@ class GameBulkPriceUpdateView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
 
         price_type = serializer.get_db_field()  # تبدیل خودکار
-        price_value = serializer.validated_data['price']
+        price_value = serializer.validated_data["price"]
 
         updated_count = Game.objects.update(**{price_type: price_value})
 
-        return Response({
-            "message": f"Updated {updated_count} games",
-            "type": serializer.validated_data['type'],  # همون چیزی که کاربر فرستاده
-            "price": price_value
-        }, status=status.HTTP_200_OK)
+        return Response(
+            {
+                "message": f"Updated {updated_count} games",
+                "type": serializer.validated_data["type"],  # همون چیزی که کاربر فرستاده
+                "price": price_value,
+            },
+            status=status.HTTP_200_OK,
+        )
 
 
 # ==================== Blog Views ====================
@@ -680,6 +835,92 @@ class EmployeeBlogDetail(generics.RetrieveUpdateDestroyAPIView):
     queryset = BlogPost.objects.filter(is_deleted=False)
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
-    lookup_field = 'slug'
+    lookup_field = "slug"
 
 
+# ==================== Customer Store Views ====================
+
+
+class StoreProductListView(generics.ListAPIView):
+    serializer_class = StoreProductSerializer
+    permission_classes = [AllowAny]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ["category"]
+    search_fields = ["title", "description"]
+    ordering_fields = ["price", "created_at", "stock"]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        qs = Product.objects.filter(is_deleted=False).select_related("category")
+        min_price = self.request.query_params.get("min_price")
+        max_price = self.request.query_params.get("max_price")
+        in_stock = self.request.query_params.get("in_stock")
+        if min_price:
+            qs = qs.filter(price__gte=min_price)
+        if max_price:
+            qs = qs.filter(price__lte=max_price)
+        if in_stock and in_stock.lower() == "true":
+            qs = qs.filter(stock__gt=0)
+        return qs
+
+
+class StoreProductDetailView(generics.RetrieveAPIView):
+    serializer_class = StoreProductSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Product.objects.filter(is_deleted=False).select_related("category")
+
+
+class StoreProductImagesView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+
+    def get_serializer_class(self):
+        from inventory.serializers import ProductImageSerializer
+
+        return ProductImageSerializer
+
+    def get_queryset(self):
+        from inventory.models import ProductImage
+
+        return ProductImage.objects.filter(
+            product_id=self.kwargs["pk"], is_deleted=False
+        )
+
+
+class StoreCategoryListView(generics.ListAPIView):
+    from inventory.serializers import ProductCategorySerializer
+
+    serializer_class = ProductCategorySerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return ProductCategory.objects.filter(is_deleted=False)
+
+
+class StoreGameListView(generics.ListAPIView):
+    serializer_class = StoreGameSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return Game.objects.filter(is_deleted=False).prefetch_related("game_images")
+
+
+class StoreSonyCategoryListView(generics.ListAPIView):
+    permission_classes = [AllowAny]
+
+    def get_serializer_class(self):
+        from rest_framework import serializers
+        from orders.models import SonyAccountOrderCategory
+
+        class _SonyCategorySerializer(serializers.ModelSerializer):
+            class Meta:
+                model = SonyAccountOrderCategory
+                fields = ["id", "title", "type", "account_capacity", "rent_time_days"]
+
+        return _SonyCategorySerializer
+
+    def get_queryset(self):
+        from orders.models import SonyAccountOrderCategory
+
+        return SonyAccountOrderCategory.objects.filter(is_deleted=False)
