@@ -25,7 +25,7 @@ from inventory.models import Product
 class ProductCartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
-        fields = ["title", "main_img", "color", "price"]
+        fields = ["title", "main_img", "price"]
 
 
 class CartItemReadSerializer(serializers.ModelSerializer):

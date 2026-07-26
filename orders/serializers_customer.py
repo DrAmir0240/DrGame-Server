@@ -114,7 +114,7 @@ class ProductOrderListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductOrder
-        fields = ["id", "stage", "total_amount", "created_at"]
+        fields = ["id", "stage", "amount", "created_at"]
 
 
 class ProductOrderDetailSerializer(serializers.ModelSerializer):
@@ -124,7 +124,7 @@ class ProductOrderDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductOrder
-        fields = ["id", "stage", "total_amount", "created_at", "items", "stage_logs"]
+        fields = ["id", "stage", "amount", "created_at", "items", "stage_logs"]
 
     def get_stage_logs(self, obj):
         logs = obj.stage_logs.filter(is_deleted=False).select_related(

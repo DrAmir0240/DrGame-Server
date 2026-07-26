@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from hr.serializers import SoftDeleteSerializerMixin
-from accounting.models import GameOrder
+from orders.models import SonyAccountOrder
 from inventory.models import SonyAccount
 
 
@@ -20,15 +20,25 @@ class SonyAccountSerializer(serializers.ModelSerializer):
         fields = ["id", "username", "password"]
 
 
-class SonyAccountMatchedSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
+class SonyAccountMatchedSerializer(
+    SoftDeleteSerializerMixin, serializers.ModelSerializer
+):
+    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field="title")
     matching_games_count = serializers.IntegerField(read_only=True)
-    employee = serializers.SerializerMethodField
+    employee = serializers.SerializerMethodField()
 
     class Meta:
         model = SonyAccount
-        fields = ['id', 'username', 'games', 'matching_games_count', 'region', 'created_at', 'updated_at']
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "username",
+            "games",
+            "matching_games_count",
+            "region",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["is_deleted", "created_at", "updated_at"]
 
     def get_employee(self, obj):
         if obj.employee:
@@ -42,12 +52,12 @@ class GameOrderMatchedSerializer(serializers.ModelSerializer):
     employee = serializers.SerializerMethodField()
 
     class Meta:
-        model = GameOrder
+        model = SonyAccountOrder
         fields = [
             "id",
             "customer_name",
             "employee",
-            "status",
+            "amount",
             "created_at",
             "matching_games_count",
         ]
@@ -66,7 +76,7 @@ class GameOrderMatchedSerializer(serializers.ModelSerializer):
 class SonyAccountCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SonyAccount
-        fields = ['username', 'password']
+        fields = ["username", "password"]
 
 
 class SonyAccountAddFromFileSerializer(serializers.Serializer):

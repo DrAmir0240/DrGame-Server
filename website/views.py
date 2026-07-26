@@ -93,7 +93,7 @@ class GameTrendRetrieveAPIView(generics.RetrieveAPIView):
 class ProductListAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
     queryset = (
-        Product.objects.select_related("color", "category", "company")
+        Product.objects.select_related("category")
         .prefetch_related("images")
         .filter(is_deleted=False)
         .order_by("-created_at")
@@ -101,7 +101,7 @@ class ProductListAPIView(generics.ListAPIView):
     )
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ["category", "color", "company", "is_deleted"]
+    filterset_fields = ["category", "is_deleted"]
     search_fields = ["title", "description"]
     ordering_fields = ["price", "created_at", "stock"]
     ordering = ["-created_at"]
@@ -110,7 +110,7 @@ class ProductListAPIView(generics.ListAPIView):
 class ProductRetrieveAPIView(generics.RetrieveAPIView):
     serializer_class = ProductSerializer
     queryset = (
-        Product.objects.select_related("color", "category", "company")
+        Product.objects.select_related("category")
         .prefetch_related("images")
         .filter(is_deleted=False)
         .all()
