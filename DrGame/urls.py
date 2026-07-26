@@ -33,9 +33,11 @@ urlpatterns = [
     path("orders/", include("orders.urls")),
     # path('platform-settings/', include('platform_settings.urls')),
     # path('psn/', include('psn.urls')),
+    path("support/", include("support.urls")),
     path("task-manager/", include("task_manager.urls")),
     path("users/", include("users.urls")),
     path("website/", include("website.urls")),
+    path("blog/", include("blog.urls")),
     # Customer-facing API
     path("customer/", include("customer.urls")),
     # path('sonyaccount/', include('utils.urls')),

@@ -5,6 +5,6 @@ urlpatterns = [
     path("", include("crm.urls_customer")),
     # Orders (orders app)
     path("orders/", include("orders.urls_customer")),
-    # Tickets (support app) — will be added in Phase 4
-    # path('tickets/', include('support.urls')),
+    # Tickets (support app)
+    path("tickets/", include("support.urls_customer")),
 ]
