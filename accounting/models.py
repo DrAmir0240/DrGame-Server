@@ -2,6 +2,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 
+from hr.models import Employee
 from users.models import CustomUser
 
 
@@ -20,10 +21,10 @@ class BankAccount(models.Model):
 
 class AccountSide(models.Model):
     TYPE_CHOICES = (
-        ('customer', 'مشتری'),
-        ('employee', 'کارمند'),
-        ('supplier', 'تامین‌کننده'),
-        ('other', 'سایر'),
+        ("customer", "مشتری"),
+        ("employee", "کارمند"),
+        ("supplier", "تامین‌کننده"),
+        ("other", "سایر"),
     )
 
     name = models.CharField(max_length=100, blank=True, null=True)
@@ -35,10 +36,10 @@ class AccountSide(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="نوع مدل مرتبط (Customer، Employee، Supplier)"
+        help_text="نوع مدل مرتبط (Customer، Employee، Supplier)",
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -49,13 +50,13 @@ class AccountSide(models.Model):
             return str(self.content_object)
         if self.name:
             return self.name
-        return f'{self.get_type_display()} #{self.object_id}'
+        return f"{self.get_type_display()} #{self.object_id}"
 
 
 class InvoiceCategory(models.Model):
     DIRECTION_CHOICES = (
-        ('in', 'ورودی'),
-        ('out', 'خروجی'),
+        ("in", "ورودی"),
+        ("out", "خروجی"),
     )
 
     title = models.CharField(max_length=100)
@@ -66,30 +67,40 @@ class InvoiceCategory(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.title} ({self.get_direction_display()})'
+        return f"{self.title} ({self.get_direction_display()})"
 
 
 class Invoice(models.Model):
     STATUS_CHOICES = (
-        ('draft', 'پیش‌نویس'),
-        ('primary', 'صادر شده'),
-        ('finalize', 'نهایی'),
+        ("draft", "پیش‌نویس"),
+        ("primary", "صادر شده"),
+        ("finalize", "نهایی"),
     )
 
     PAYMENT_STATUS_CHOICES = (
-        ('unpaid', 'پرداخت نشده'),
-        ('partial', 'پرداخت جزئی'),
-        ('paid', 'پرداخت شده'),
+        ("unpaid", "پرداخت نشده"),
+        ("partial", "پرداخت جزئی"),
+        ("paid", "پرداخت شده"),
     )
 
-    account_side = models.ForeignKey(AccountSide, on_delete=models.CASCADE, related_name='invoices')
-    category = models.ForeignKey(InvoiceCategory, on_delete=models.CASCADE, related_name='invoices')
+    account_side = models.ForeignKey(
+        AccountSide, on_delete=models.CASCADE, related_name="invoices"
+    )
+    category = models.ForeignKey(
+        InvoiceCategory, on_delete=models.CASCADE, related_name="invoices"
+    )
     discount = models.IntegerField(default=0)
     amount = models.IntegerField()
-    paid_amount = models.IntegerField(default=0, help_text="مجموع مبلغ پرداخت‌شده — از Celery آپدیت می‌شه")
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='unpaid')
-    is_payroll = models.BooleanField(default=False, help_text="آیا این فاکتور فیش حقوقیه؟")
+    paid_amount = models.IntegerField(
+        default=0, help_text="مجموع مبلغ پرداخت‌شده — از Celery آپدیت می‌شه"
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
+    payment_status = models.CharField(
+        max_length=20, choices=PAYMENT_STATUS_CHOICES, default="unpaid"
+    )
+    is_payroll = models.BooleanField(
+        default=False, help_text="آیا این فاکتور فیش حقوقیه؟"
+    )
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -100,7 +111,7 @@ class Invoice(models.Model):
         return max(0, self.amount - self.discount - self.paid_amount)
 
     def __str__(self):
-        return f'فاکتور #{self.id} - {self.account_side}'
+        return f"فاکتور #{self.id} - {self.account_side}"
 
 
 class InvoiceItem(models.Model):
@@ -111,7 +122,8 @@ class InvoiceItem(models.Model):
     - ProductOrder
     - یا هر مدل دیگه‌ای
     """
-    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name='items')
+
+    invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
     title = models.CharField(max_length=200)
     quantity = models.IntegerField(default=1)
     unit_price = models.IntegerField()
@@ -123,10 +135,10 @@ class InvoiceItem(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="نوع مدل مرتبط (SonyAccountOrder، RepairOrder، ProductOrder و...)"
+        help_text="نوع مدل مرتبط (SonyAccountOrder، RepairOrder، ProductOrder و...)",
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
-    content_object = GenericForeignKey('content_type', 'object_id')
+    content_object = GenericForeignKey("content_type", "object_id")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -137,18 +149,19 @@ class InvoiceItem(models.Model):
         return (self.unit_price * self.quantity) - self.discount
 
     def __str__(self):
-        return f'{self.title} × {self.quantity}'
+        return f"{self.title} × {self.quantity}"
 
 
 class PayrollDetail(models.Model):
     """
     جزئیات فیش حقوقی — فقط وقتی invoice.is_payroll=True معنی داره
     """
+
     invoice = models.OneToOneField(
         Invoice,
         on_delete=models.CASCADE,
-        related_name='payroll_detail',
-        limit_choices_to={'is_payroll': True}
+        related_name="payroll_detail",
+        limit_choices_to={"is_payroll": True},
     )
 
     # درآمدها
@@ -157,7 +170,9 @@ class PayrollDetail(models.Model):
     bonus = models.IntegerField(default=0, help_text="پاداش")
     housing_allowance = models.IntegerField(default=0, help_text="حق مسکن")
     food_allowance = models.IntegerField(default=0, help_text="حق خوار و بار")
-    transportation_allowance = models.IntegerField(default=0, help_text="حق ایاب و ذهاب")
+    transportation_allowance = models.IntegerField(
+        default=0, help_text="حق ایاب و ذهاب"
+    )
 
     # کسورات
     insurance_deduction = models.IntegerField(default=0, help_text="کسر بیمه")
@@ -174,21 +189,21 @@ class PayrollDetail(models.Model):
     @property
     def gross_salary(self):
         return (
-                self.base_salary
-                + self.overtime_amount
-                + self.bonus
-                + self.housing_allowance
-                + self.food_allowance
-                + self.transportation_allowance
+            self.base_salary
+            + self.overtime_amount
+            + self.bonus
+            + self.housing_allowance
+            + self.food_allowance
+            + self.transportation_allowance
         )
 
     @property
     def total_deductions(self):
         return (
-                self.insurance_deduction
-                + self.tax_deduction
-                + self.loan_deduction
-                + self.other_deductions
+            self.insurance_deduction
+            + self.tax_deduction
+            + self.loan_deduction
+            + self.other_deductions
         )
 
     @property
@@ -196,18 +211,28 @@ class PayrollDetail(models.Model):
         return self.gross_salary - self.total_deductions
 
     def __str__(self):
-        return f'فیش حقوقی فاکتور #{self.invoice_id}'
+        return f"فیش حقوقی فاکتور #{self.invoice_id}"
 
 
 class Transaction(models.Model):
     DIRECTION_CHOICES = (
-        ('in', 'دریافت'),
-        ('out', 'پرداخت'),
+        ("in", "دریافت"),
+        ("out", "پرداخت"),
     )
 
-    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='transactions')
-    account_side = models.ForeignKey(AccountSide, on_delete=models.CASCADE, related_name='transactions')
-    bank_account = models.ForeignKey(BankAccount, on_delete=models.CASCADE, related_name='transactions')
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="transactions",
+    )
+    account_side = models.ForeignKey(
+        AccountSide, on_delete=models.CASCADE, related_name="transactions"
+    )
+    bank_account = models.ForeignKey(
+        BankAccount, on_delete=models.CASCADE, related_name="transactions"
+    )
     amount = models.IntegerField()
     direction = models.CharField(max_length=10, choices=DIRECTION_CHOICES)
     description = models.TextField(blank=True, null=True)
@@ -216,15 +241,65 @@ class Transaction(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.get_direction_display()} {self.amount} — {self.account_side}'
+        return f"{self.get_direction_display()} {self.amount} — {self.account_side}"
 
 
 class Wallet(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
-    balance = models.IntegerField()
+    user = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="wallet"
+    )
+    balance = models.BigIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.full_name()}: {self.balance}"
+        return f"{self.user.full_name()}: {self.balance:,} T"
+
+
+class WalletTransaction(models.Model):
+    TYPE_CHOICES = (
+        ("charge_admin", "شارژ توسط ادمین"),
+        ("charge_gateway", "شارژ آنلاین"),
+        ("debit_order", "کسر بابت سفارش"),
+        ("refund", "برگشت وجه"),
+    )
+    STATUS_CHOICES = (
+        ("pending", "در انتظار"),
+        ("success", "موفق"),
+        ("failed", "ناموفق"),
+        ("cancelled", "لغو شده"),
+    )
+
+    wallet = models.ForeignKey(
+        Wallet, on_delete=models.CASCADE, related_name="transactions"
+    )
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    amount = models.PositiveBigIntegerField(help_text="مبلغ به تومان")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    description = models.CharField(max_length=300, blank=True)
+    gateway_ref = models.CharField(
+        max_length=100, blank=True, null=True, help_text="شناسه پرداخت درگاه"
+    )
+    gateway_name = models.CharField(
+        max_length=50, blank=True, null=True, help_text="مثال: zarinpal"
+    )
+    order_content_type = models.ForeignKey(
+        ContentType, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    order_object_id = models.PositiveIntegerField(null=True, blank=True)
+    performed_by = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        help_text="فقط برای charge_admin",
+    )
+    balance_before = models.PositiveBigIntegerField(help_text="موجودی قبل از تراکنش")
+    balance_after = models.PositiveBigIntegerField(help_text="موجودی بعد از تراکنش")
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-created_at"]

@@ -30,3 +30,10 @@ class SonyAccountGameAdmin(admin.ModelAdmin):
     class Media:
         fields = '__all__'
         search_fields = '__all__'
+
+
+@admin.register(models.SonyAccountAction)
+class SonyAccountActionAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'

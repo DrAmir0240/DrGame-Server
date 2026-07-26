@@ -31,20 +31,36 @@ class SonyAccountBank(models.Model):
 class SonyAccount(models.Model):
     username = models.CharField(max_length=100, unique=True, null=True)
     password = models.CharField(max_length=100, null=True)
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True,
-                                 related_name='employee_accounts')
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employee_accounts",
+    )
     two_step = models.IntegerField(null=True, blank=True)
-    status = models.ForeignKey(SonyAccountStatus, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.ForeignKey(
+        SonyAccountStatus, on_delete=models.SET_NULL, null=True, blank=True
+    )
     bank_account_status = models.BooleanField(null=True, blank=True)
-    bank_account = models.ForeignKey(SonyAccountBank, on_delete=models.SET_NULL, null=True, blank=True)
+    bank_account = models.ForeignKey(
+        SonyAccountBank, on_delete=models.SET_NULL, null=True, blank=True
+    )
     plus = models.BooleanField(null=True, blank=True)
-    games = models.ManyToManyField(Game, through='SonyAccountGame', related_name='users')
-    region = models.CharField(max_length=100, null=True, blank=True, choices=(
-        ('America', 'america'),
-        ('Europe', 'europe'),
-        ('Asia', 'asia'),
-        ('Mix', 'mix'),
-    ))
+    games = models.ManyToManyField(
+        Game, through="SonyAccountGame", related_name="users"
+    )
+    region = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        choices=(
+            ("America", "america"),
+            ("Europe", "europe"),
+            ("Asia", "asia"),
+            ("Mix", "mix"),
+        ),
+    )
     is_sold = models.BooleanField(default=False)
     is_owned = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
@@ -55,6 +71,7 @@ class SonyAccount(models.Model):
 
     def set_totp_secret(self, secret):
         from utils.crypto import encrypt_text
+
         self.two_step_secret = encrypt_text(secret)
         self.two_step_enabled = True
         self.save()
@@ -62,13 +79,14 @@ class SonyAccount(models.Model):
     def get_otp(self):
         from utils.crypto import decrypt_text
         import pyotp, time
+
         if not self.two_step_secret:
             return None
         secret = decrypt_text(self.two_step_secret)
         totp = pyotp.TOTP(secret)
         return {
             "code": totp.now(),
-            "remaining": totp.interval - (int(time.time()) % totp.interval)
+            "remaining": totp.interval - (int(time.time()) % totp.interval),
         }
 
     def __str__(self):
@@ -76,17 +94,42 @@ class SonyAccount(models.Model):
 
 
 class SonyAccountGame(models.Model):
-    sony_account = models.ForeignKey(SonyAccount, on_delete=models.CASCADE, related_name='account_games')
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='game_accounts')
+    sony_account = models.ForeignKey(
+        SonyAccount, on_delete=models.CASCADE, related_name="account_games"
+    )
+    game = models.ForeignKey(
+        Game, on_delete=models.CASCADE, related_name="game_accounts"
+    )
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['sony_account', 'game']
+        unique_together = ["sony_account", "game"]
         indexes = [
-            models.Index(fields=['sony_account', 'game']),
+            models.Index(fields=["sony_account", "game"]),
         ]
 
     def __str__(self):
         return f"{self.sony_account} - {self.game}"
+
+
+class SonyAccountAction(models.Model):
+    sony_account = models.ForeignKey(
+        SonyAccount, on_delete=models.CASCADE, related_name="account_actions"
+    )
+    order = models.ForeignKey(
+        "orders.SonyAccountOrder",
+        on_delete=models.CASCADE,
+        related_name="order_actions",
+    )
+    account_capability_after = models.IntegerField(default=0)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="employee_actions"
+    )
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.sony_account} - {self.order}"
