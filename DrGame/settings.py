@@ -58,7 +58,6 @@ INSTALLED_APPS = [
     "orders",
     "dashboard",
     "support",
-    "blog",
     # third-party apps
     "rest_framework",
     "rest_framework_simplejwt",

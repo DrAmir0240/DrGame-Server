@@ -18,6 +18,13 @@ class SonyAccountBankAdmin(admin.ModelAdmin):
         search_fields = '__all__'
 
 
+@admin.register(models.SonyAccountSellMethod)
+class SonyAccountSellMethodAdmin(admin.ModelAdmin):
+    class Media:
+        fields = '__all__'
+        search_fields = '__all__'
+
+
 @admin.register(models.SonyAccount)
 class SonyAccountAdmin(admin.ModelAdmin):
     class Media:

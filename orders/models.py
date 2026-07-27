@@ -189,6 +189,7 @@ class SonyAccountOrderCategory(models.Model):
     type = models.CharField(max_length=10, choices=TYPE_CHOICES)
     rent_time_days = models.IntegerField(default=1, null=True, blank=True)
     account_capacity = models.CharField(max_length=10, choices=ACCOUNT_CAPACITY_CHOICES)
+    base_price = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):

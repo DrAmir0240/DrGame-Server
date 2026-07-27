@@ -6,8 +6,6 @@ from users.models import CustomUser
 
 
 # Create your models here.
-
-
 class Customer(models.Model):
     user = models.OneToOneField(
         CustomUser, on_delete=models.CASCADE, related_name="customer", null=True

@@ -25,22 +25,15 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounting/", include("accounting.urls")),
     path("crm/", include("crm.urls")),
-    # path('dashboard/', include('dashboard.urls')),
     path("docs/", include("docs.urls")),
     path("hr/", include("hr.urls")),
     path("inventory/", include("inventory.urls")),
-    # path('messenger/', include('messenger.urls')),
     path("orders/", include("orders.urls")),
-    # path('platform-settings/', include('platform_settings.urls')),
-    # path('psn/', include('psn.urls')),
     path("support/", include("support.urls")),
     path("task-manager/", include("task_manager.urls")),
     path("users/", include("users.urls")),
     path("website/", include("website.urls")),
-    path("blog/", include("blog.urls")),
-    # Customer-facing API
     path("customer/", include("customer.urls")),
-    # path('sonyaccount/', include('utils.urls')),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
         "swagger/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"

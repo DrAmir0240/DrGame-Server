@@ -28,6 +28,18 @@ class SonyAccountBank(models.Model):
         return self.title
 
 
+class SonyAccountSellMethod(models.Model):
+    title = models.CharField(max_length=100)
+    category = models.ForeignKey("orders.SonyAccountOrderCategory", on_delete=models.PROTECT)
+    price = models.BigIntegerField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
 class SonyAccount(models.Model):
     username = models.CharField(max_length=100, unique=True, null=True)
     password = models.CharField(max_length=100, null=True)
@@ -61,8 +73,8 @@ class SonyAccount(models.Model):
             ("Mix", "mix"),
         ),
     )
-    is_sold = models.BooleanField(default=False)
-    is_owned = models.BooleanField(default=False)
+    price = models.BigIntegerField(null=True, blank=True)
+    sell_method = models.ManyToManyField(SonyAccountSellMethod)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

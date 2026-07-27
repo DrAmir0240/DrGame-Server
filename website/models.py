@@ -1,43 +1,92 @@
 from django.core.exceptions import ValidationError
-from django.core.validators import EmailValidator
-from django.conf import settings
 from django.db import models
 from uuid import uuid4
-from django.utils import timezone
 from slugify import slugify
+
+from hr.models import Employee
 from users.models import CustomUser
 from crm.models import Customer
 from inventory.models import Product
 
 
+# Blog
+class BlogPostCategory(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name_plural = "Blog Post Categories"
+
+    def __str__(self):
+        return self.title
+
+
+class BlogPost(models.Model):
+    STATUS_CHOICES = (
+        ("draft", "پیش‌نویس"),
+        ("published", "منتشر شده"),
+    )
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200, unique=True, allow_unicode=True)
+    body = models.TextField()
+    cover_image = models.ImageField(upload_to="blog/covers/", null=True, blank=True)
+    category = models.ForeignKey(
+        BlogPostCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="posts",
+    )
+    author = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="draft")
+    published_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-published_at"]
+
+    def __str__(self):
+        return self.title
+
+
+class BlogPostImage(models.Model):
+    post = models.ForeignKey(BlogPost, on_delete=models.CASCADE, related_name="images")
+    image = models.ImageField(upload_to="blog/images/")
+    priority = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Image for {self.post.title}"
+
+
+# Game
+class GameCategory(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+
+
 class Game(models.Model):
     title = models.CharField(max_length=100, unique=True, null=True)
+    category = models.ForeignKey(GameCategory, on_delete=models.CASCADE)
     main_img = models.ImageField(null=True, blank=True, upload_to="main_img/game/")
     volume = models.PositiveIntegerField(null=True, blank=True)
-    online_ps4_price = models.IntegerField(null=True, blank=True)
-    online_ps5_price = models.IntegerField(null=True, blank=True)
-    offline_ps4_price = models.IntegerField(null=True, blank=True)
-    offline_ps5_price = models.IntegerField(null=True, blank=True)
-    data_ps4_price = models.IntegerField(null=True, blank=True)
-    data_ps5_price = models.IntegerField(null=True, blank=True)
-    xbox_price = models.IntegerField(null=True, blank=True)
-    nintendo_price = models.IntegerField(null=True, blank=True)
     description = models.TextField(max_length=5000, null=True, blank=True)
-    is_trend = models.BooleanField(default=False)
     units_sold = models.PositiveIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def clean(self):
-        if self.is_trend:
-            games_count = Game.objects.filter(is_trend=True).exclude(pk=self.pk).count()
-            if games_count >= 4:
-                raise ValidationError("حداکثر ۴ بازی می‌توانند ترند باشند")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
@@ -56,23 +105,60 @@ class GameImage(models.Model):
         return self.game.title
 
 
+# Product
+class StoreProductCategory(models.Model):
+    title = models.CharField(max_length=100)
+    description = models.TextField(max_length=5000, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+
+
+class StoreProduct(models.Model):
+    title = models.CharField(max_length=100)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class StoreProductImage(models.Model):
+    img = models.ImageField(null=True, blank=True, upload_to="images/products/")
+    product = models.ForeignKey(
+        StoreProduct, on_delete=models.CASCADE, null=True, related_name="product_images"
+    )
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.product.title
+
+
 # Shopping
-class Cart(models.Model):
+# Product Cart
+class ProductCart(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid4, editable=False)
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.full_name} cart"
+        return f"{self.user} cart"
 
     @property
     def total_price(self):
         return sum(item.product.price * item.quantity for item in self.cart_items.all())
 
 
-class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="cart_items")
+class ProductCartItem(models.Model):
+    cart = models.ForeignKey(ProductCart, on_delete=models.CASCADE, related_name="cart_items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveIntegerField(default=1)
     is_deleted = models.BooleanField(default=False)
@@ -90,30 +176,16 @@ class CartItem(models.Model):
         return f"{self.product.title} : {self.quantity} for {self.cart}"
 
 
-GAME_CART_TYPE = (
-    ("online_ps4", "online_ps4"),
-    ("online_ps5", "online_ps5"),
-    ("offline_ps4", "offline_ps4"),
-    ("offline_ps5", "offline_ps5"),
-    ("data_ps4", "data_ps4"),
-    ("data_ps5", "data_ps5"),
-    ("xbox", "xbox"),
-    ("nintendo", "nintendo"),
-)
-
-
+# Game Cart
 class GameCart(models.Model):
     user = models.OneToOneField(Customer, on_delete=models.CASCADE)
-    type = models.CharField(
-        max_length=500, choices=GAME_CART_TYPE, default="online_ps4"
-    )
     price = models.PositiveIntegerField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.user.full_name} game cart"
+        return f"{self.user} game cart"
 
 
 class GameCartItem(models.Model):
@@ -132,159 +204,7 @@ class GameCartItem(models.Model):
         return f"{self.game.title} game cart {self.game_cart}"
 
 
-# Blog — DEPRECATED: Use blog.BlogPost instead
-# TODO: Remove after data migration to blog app
-
-
-class BlogPost(models.Model):
-    STATUS_CHOICES = (
-        ("draft", "پیش‌نویس"),
-        ("published", "منتشر شده"),
-    )
-
-    title = models.CharField(max_length=200, unique=True, verbose_name="عنوان")
-    slug = models.SlugField(
-        max_length=250, unique=True, allow_unicode=True, verbose_name="اسلاگ"
-    )
-    author = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name="blog_posts",
-        verbose_name="نویسنده",
-    )
-    content = models.TextField(verbose_name="محتوا")
-    featured_image = models.ImageField(
-        upload_to="blog_images/", blank=True, null=True, verbose_name="تصویر شاخص"
-    )
-    meta_description = models.CharField(
-        max_length=160, blank=True, null=True, verbose_name="توضیحات متا"
-    )
-    status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default="draft", verbose_name="وضعیت"
-    )
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name="تاریخ ایجاد")
-    updated_at = models.DateTimeField(auto_now=True, verbose_name="تاریخ به‌روزرسانی")
-    published_at = models.DateTimeField(
-        default=timezone.now, verbose_name="تاریخ انتشار"
-    )
-
-    class Meta:
-        verbose_name = "Post"
-        verbose_name_plural = "Posts"
-        ordering = ["-published_at"]
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title, allow_unicode=True)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.title
-
-
-# about us & contact us models
-
-
-class AboutUs(models.Model):
-    title = models.CharField(max_length=255)
-    subtitle = models.CharField(max_length=255, blank=True)
-    content = models.TextField()
-
-    # Media
-    banner_image = models.ImageField(upload_to="about/banners/", null=True, blank=True)
-    team_image = models.ImageField(upload_to="about/team/", null=True, blank=True)
-
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name_plural = "About Us Page"
-
-    def __str__(self):
-        return self.title
-
-
-class ContactUs(models.Model):
-    address = models.CharField(max_length=700)
-    phone = models.CharField(max_length=20)
-    email = models.EmailField()
-    map_embed_code = models.TextField(blank=True, help_text="Google Maps iframe code")
-
-    # Business Hours
-    opening_hours = models.CharField(max_length=100, default="9:00 AM - 6:00 PM")
-
-    # Social Media
-    facebook_url = models.URLField(blank=True)
-    twitter_url = models.URLField(blank=True)
-    instagram_url = models.URLField(blank=True)
-
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name_plural = "Contact Page Settings"
-
-    def __str__(self):
-        return f"{self.address} - {self.phone}"
-
-
-class ContactSubmission(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-    email = models.EmailField(blank=True, null=True, validators=[EmailValidator()])
-    phone = models.CharField(max_length=11)
-    subject = models.CharField(max_length=200)
-    message = models.TextField()
-
-    is_deleted = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ["-created_at"]
-        verbose_name = "Contact Submission"
-        verbose_name_plural = "Contact Submissions"
-
-    def __str__(self):
-        return f"{self.email} : {self.subject}"
-
-
 # Course Models
-
-
-class Course(models.Model):
-    STATUS_CHOICES = [
-        ("draft", "Draft"),
-        ("published", "Published"),
-    ]
-    title = models.CharField(max_length=255, unique=True)
-    slug = models.SlugField(
-        max_length=255,
-        unique=True,
-        allow_unicode=True,
-    )
-    description = models.TextField()
-    course_image = models.ImageField(
-        upload_to="course/",
-    )
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(choices=STATUS_CHOICES, max_length=10)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title, allow_unicode=True)
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.title
-
-
 class Video(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
@@ -298,7 +218,6 @@ class Video(models.Model):
         upload_to="videos/",
     )
     status = models.CharField(choices=STATUS_CHOICES, max_length=10)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="videos")
     duration = models.DurationField()
     priority = models.PositiveIntegerField(unique=True, verbose_name="video order")
 
@@ -311,12 +230,10 @@ class Video(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.title} - {self.course.title}"
+        return f"{self.title}"
 
 
-# Banner
-
-
+# Home CMS
 class HomeBanner(models.Model):
     title = models.CharField(max_length=100, verbose_name="عنوان")
     image = models.ImageField(upload_to="banners/", verbose_name="تصویر")
@@ -327,12 +244,57 @@ class HomeBanner(models.Model):
 
     def clean(self):
         if (
-            self.is_chosen
-            and HomeBanner.objects.filter(is_chosen=True).exclude(pk=self.pk).count()
-            >= 3
+                self.is_chosen
+                and HomeBanner.objects.filter(is_chosen=True).exclude(pk=self.pk).count()
+                >= 3
         ):
             raise ValidationError("حداکثر ۳ بنر می‌توانند فعال باشند")
 
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class HomeSection(models.Model):
+    title = models.CharField(max_length=100)
+    model_content = models.CharField(max_length=5000, choices=(('game', 'بازی'), ('product', 'کالا'), ('blog', 'بلاگ')))
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
+
+
+class HomeSectionItem(models.Model):
+    section = models.ForeignKey(HomeSection, on_delete=models.CASCADE, related_name="items")
+    item_id = models.BigIntegerField()
+    # item_title
+    # item_description
+    # item_image
+    # item_type
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.section.title} : {self.item_id}"
+
+
+# About Us
+class AboutUs(models.Model):
+    title = models.CharField(max_length=100)
+    logo = models.ImageField(upload_to="logo/")
+    phone_number = models.CharField(max_length=20, unique=True)
+    email = models.EmailField()
+    address = models.TextField()
+    e_namaad = models.ImageField(upload_to="about_us/", null=True, blank=True)
+    e_namaad_url = models.URLField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.title
