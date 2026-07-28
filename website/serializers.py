@@ -1,500 +1,399 @@
-# from rest_framework import serializers
-# from slugify import slugify
-#
-# from platform_settings.serializers import SoftDeleteSerializerMixin
-# from website.models import (
-#     ProductCart,
-#     ProductCartItem,
-#     BlogPost,
-#     Video,
-#     HomeBanner,
-#     GameCart,
-#     GameCartItem,
-#     Game,
-#     GameImage,
-# )
-# from inventory.models import Product
-#
-#
-# # cart-item
-# class ProductCartItemSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Product
-#         fields = ["title", "main_img", "price"]
-#
-#
-# class CartItemReadSerializer(serializers.ModelSerializer):
-#     product = ProductCartItemSerializer(read_only=True)
-#     item_total = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = ProductCartItem
-#         fields = [
-#             "id",
-#             "product_id",
-#             "product",
-#             "quantity",
-#             "item_total",
-#             "created_at",
-#             "updated_at",
-#         ]
-#         read_only_fields = fields
-#
-#     def get_item_total(self, obj):
-#         return obj.total_item_price
-#
-#
-# class CartItemWriteSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = ProductCartItem
-#         fields = ["product", "quantity"]
-#         extra_kwargs = {"quantity": {"min_value": 1}}
-#
-#     def validate(self, data):
-#         product_item = data["product"]
-#         product = Product.objects.get(pk=product_item.pk)
-#         if data["quantity"] > product.stock:
-#             raise serializers.ValidationError(
-#                 {"quantity": "تعداد درخواستی بیشتر از موجودی انبار است"}
-#             )
-#         return data
-#
-#     def create(self, validated_data):
-#         cart = self.context["cart"]
-#         product = validated_data.get("product")
-#         quantity = validated_data.get("quantity")
-#
-#         cart_item, created = ProductCartItem.objects.get_or_create(
-#             cart=cart, product=product, defaults={"quantity": quantity}
-#         )
-#         if not created:
-#             if (cart_item.quantity + quantity) > product.stock:
-#                 raise serializers.ValidationError(
-#                     {"quantity": "تعداد کل بیشتر از موجودی انبار می‌شود"}
-#                 )
-#             else:
-#                 cart_item.quantity += quantity
-#                 cart_item.save()
-#
-#         self.instance = cart_item
-#         return cart_item
-#
-#     def update(self, instance, validated_data):
-#         instance.quantity = validated_data.get("quantity", instance.quantity)
-#         instance.save()
-#         return instance
-#
-#
-# # cart
-#
-#
-# class CartSerializer(serializers.ModelSerializer):
-#     cart_items = CartItemReadSerializer(many=True, read_only=True)
-#     total_price = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = ProductCart
-#         fields = ["id", "created_at", "cart_items", "total_price", "is_deleted"]
-#         read_only_fields = fields
-#
-#     def get_total_price(self, obj):
-#         return obj.total_price
-#
-#
-# class GameSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Game
-#         fields = "__all__"
-#
-#
-# class GameCartChoicesSerializer(serializers.Serializer):
-#     key = serializers.CharField()
-#     value = serializers.CharField()
-#
-#
-# class GameCartItemSerializer(serializers.ModelSerializer):
-#     game = GameSerializer(read_only=True)
-#
-#     class Meta:
-#         model = GameCartItem
-#         fields = "__all__"
-#         read_only_fields = ["id", "created_at", "updated_at"]
-#
-#
-# class GameCartSerializer(serializers.ModelSerializer):
-#     games = GameCartItemSerializer(many=True)
-#     volume = serializers.SerializerMethodField(read_only=True)
-#
-#     class Meta:
-#         model = GameCart
-#         fields = "__all__"
-#         read_only_fields = ["is_deleted", "created_at", "updated_at"]
-#
-#     def get_volume(self, obj):
-#         volume = sum(game.game.volume for game in obj.games.all())
-#         return volume
-#
-#
-# ######################################
-#
-#
-# class BlogPostListSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = BlogPost
-#         fields = [
-#             "id",
-#             "title",
-#             "slug",
-#             "featured_image",
-#             "status",
-#             "created_at",
-#             "published_at",
-#         ]
-#         read_only_fields = ["id", "published_at", "author", "slug"]
-#
-#
-# class BlogPostDetailSerializer(BlogPostListSerializer):
-#     class Meta(BlogPostListSerializer.Meta):
-#         fields = BlogPostListSerializer.Meta.fields + [
-#             "content",
-#             "meta_description",
-#             "updated_at",
-#         ]
-#
-#
-# class CreateBlogPostSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = BlogPost
-#         fields = [
-#             "id",
-#             "title",
-#             "author",
-#             "content",
-#             "featured_image",
-#             "meta_description",
-#             "status",
-#             "published_at",
-#         ]
-#         read_only_fields = ["id", "published_at", "author"]
-#
-#     def create(self, validated_data):
-#         blog_post = BlogPost(**validated_data)
-#         blog_post.slug = slugify(blog_post.title, allow_unicode=True)
-#         blog_post.author = self.context["user"]
-#         blog_post.save()
-#
-#         return blog_post
-#
-#
-# class UpdateBlogPostSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = BlogPost
-#         fields = [
-#             "id",
-#             "title",
-#             "author",
-#             "content",
-#             "featured_image",
-#             "meta_description",
-#             "status",
-#             "published_at",
-#         ]
-#         read_only_fields = ["id", "published_at", "author"]
-#
-#     def update(self, instance, validated_data):
-#         tags_data = validated_data.pop("tags", None)
-#
-#         for field, value in validated_data.items():
-#             setattr(instance, field, value)
-#
-#         if "title" in validated_data:
-#             instance.slug = slugify(instance.title, allow_unicode=True)
-#
-#         instance.save()
-#
-#         if tags_data is not None:
-#             instance.tags.set(tags_data)
-#
-#         return instance
-#
-#
-# # Course Serializers
-#
-#
-# class VideoSerializer(serializers.ModelSerializer):
-#     video_url = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Video
-#         fields = [
-#             "id",
-#             "title",
-#             "slug",
-#             "description",
-#             "video_url",
-#             "status",
-#             "duration",
-#             "priority",
-#             "updated_at",
-#         ]
-#         read_only_fields = ["slug"]
-#
-#     def get_video_url(self, obj):
-#         request = self.context.get("request")
-#         user = request.user if request else None
-#
-#         if user and user.is_authenticated:
-#             has_purchased = self.context.get("has_purchased", False)
-#             if has_purchased or user.is_staff:
-#                 if obj.video_file and hasattr(obj.video_file, "url"):
-#                     return request.build_absolute_uri(obj.video_file.url)
-#         return None
-#
-#
-# class VideoCreateSerializer(VideoSerializer):
-#     class Meta(VideoSerializer.Meta):
-#         fields = VideoSerializer.Meta.fields + ["video_file"]
-#
-#     def create(self, validated_data):
-#         video = Video(**validated_data)
-#         video.slug = slugify(video.title, allow_unicode=True)
-#         video.course = self.context.get("course")
-#         video.save()
-#         return video
-#
-#
-# class VideoUpdateSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = Video
-#         fields = [
-#             "id",
-#             "title",
-#             "slug",
-#             "description",
-#             "status",
-#             "duration",
-#             "priority",
-#             "video_file",
-#         ]
-#         read_only_fields = ["slug"]
-#         extra_kwargs = {
-#             "title": {"required": False},
-#             "description": {"required": False},
-#             "video_file": {"required": False},
-#             "status": {"required": False},
-#             "duration": {"required": False},
-#             "priority": {"required": False},
-#         }
-#
-#     def update(self, instance, validated_data):
-#         instance.title = validated_data.get("title", instance.title)
-#         instance.slug = slugify(instance.title, allow_unicode=True)
-#
-#         for field, value in validated_data.items():
-#             setattr(instance, field, value)
-#
-#         instance.save()
-#         return instance
-#
-#
-#
-#
-#
-#
-# class HomeBannerSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = HomeBanner
-#         fields = [
-#             "title",
-#             "image",
-#             "is_chosen",
-#             "order",
-#             "created_at",
-#             "updated_at",
-#         ]
-#         read_only_fields = ("created_at", "updated_at")
-#
-#     def validate(self, data):
-#         if data.get("is_chosen", False):
-#             instance_pk = self.instance.pk if self.instance else None
-#             count_banners = (
-#                 HomeBanner.objects.filter(is_chosen=True)
-#                 .exclude(pk=instance_pk)
-#                 .count()
-#             )
-#             if count_banners >= 3:
-#                 raise serializers.ValidationError(
-#                     {"is_chosen": "Only 3 banners can be selected"}
-#                 )
-#         return data
-#
-#
-# class EmployeeGameImageSerializer(
-#     SoftDeleteSerializerMixin, serializers.ModelSerializer
-# ):
-#     # برای اینکه بتوانیم در آپدیت، id را از ورودی بخوانیم
-#     id = serializers.IntegerField(required=False)
-#
-#     class Meta:
-#         model = GameImage
-#         # game را از ورودی حذف می‌کنیم؛ اتصال را خودمان انجام می‌دهیم
-#         exclude = ["game"]
-#
-#
-# class EmployeeGameSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-#     game_images = EmployeeGameImageSerializer(many=True, required=False)
-#
-#     class Meta:
-#         model = Game
-#         fields = "__all__"
-#         read_only_fields = ["is_deleted", "created_at", "updated_at"]
-#
-#     def create(self, validated_data):
-#         images_data = validated_data.pop("game_images", [])
-#         game = Game.objects.create(**validated_data)
-#         # ساخت تصاویر جدید (بدون نیاز به game در ورودی)
-#         for img_data in images_data:
-#             img_data.pop("id", None)  # ورودی id برای ساخت لازم نیست
-#             img_data.pop("game", None)  # امنیت بیشتر
-#             # اگر کاربر به اشتباه is_deleted=true فرستاد، ایجاد نکن
-#             if img_data.get("is_deleted"):
-#                 continue
-#             GameImage.objects.create(game=game, **img_data)
-#         return game
-#
-#     def update(self, instance, validated_data):
-#         images_data = validated_data.pop("game_images", None)
-#
-#         # آپدیت فیلدهای خود Game
-#         for attr, value in validated_data.items():
-#             setattr(instance, attr, value)
-#         instance.save()
-#
-#         if images_data is not None:
-#             # حذف همه عکس‌های قبلی
-#             instance.game_images.all().delete()
-#             # ساخت عکس‌های جدید
-#             for img_data in images_data:
-#                 img_data.pop("id", None)
-#                 img_data.pop("game", None)
-#                 if img_data.get("is_deleted"):
-#                     continue
-#                 GameImage.objects.create(game=instance, **img_data)
-#
-#         return instance
-#
-#
-# class GameBulkPriceUpdateSerializer(serializers.Serializer):
-#     TYPE_CHOICES = [
-#         ("online_ps4", "Online PS4"),
-#         ("online_ps5", "Online PS5"),
-#         ("offline_ps4", "Offline PS4"),
-#         ("offline_ps5", "Offline PS5"),
-#         ("data_ps4", "Data PS4"),
-#         ("data_ps5", "Data PS5"),
-#         ("xbox", "Xbox"),
-#         ("nintendo", "Nintendo"),
-#     ]
-#
-#     type = serializers.ChoiceField(choices=TYPE_CHOICES)
-#     price = serializers.IntegerField(min_value=0)
-#
-#     def get_db_field(self):
-#         """
-#         تبدیل ورودی کاربر به اسم واقعی فیلد دیتابیس
-#         """
-#         type_map = {
-#             "online_ps4": "online_ps4_price",
-#             "online_ps5": "online_ps5_price",
-#             "offline_ps4": "offline_ps4_price",
-#             "offline_ps5": "offline_ps5_price",
-#             "data_ps4": "data_ps4_price",
-#             "data_ps5": "data_ps5_price",
-#             "xbox": "xbox_price",
-#             "nintendo": "nintendo_price",
-#         }
-#         return type_map[self.validated_data["type"]]
-#
-#
-# class EmployeeBlogSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
-#     class Meta:
-#         model = BlogPost
-#         fields = "__all__"
-#         read_only_fields = ["created_at", "updated_at"]
-#
-#
-# class GameSearchSerializer(serializers.ModelSerializer):
-#     type = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Game
-#         fields = ["id", "title", "type"]
-#
-#     def get_type(self, obj):
-#         return "game"
-#
-#
-# class StoreProductSerializer(serializers.ModelSerializer):
-#     category_title = serializers.CharField(source="category.title", read_only=True)
-#     is_in_wishlist = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Product
-#         fields = [
-#             "id",
-#             "title",
-#             "main_img",
-#             "price",
-#             "stock",
-#             "category_id",
-#             "category_title",
-#             "is_in_wishlist",
-#         ]
-#
-#     def get_is_in_wishlist(self, obj):
-#         request = self.context.get("request")
-#         if not request or not request.user.is_authenticated:
-#             return None
-#         try:
-#             from crm.models import CustomerWishlist
-#             from django.contrib.contenttypes.models import ContentType
-#
-#             customer = request.user.customer
-#             ct = ContentType.objects.get_for_model(obj)
-#             return CustomerWishlist.objects.filter(
-#                 customer=customer, content_type=ct, object_id=obj.id, is_deleted=False
-#             ).exists()
-#         except Exception:
-#             return None
-#
-#
-# class StoreGameSerializer(serializers.ModelSerializer):
-#     is_in_wishlist = serializers.SerializerMethodField()
-#
-#     class Meta:
-#         model = Game
-#         fields = [
-#             "id",
-#             "title",
-#             "main_img",
-#             "volume",
-#             "description",
-#             "is_trend",
-#             "is_in_wishlist",
-#         ]
-#
-#     def get_is_in_wishlist(self, obj):
-#         request = self.context.get("request")
-#         if not request or not request.user.is_authenticated:
-#             return None
-#         try:
-#             from crm.models import CustomerWishlist
-#             from django.contrib.contenttypes.models import ContentType
-#
-#             customer = request.user.customer
-#             ct = ContentType.objects.get_for_model(obj)
-#             return CustomerWishlist.objects.filter(
-#                 customer=customer, content_type=ct, object_id=obj.id, is_deleted=False
-#             ).exists()
-#         except Exception:
-#             return None
+from rest_framework import serializers
+
+from website.models import (
+    AboutUs,
+    Game,
+    GameCart,
+    GameCartItem,
+    GameImage,
+    HomeBanner,
+    HomeSection,
+    HomeSectionItem,
+    ProductCart,
+    ProductCartItem,
+    StoreProduct,
+    StoreProductImage, GameCategory, StoreProductCategory, BlogPost,
+)
+
+
+# ============================================================
+# CUSTOMER SECTION — HOME / LANDING
+# ============================================================
+
+
+class HomeBannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeBanner
+        fields = ["id", "title", "image", "order"]
+
+
+class HomeSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeSection
+        fields = ["id", "title", "model_content"]
+
+
+class HomeSectionItemSerializer(serializers.ModelSerializer):
+    section_title = serializers.SerializerMethodField()
+    item_title = serializers.SerializerMethodField()
+    item_description = serializers.SerializerMethodField()
+    item_type = serializers.SerializerMethodField()
+    item_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = HomeSectionItem
+        fields = ["section", "section_title", "item_id",
+                  "item_title", "item_description", "item_image",
+                  "item_type", "is_active"]
+
+    def get_model(self, obj):
+        if obj.section.type == "game":
+            qs = Game.objects.filter(id=obj.item_id)
+        if obj.section.type == "product":
+            qs = StoreProduct.objects.filter(id=obj.item_id)
+        if obj.section.type == "blog":
+            qs = BlogPost.objects.filter(id=obj.item_id)
+        else:
+            qs = None
+        return qs
+
+    def get_section_title(self, obj):
+        return obj.section.title if obj.section else None
+
+    def get_item_title(self, obj):
+        model = self.get_model(obj)
+        if hasattr(model, "title"):
+            return model.title
+        return None
+
+    def get_item_description(self, obj):
+        model = self.get_model(obj)
+        if hasattr(model, "description"):
+            return model.description
+        return None
+
+    def get_item_image(self, obj):
+        model = self.get_model(obj)
+        if hasattr(model, "image"):
+            if hasattr(model.image, "url"):
+                return model.image.url
+        return None
+
+    def get_item_type(self, obj):
+        return obj.section.type if obj.section else None
+
+
+class AboutUsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AboutUs
+        fields = [
+            "id",
+            "title",
+            "logo",
+            "phone_number",
+            "email",
+            "address",
+            "e_namaad",
+            "e_namaad_url",
+        ]
+
+
+# ============================================================
+# CUSTOMER SECTION — PRODUCT STORE
+# ============================================================
+class StoreProductCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreProductCategory
+        fields = ["id", "title"]
+
+
+class StoreProductSearchSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+
+    class Meta:
+        model = StoreProduct
+        fields = ["id", "title", "product_id", "product_title", "product_main_img"]
+
+
+class StoreProductListSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+    product_price = serializers.DecimalField(
+        source="product.price", max_digits=20, decimal_places=5
+    )
+    product_stock = serializers.IntegerField(source="product.stock")
+
+    class Meta:
+        model = StoreProduct
+        fields = [
+            "id",
+            "title",
+            "product_id",
+            "product_title",
+            "product_main_img",
+            "product_price",
+            "product_stock",
+        ]
+
+
+class StoreProductDetailSerializer(serializers.ModelSerializer):
+    product_id = serializers.IntegerField(source="product.id")
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+    product_description = serializers.CharField(source="product.description")
+    product_price = serializers.DecimalField(
+        source="product.price", max_digits=20, decimal_places=5
+    )
+    product_category_id = serializers.IntegerField(source="product.category_id")
+    product_category_title = serializers.CharField(
+        source="product.category.title", allow_null=True
+    )
+    stock_count = serializers.IntegerField(read_only=True)
+    available_colors = serializers.ListField(
+        child=serializers.CharField(), read_only=True
+    )
+
+    class Meta:
+        model = StoreProduct
+        fields = [
+            "id",
+            "title",
+            "product_id",
+            "product_title",
+            "product_main_img",
+            "product_description",
+            "product_price",
+            "product_category_id",
+            "product_category_title",
+            "stock_count",
+            "available_colors",
+        ]
+
+
+class StoreProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreProductImage
+        fields = ["id", "img", "product_id"]
+
+
+# ============================================================
+# CUSTOMER SECTION — GAME STORE
+# ============================================================
+class GameCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameCategory
+        fields = ["id", "title"]
+
+
+class GameSearchSerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+
+    class Meta:
+        model = Game
+        fields = ["id", "title", "main_img", "category_id", "category_title"]
+
+
+class GameListSerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "title",
+            "main_img",
+            "description",
+            "volume",
+            "units_sold",
+            "category_id",
+            "category_title",
+        ]
+
+
+class GameDetailSerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+    account_stock = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "title",
+            "main_img",
+            "description",
+            "volume",
+            "units_sold",
+            "category_id",
+            "category_title",
+            "account_stock",
+        ]
+
+
+class GameImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameImage
+        fields = ["id", "img", "game_id"]
+
+
+# ============================================================
+# CUSTOMER SECTION — PRODUCT CART
+# ============================================================
+
+
+class ProductCartItemDetailSerializer(serializers.ModelSerializer):
+    store_product_id = serializers.SerializerMethodField()
+    store_product_title = serializers.SerializerMethodField()
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+    unit_price = serializers.DecimalField(
+        source="product.price", max_digits=20, decimal_places=5
+    )
+    total_item_price = serializers.DecimalField(
+        max_digits=20, decimal_places=5, read_only=True
+    )
+
+    class Meta:
+        model = ProductCartItem
+        fields = [
+            "id",
+            "product_id",
+            "store_product_id",
+            "store_product_title",
+            "product_title",
+            "product_main_img",
+            "unit_price",
+            "quantity",
+            "total_item_price",
+            "color",
+        ]
+
+    def get_store_product_id(self, obj):
+        sp = StoreProduct.objects.filter(product=obj.product, is_deleted=False).first()
+        return sp.id if sp else None
+
+    def get_store_product_title(self, obj):
+        sp = StoreProduct.objects.filter(product=obj.product, is_deleted=False).first()
+        return sp.title if sp else None
+
+
+class ProductCartDetailSerializer(serializers.ModelSerializer):
+    items = serializers.SerializerMethodField()
+    total_price = serializers.DecimalField(
+        max_digits=20, decimal_places=5, read_only=True
+    )
+    item_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProductCart
+        fields = ["id", "created_at", "items", "total_price", "item_count"]
+
+    def get_items(self, obj):
+        items = obj.cart_items.filter(is_deleted=False)
+        return ProductCartItemDetailSerializer(items, many=True).data
+
+    def get_item_count(self, obj):
+        return obj.cart_items.filter(is_deleted=False).count()
+
+
+class ProductCartItemListSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title")
+    total_item_price = serializers.DecimalField(
+        max_digits=20, decimal_places=5, read_only=True
+    )
+
+    class Meta:
+        model = ProductCartItem
+        fields = [
+            "id",
+            "product_id",
+            "product_title",
+            "quantity",
+            "total_item_price",
+            "color",
+        ]
+
+
+class ProductCartAddItemInputSerializer(serializers.Serializer):
+    store_product_id = serializers.IntegerField()
+    color = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+
+
+class ProductCartAddItemOutputSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductCartItem
+        fields = ["id", "product_id", "quantity", "color"]
+
+
+# ============================================================
+# CUSTOMER SECTION — GAME CART
+# ============================================================
+
+
+class GameCartItemGameSerializer(serializers.ModelSerializer):
+    game_id = serializers.IntegerField(source="game.id")
+    game_title = serializers.CharField(source="game.title")
+    game_main_img = serializers.ImageField(source="game.main_img")
+    game_volume = serializers.IntegerField(source="game.volume")
+
+    class Meta:
+        model = GameCartItem
+        fields = ["id", "game_id", "game_title", "game_main_img", "game_volume"]
+
+
+class GameCartDetailSerializer(serializers.ModelSerializer):
+    games = GameCartItemGameSerializer(many=True, read_only=True)
+    total_volume = serializers.SerializerMethodField()
+    volume_flag = serializers.SerializerMethodField()
+
+    class Meta:
+        model = GameCart
+        fields = ["id", "created_at", "games", "total_volume", "volume_flag"]
+
+    def get_total_volume(self, obj):
+        from website.services import get_cart_volume_info
+
+        customer = self.context.get("request").user.customer
+        info = get_cart_volume_info(customer)
+        return info["total_volume"]
+
+    def get_volume_flag(self, obj):
+        from website.services import get_cart_volume_info
+
+        customer = self.context.get("request").user.customer
+        info = get_cart_volume_info(customer)
+        return info["volume_flag"]
+
+
+class MatchedSonyAccountSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    username = serializers.CharField()
+    price = serializers.IntegerField(allow_null=True)
+    plus = serializers.BooleanField(allow_null=True)
+    region = serializers.CharField(allow_null=True)
+    status_id = serializers.SerializerMethodField()
+    status_title = serializers.SerializerMethodField()
+    match_count = serializers.IntegerField()
+
+    def get_status_id(self, obj):
+        return obj.status_id if hasattr(obj, "status_id") else None
+
+    def get_status_title(self, obj):
+        return obj.status.title if obj.status else None
+
+
+class GameCartVolumeSerializer(serializers.Serializer):
+    total_volume = serializers.IntegerField()
+    volume_flag = serializers.CharField()
+
+
+class GameCartAddItemInputSerializer(serializers.Serializer):
+    game_id = serializers.IntegerField()
+
+
+class GameCartAddItemOutputSerializer(serializers.ModelSerializer):
+    game_title = serializers.CharField(source="game.title")
+
+    class Meta:
+        model = GameCartItem
+        fields = ["id", "game_id", "game_title"]

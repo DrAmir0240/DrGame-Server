@@ -158,9 +158,12 @@ class ProductCart(models.Model):
 
 
 class ProductCartItem(models.Model):
-    cart = models.ForeignKey(ProductCart, on_delete=models.CASCADE, related_name="cart_items")
+    cart = models.ForeignKey(
+        ProductCart, on_delete=models.CASCADE, related_name="cart_items"
+    )
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="items")
     quantity = models.PositiveIntegerField(default=1)
+    color = models.CharField(max_length=50, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -257,7 +260,10 @@ class HomeBanner(models.Model):
 
 class HomeSection(models.Model):
     title = models.CharField(max_length=100)
-    model_content = models.CharField(max_length=5000, choices=(('game', 'بازی'), ('product', 'کالا'), ('blog', 'بلاگ')))
+    model_content = models.CharField(
+        max_length=5000,
+        choices=(("game", "بازی"), ("product", "کالا"), ("blog", "بلاگ")),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
@@ -267,12 +273,10 @@ class HomeSection(models.Model):
 
 
 class HomeSectionItem(models.Model):
-    section = models.ForeignKey(HomeSection, on_delete=models.CASCADE, related_name="items")
+    section = models.ForeignKey(
+        HomeSection, on_delete=models.CASCADE, related_name="items"
+    )
     item_id = models.BigIntegerField()
-    # item_title
-    # item_description
-    # item_image
-    # item_type
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
