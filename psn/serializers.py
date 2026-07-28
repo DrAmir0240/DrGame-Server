@@ -1,24 +1,32 @@
 from rest_framework import serializers
 
-from inventory.models import SonyAccountBank, SonyAccountStatus, SonyAccount, SonyAccountGame
+from orders.models import SonyAccountOrderCategory
 from platform_settings.serializers import SoftDeleteSerializerMixin
+from psn.models import SonyAccount, SonyAccountBank, SonyAccountGame, SonyAccountStatus
+from website.models import Game
 
 
-class EmployeeSonyAccountBankSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeeSonyAccountBankSerializer(
+    SoftDeleteSerializerMixin, serializers.ModelSerializer
+):
     class Meta:
         model = SonyAccountBank
         fields = "__all__"
 
 
-class EmployeeSonyAccountStatusSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeeSonyAccountStatusSerializer(
+    SoftDeleteSerializerMixin, serializers.ModelSerializer
+):
     class Meta:
         model = SonyAccountStatus
         fields = "__all__"
 
 
-class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.ModelSerializer):
+class EmployeeSonyAccountSerializer(
+    SoftDeleteSerializerMixin, serializers.ModelSerializer
+):
     employee_name = serializers.SerializerMethodField()
-    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field='title')
+    games = serializers.SlugRelatedField(many=True, read_only=True, slug_field="title")
     status_title = serializers.SerializerMethodField()
     game_ids = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False
@@ -27,7 +35,7 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
     class Meta:
         model = SonyAccount
         fields = "__all__"
-        read_only_fields = ['is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ["is_deleted", "created_at", "updated_at"]
 
     def get_employee_name(self, obj):
         if obj.employee:
@@ -47,6 +55,7 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
 
         if game_ids is not None:
             from django.db import transaction
+
             with transaction.atomic():
                 # همه‌ی بازی‌های قبلی این اکانت پاک میشن
                 SonyAccountGame.objects.filter(sony_account=instance).delete()
@@ -54,12 +63,10 @@ class EmployeeSonyAccountSerializer(SoftDeleteSerializerMixin, serializers.Model
                 # بازی‌های جدید ست میشن
                 for game_id in game_ids:
                     SonyAccountGame.objects.create(
-                        sony_account=instance,
-                        game_id=game_id
+                        sony_account=instance, game_id=game_id
                     )
 
         return instance
-
 
 
 class SonyAccountSearchSerializer(serializers.ModelSerializer):
@@ -67,7 +74,140 @@ class SonyAccountSearchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SonyAccount
-        fields = ['id', 'username', 'region', 'type']
+        fields = ["id", "username", "region", "type"]
 
     def get_type(self, obj):
         return "sony_account"
+
+
+# ============================================================
+# PSN WEBSITE SERIALIZERS (Phase 2)
+# ============================================================
+
+
+class SonyAccountListSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    status_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccount
+        fields = [
+            "id",
+            "username",
+            "employee_id",
+            "employee_name",
+            "status_id",
+            "status_title",
+            "region",
+            "plus",
+            "price",
+            "is_deleted",
+        ]
+
+    def get_employee_name(self, obj):
+        if obj.employee:
+            return f"{obj.employee.first_name} {obj.employee.last_name}"
+        return None
+
+    def get_status_title(self, obj):
+        return obj.status.title if obj.status else None
+
+
+class SonyAccountCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccount
+        fields = [
+            "username",
+            "password",
+            "employee",
+            "two_step",
+            "status",
+            "bank_account_status",
+            "bank_account",
+            "plus",
+            "region",
+            "price",
+            "sell_method",
+        ]
+
+
+class SonyAccountDetailSerializer(serializers.ModelSerializer):
+    employee_name = serializers.SerializerMethodField()
+    status_title = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SonyAccount
+        fields = [
+            "id",
+            "username",
+            "password",
+            "employee_id",
+            "employee_name",
+            "two_step",
+            "status_id",
+            "status_title",
+            "bank_account_status",
+            "bank_account_id",
+            "plus",
+            "region",
+            "price",
+            "sell_method",
+            "two_step_enabled",
+            "is_deleted",
+        ]
+
+    def get_employee_name(self, obj):
+        if obj.employee:
+            return f"{obj.employee.first_name} {obj.employee.last_name}"
+        return None
+
+    def get_status_title(self, obj):
+        return obj.status.title if obj.status else None
+
+
+class SonyAccountGameListSerializer(serializers.ModelSerializer):
+    game_title = serializers.CharField(source="game.title")
+    game_main_img = serializers.ImageField(source="game.main_img")
+
+    class Meta:
+        model = SonyAccountGame
+        fields = ["id", "game_id", "game_title", "game_main_img", "is_deleted"]
+
+
+class SonyAccountGameCreateInputSerializer(serializers.Serializer):
+    game_ids = serializers.ListField(child=serializers.IntegerField())
+
+
+class SonyAccountGameCreateOutputSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    game_id = serializers.IntegerField()
+    game_title = serializers.CharField(source="game.title")
+
+    class Meta:
+        model = SonyAccountGame
+        fields = ["id", "game_id", "game_title"]
+
+
+class PSNGameListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ["id", "title", "main_img"]
+
+
+class PSNSonyAccountStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountStatus
+        fields = ["id", "title"]
+
+
+class PSNSonyAccountCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SonyAccountOrderCategory
+        fields = [
+            "id",
+            "title",
+            "type",
+            "rent_time_days",
+            "account_capacity",
+            "base_price",
+        ]

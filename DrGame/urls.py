@@ -29,6 +29,7 @@ urlpatterns = [
     path("hr/", include("hr.urls")),
     path("inventory/", include("inventory.urls")),
     path("orders/", include("orders.urls")),
+    path("psn/", include("psn.urls")),
     path("support/", include("support.urls")),
     path("task-manager/", include("task_manager.urls")),
     path("users/", include("users.urls")),

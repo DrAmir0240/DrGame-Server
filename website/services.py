@@ -204,6 +204,13 @@ def add_game_to_cart(customer: Customer, game_id: int) -> GameCartItem:
     return GameCartItem.objects.create(game_cart=cart, game=game)
 
 
+def get_entities_for_store_product(store_product_pk: int) -> QuerySet:
+    store_product = get_object_or_404(StoreProduct, id=store_product_pk)
+    return ProductEntity.objects.filter(
+        product_id=store_product.product_id, is_deleted=False
+    )
+
+
 def remove_game_from_cart(customer: Customer, game_id: int) -> None:
     try:
         cart = GameCart.objects.get(user=customer)

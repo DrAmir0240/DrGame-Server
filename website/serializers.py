@@ -1,10 +1,15 @@
 from rest_framework import serializers
 
+from inventory.models import ProductEntity
 from website.models import (
     AboutUs,
+    BlogPost,
+    BlogPostCategory,
+    BlogPostImage,
     Game,
     GameCart,
     GameCartItem,
+    GameCategory,
     GameImage,
     HomeBanner,
     HomeSection,
@@ -12,7 +17,9 @@ from website.models import (
     ProductCart,
     ProductCartItem,
     StoreProduct,
-    StoreProductImage, GameCategory, StoreProductCategory, BlogPost,
+    StoreProductCategory,
+    StoreProductImage,
+    Video,
 )
 
 
@@ -42,9 +49,16 @@ class HomeSectionItemSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = HomeSectionItem
-        fields = ["section", "section_title", "item_id",
-                  "item_title", "item_description", "item_image",
-                  "item_type", "is_active"]
+        fields = [
+            "section",
+            "section_title",
+            "item_id",
+            "item_title",
+            "item_description",
+            "item_image",
+            "item_type",
+            "is_active",
+        ]
 
     def get_model(self, obj):
         if obj.section.type == "game":
@@ -397,3 +411,398 @@ class GameCartAddItemOutputSerializer(serializers.ModelSerializer):
     class Meta:
         model = GameCartItem
         fields = ["id", "game_id", "game_title"]
+
+
+# ============================================================
+# CUSTOMER SECTION — BLOG
+# ============================================================
+
+
+class CustomerBlogCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPostCategory
+        fields = ["id", "title", "description"]
+
+
+class CustomerBlogListSerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", allow_null=True)
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+    author_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BlogPost
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "cover_image",
+            "category_id",
+            "category_title",
+            "author_id",
+            "author_name",
+            "published_at",
+        ]
+
+    def get_author_name(self, obj):
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}"
+        return None
+
+
+class CustomerBlogDetailSerializer(serializers.ModelSerializer):
+    category_id = serializers.IntegerField(source="category.id", allow_null=True)
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+    author_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BlogPost
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "body",
+            "cover_image",
+            "category_id",
+            "category_title",
+            "author_id",
+            "author_name",
+            "published_at",
+        ]
+
+    def get_author_name(self, obj):
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}"
+        return None
+
+
+class CustomerBlogImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPostImage
+        fields = ["id", "image", "priority", "post_id"]
+
+
+# ============================================================
+# CUSTOMER SECTION — VIDEO
+# ============================================================
+
+
+class CustomerVideoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "description",
+            "duration",
+            "priority",
+            "status",
+        ]
+
+
+class CustomerVideoDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "description",
+            "video_file",
+            "duration",
+            "priority",
+            "status",
+        ]
+
+
+# ============================================================
+# EMPLOYEE SECTION — HOME
+# ============================================================
+
+
+class EmployeeHomeBannerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeBanner
+        fields = ["id", "title", "image", "is_chosen", "order"]
+
+
+class EmployeeHomeSectionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeSection
+        fields = ["id", "title", "model_content"]
+
+
+class EmployeeHomeSectionItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = HomeSectionItem
+        fields = ["id", "section_id", "item_id", "is_active"]
+
+
+class EmployeeAboutUsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AboutUs
+        fields = [
+            "id",
+            "title",
+            "logo",
+            "phone_number",
+            "email",
+            "address",
+            "e_namaad",
+            "e_namaad_url",
+            "is_active",
+        ]
+
+
+# ============================================================
+# EMPLOYEE SECTION — PRODUCT STORE
+# ============================================================
+
+
+class EmployeeStoreProductSearchSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+    product_stock = serializers.IntegerField(source="product.stock")
+
+    class Meta:
+        model = StoreProduct
+        fields = [
+            "id",
+            "title",
+            "product_id",
+            "product_title",
+            "product_main_img",
+            "product_stock",
+        ]
+
+
+class EmployeeStoreProductCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreProductCategory
+        fields = ["id", "title"]
+
+
+class EmployeeStoreProductListSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title")
+    product_main_img = serializers.ImageField(source="product.main_img")
+    product_price = serializers.DecimalField(
+        source="product.price", max_digits=20, decimal_places=5
+    )
+    product_stock = serializers.IntegerField(source="product.stock")
+
+    class Meta:
+        model = StoreProduct
+        fields = [
+            "id",
+            "title",
+            "product_id",
+            "product_title",
+            "product_main_img",
+            "product_price",
+            "product_stock",
+            "is_deleted",
+        ]
+
+
+class EmployeeStoreProductDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreProduct
+        fields = ["id", "title", "product_id"]
+
+
+class EmployeeProductEntitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductEntity
+        fields = ["id", "uni_id", "product_id", "color", "main_img"]
+
+
+class EmployeeStoreProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StoreProductImage
+        fields = ["id", "img", "product_id"]
+
+
+# ============================================================
+# EMPLOYEE SECTION — GAME STORE
+# ============================================================
+
+
+class EmployeeGameSearchSerializer(serializers.ModelSerializer):
+    category_title = serializers.CharField(source="category.title", allow_null=True)
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "title",
+            "main_img",
+            "category_id",
+            "category_title",
+            "volume",
+            "units_sold",
+        ]
+
+
+class EmployeeGameCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameCategory
+        fields = ["id", "title", "description"]
+
+
+class EmployeeGameListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "title",
+            "main_img",
+            "description",
+            "volume",
+            "units_sold",
+            "category_id",
+            "is_deleted",
+        ]
+
+
+class EmployeeGameDetailSerializer(serializers.ModelSerializer):
+    account_stock = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Game
+        fields = [
+            "id",
+            "title",
+            "main_img",
+            "description",
+            "volume",
+            "units_sold",
+            "category_id",
+            "account_stock",
+            "is_deleted",
+        ]
+
+
+class EmployeeGameImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GameImage
+        fields = ["id", "img", "game_id"]
+
+
+# ============================================================
+# EMPLOYEE SECTION — BLOG
+# ============================================================
+
+
+class EmployeeBlogSearchSerializer(serializers.ModelSerializer):
+    author_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = BlogPost
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "status",
+            "author_id",
+            "author_name",
+            "category_id",
+            "published_at",
+        ]
+
+    def get_author_name(self, obj):
+        if obj.author:
+            return f"{obj.author.first_name} {obj.author.last_name}"
+        return None
+
+
+class EmployeeBlogCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPostCategory
+        fields = ["id", "title", "description", "is_deleted"]
+
+
+class EmployeeBlogListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPost
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "body",
+            "cover_image",
+            "category_id",
+            "author_id",
+            "status",
+            "published_at",
+            "is_deleted",
+        ]
+
+
+class EmployeeBlogDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPost
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "body",
+            "cover_image",
+            "category_id",
+            "author_id",
+            "status",
+            "published_at",
+            "is_deleted",
+        ]
+
+
+class EmployeeBlogImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = BlogPostImage
+        fields = ["id", "image", "priority", "post_id"]
+
+
+# ============================================================
+# EMPLOYEE SECTION — VIDEO
+# ============================================================
+
+
+class EmployeeVideoSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = ["id", "title", "slug", "status", "duration", "priority"]
+
+
+class EmployeeVideoListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "description",
+            "video_file",
+            "status",
+            "duration",
+            "priority",
+        ]
+
+
+class EmployeeVideoDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Video
+        fields = [
+            "id",
+            "title",
+            "slug",
+            "description",
+            "video_file",
+            "status",
+            "duration",
+            "priority",
+        ]
+
+
+class EmployeeGameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Game
+        fields = ["id", "title", "main_img"]
