@@ -70,7 +70,7 @@ class CustomerTicketReplyView(generics.CreateAPIView):
         ticket = self.get_object()
         if ticket.status == "closed":
             return Response(
-                {"detail": "تیکت بسته است و نمی‌توانید پاسخ دهید"},
+                {"detail": "Ticket is closed and you cannot reply"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         serializer = self.get_serializer(data=request.data)
@@ -133,7 +133,7 @@ class EmployeeTicketAssignView(generics.UpdateAPIView):
             emp = Employee.objects.get(pk=serializer.validated_data["assigned_to_id"])
         except Employee.DoesNotExist:
             return Response(
-                {"detail": "کارمند نامعتبر"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Invalid employee"}, status=status.HTTP_400_BAD_REQUEST
             )
         ticket.assigned_to = emp
         ticket.status = "in_progress"
@@ -141,9 +141,9 @@ class EmployeeTicketAssignView(generics.UpdateAPIView):
         TicketMessage.objects.create(
             ticket=ticket,
             sender_type="system",
-            body=f"تیکت به {emp.first_name} {emp.last_name} اختصاص یافت",
+            body=f"Ticket assigned to {emp.first_name} {emp.last_name}",
         )
-        return Response({"detail": "تیکت اختصاص یافت"})
+        return Response({"detail": "Ticket assigned"})
 
 
 class EmployeeTicketStatusView(generics.UpdateAPIView):
@@ -168,9 +168,9 @@ class EmployeeTicketStatusView(generics.UpdateAPIView):
         TicketMessage.objects.create(
             ticket=ticket,
             sender_type="system",
-            body=f"وضعیت تیکت از {dict(Ticket.STATUS_CHOICES).get(old_status, old_status)} به {dict(Ticket.STATUS_CHOICES).get(new_status, new_status)} تغییر یافت",
+            body=f"Ticket status changed from {dict(Ticket.STATUS_CHOICES).get(old_status, old_status)} to {dict(Ticket.STATUS_CHOICES).get(new_status, new_status)}",
         )
-        return Response({"detail": "وضعیت تیکت تغییر یافت"})
+        return Response({"detail": "Ticket status changed"})
 
 
 class EmployeeTicketInternalNoteView(generics.CreateAPIView):
@@ -187,7 +187,7 @@ class EmployeeTicketInternalNoteView(generics.CreateAPIView):
         body = request.data.get("body", "")
         if not body:
             return Response(
-                {"detail": "متن یادداشت الزامی است"},
+                {"detail": "Note text is required"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         msg = TicketMessage.objects.create(

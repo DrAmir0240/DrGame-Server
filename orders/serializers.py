@@ -45,7 +45,7 @@ class EmployeeOrderItemSerializer(serializers.ModelSerializer):
     )
     quantity = serializers.IntegerField(min_value=1)
 
-    # اینها فقط read_only هستن
+    # these are read-only
     title = serializers.CharField(source='product.title', read_only=True)
     amount = serializers.DecimalField(source='product.price', max_digits=12, decimal_places=2, read_only=True)
     main_img = serializers.SerializerMethodField()
@@ -83,13 +83,13 @@ class EmployeeProductOrderSerializer(SoftDeleteSerializerMixin, serializers.Mode
         order_items_data = validated_data.pop('order_items')
         total_amount = 0
 
-        # ساخت Order
+        # Create Order
         order = Order.objects.create(
             order_type="employee",
             **validated_data
         )
 
-        # ساخت OrderItem ها
+        # Create OrderItems
         for item in order_items_data:
             product = item['product']
             quantity = item['quantity']
@@ -176,7 +176,7 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
 
         price = field_map.get(order_console_type)
         if price is None:
-            raise ValidationError(f"قیمت بازی '{game.title}' برای '{order_console_type}' تنظیم نشده است.")
+            raise ValidationError(f"Price for game '{game.title}' is not set for '{order_console_type}'.")
         return price
 
     def get_fields(self):
@@ -260,14 +260,14 @@ class EmployeeGameOrderSerializer(serializers.ModelSerializer):
             # ---------- status change logic ----------
             if old_status != new_status:
 
-                # رسپشن: تحویل به دکتر گیم
+                # reception: delivered to DrGame
                 if (
                         old_status == 'delivered_to_drgame_and_in_waiting_queue'
                         and new_status == 'delivered_to_drgame'
                 ):
                     instance.recipient = current_employee
 
-                # پورسانت‌ها: انتظار تحویل به مشتری
+                # commissions: awaiting delivery to the customer
                 if new_status == 'done':
                     for item in instance.games.filter(is_deleted=False):
 
@@ -406,21 +406,21 @@ class SonyAccountOrderStageActionSerializer(serializers.ModelSerializer):
 
         if action_type in ('update_order_field', 'update_order_item_field') and not target_field:
             raise serializers.ValidationError(
-                {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+                {'target_field': 'This field is required for this action type.'}
             )
 
-        # مطابق مدل‌های فعلی پروژه — is_done روی آیتم وجود ندارد
+        # matching current project models — items have no is_done
         VALID_ORDER_FIELDS = {'description'}
         VALID_ITEM_FIELDS = {'sony_account'}
 
         if action_type == 'update_order_field' and target_field not in VALID_ORDER_FIELDS:
             raise serializers.ValidationError(
-                {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+                {'target_field': f'Allowed values: {VALID_ORDER_FIELDS}'}
             )
 
         if action_type == 'update_order_item_field' and target_field not in VALID_ITEM_FIELDS:
             raise serializers.ValidationError(
-                {'target_field': f'مقدار مجاز: {VALID_ITEM_FIELDS}'}
+                {'target_field': f'Allowed values: {VALID_ITEM_FIELDS}'}
             )
 
         return attrs
@@ -629,23 +629,23 @@ class RepairOrderStageActionSerializer(serializers.ModelSerializer):
         action_type = attrs.get('action_type', getattr(self.instance, 'action_type', None))
         target_field = attrs.get('target_field', getattr(self.instance, 'target_field', ''))
 
-        # is_done روی RepairOrderDevice وجود ندارد → update_order_item_field بدون فیلد مجاز است
+        # RepairOrderDevice has no is_done → update_order_item_field is allowed without a field
         VALID_ORDER_FIELDS = {'description', 'repair_fee', 'final_amount'}
         VALID_ITEM_FIELDS = set()
 
         if action_type == 'update_order_item_field':
             raise serializers.ValidationError(
-                {'action_type': 'برای سفارش تعمیر آپدیت فیلد آیتم پشتیبانی نمی‌شود.'}
+                {'action_type': 'Item field updates are not supported for repair orders.'}
             )
 
         if action_type == 'update_order_field':
             if not target_field:
                 raise serializers.ValidationError(
-                    {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+                    {'target_field': 'This field is required for this action type.'}
                 )
             if target_field not in VALID_ORDER_FIELDS:
                 raise serializers.ValidationError(
-                    {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+                    {'target_field': f'Allowed values: {VALID_ORDER_FIELDS}'}
                 )
 
         return attrs
@@ -839,22 +839,22 @@ class ProductOrderStageActionSerializer(serializers.ModelSerializer):
         action_type = attrs.get('action_type', getattr(self.instance, 'action_type', None))
         target_field = attrs.get('target_field', getattr(self.instance, 'target_field', ''))
 
-        # is_done روی ProductOrderItem وجود ندارد → update_order_item_field بدون فیلد مجاز است
+        # ProductOrderItem has no is_done → update_order_item_field is allowed without a field
         VALID_ORDER_FIELDS = {'description'}
 
         if action_type == 'update_order_item_field':
             raise serializers.ValidationError(
-                {'action_type': 'برای سفارش محصول آپدیت فیلد آیتم پشتیبانی نمی‌شود.'}
+                {'action_type': 'Item field updates are not supported for product orders.'}
             )
 
         if action_type == 'update_order_field':
             if not target_field:
                 raise serializers.ValidationError(
-                    {'target_field': 'این فیلد برای این نوع اکشن الزامی است.'}
+                    {'target_field': 'This field is required for this action type.'}
                 )
             if target_field not in VALID_ORDER_FIELDS:
                 raise serializers.ValidationError(
-                    {'target_field': f'مقدار مجاز: {VALID_ORDER_FIELDS}'}
+                    {'target_field': f'Allowed values: {VALID_ORDER_FIELDS}'}
                 )
 
         return attrs

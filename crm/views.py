@@ -36,11 +36,10 @@ from crm.serializers import (
 # Customer List Views
 # ─────────────────────────────────────────
 @extend_schema(
-    tags=["باشگاه مشتریان - لیست مشتریان"],
     summary="لیست مشتریان عادی",
 )
 class CustomerListView(generics.ListAPIView):
-    """لیست مشتری‌های معمولی (بدون پروفایل B2B)"""
+    """List regular customers (without a B2B profile)"""
 
     serializer_class = CustomerListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
@@ -63,11 +62,10 @@ class CustomerListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["باشگاه مشتریان - لیست مشتریان"],
     summary="لیست مشتریان تجاری",
 )
 class B2BCustomerListView(generics.ListAPIView):
-    """لیست مشتری‌هایی که پروفایل B2B فعال دارن"""
+    """List customers with an active B2B profile"""
 
     serializer_class = CustomerListSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter]
@@ -91,24 +89,22 @@ class B2BCustomerListView(generics.ListAPIView):
 # Customer CRUD
 # ─────────────────────────────────────────
 @extend_schema(
-    tags=["باشگاه مشتریان - کراد مشتریان"],
     summary="افزودن مشتریان عادی",
 )
 class CustomerCreateView(generics.CreateAPIView):
-    """ایجاد مشتری جدید"""
+    """Create a new customer"""
 
     serializer_class = CustomerCreateUpdateSerializer
     queryset = Customer.objects.filter(is_deleted=False)
 
 
 @extend_schema(
-    tags=["باشگاه مشتریان - کراد مشتریان"],
     summary="جزعیات، حذف و ویرایش مشتریان عادی",
 )
 class CustomerRetrieveUpdateDestroyView(
     SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView
 ):
-    """دریافت، ویرایش و حذف نرم مشتری"""
+    """Retrieve, edit and soft-delete a customer"""
 
     serializer_class = CustomerCreateUpdateSerializer
 
@@ -120,11 +116,10 @@ class CustomerRetrieveUpdateDestroyView(
 # B2B Profile CRUD
 # ─────────────────────────────────────────
 @extend_schema(
-    tags=["باشگاه مشتریان - کراد پروفایل مشرتیان تجاری"],
     summary="افزودن مشتریان تجاری",
 )
 class B2BProfileCreateView(generics.CreateAPIView):
-    """ایجاد پروفایل B2B برای مشتری"""
+    """Create a B2B profile for a customer"""
 
     serializer_class = B2BProfileSerializer
 
@@ -136,13 +131,12 @@ class B2BProfileCreateView(generics.CreateAPIView):
 
 
 @extend_schema(
-    tags=["باشگاه مشتریان - کراد پروفایل مشتریان تجاری"],
     summary="جزعیات، حذف و ویرایش مشتریان تجاری",
 )
 class B2BProfileRetrieveUpdateDestroyView(
     SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView
 ):
-    """دریافت، ویرایش و حذف نرم پروفایل B2B — با customer_id"""
+    """Retrieve, edit and soft-delete a B2B profile — by customer_id"""
 
     serializer_class = B2BProfileSerializer
 
@@ -156,7 +150,6 @@ class B2BProfileRetrieveUpdateDestroyView(
 # Customer Report Stats
 # ─────────────────────────────────────────
 @extend_schema(
-    tags=["باشگاه مشتریان - جزعیات"],
     summary="لیست تراکنش‌های مشتری",
 )
 class CustomerTransactionListView(generics.ListAPIView):
@@ -178,7 +171,6 @@ class CustomerTransactionListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["باشگاه مشتریان - جزعیات"],
     summary="لیست فاکتورهای مشتری",
 )
 class CustomerInvoiceListView(generics.ListAPIView):
@@ -205,7 +197,6 @@ class CustomerInvoiceListView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["باشگاه مشتریان - جزعیات"],
     summary="خلاصه سفارشات و مالی مشتری",
 )
 class CustomerSummaryView(generics.GenericAPIView):
@@ -270,7 +261,6 @@ class CustomerSummaryView(generics.GenericAPIView):
 # SMS Services
 # ─────────────────────────────────────────
 @extend_schema(
-    tags=["باشگاه مشتریان - سرویس SMS"],
     summary="ارسال اس ام اس",
 )
 class CustomerSendSmsService(generics.GenericAPIView):
@@ -285,7 +275,7 @@ class CustomerSendSmsService(generics.GenericAPIView):
         customer_ids = data["customer_ids"]
         send_time = data.get("send_time")
 
-        # گرفتن شماره‌ها از مشتریان
+        # Collect phone numbers from customers
         recipients = []
         customers = Customer.objects.filter(id__in=customer_ids).select_related("user")
         for customer in customers:
@@ -294,21 +284,21 @@ class CustomerSendSmsService(generics.GenericAPIView):
 
         if not recipients:
             return Response(
-                {"detail": "هیچ شماره‌ای برای ارسال یافت نشد."},
+                {"detail": "No number found to send to."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # ساخت بادی برای IPPanel
+        # Build the body for IPPanel
         body = {
             "sending_type": "webservice",
-            "from_number": "+983000505",  # شماره فرستنده
+            "from_number": "+983000505",  # sender number
             "message": message,
             "params": {"recipients": recipients},
         }
         if send_time:
             body["send_time"] = send_time.strftime("%Y-%m-%d %H:%M:%S")
 
-        # ارسال درخواست به IPPanel
+        # Send request to IPPanel
         headers = {
             "Authorization": f"{settings.FARAZ_API_KEY}",
             "Content-Type": "application/json",
@@ -321,7 +311,7 @@ class CustomerSendSmsService(generics.GenericAPIView):
         if response.status_code == 200:
             return Response(response.json(), status=status.HTTP_200_OK)
         return Response(
-            {"detail": "خطا در ارسال پیامک", "response": response.text},
+            {"detail": "Error sending SMS", "response": response.text},
             status=response.status_code,
         )
 
@@ -401,7 +391,7 @@ class CustomerWishlistToggleView(generics.GenericAPIView):
         ct = content_type_map.get(object_type)
         if not ct:
             return Response(
-                {"detail": "نوع نامعتبر"}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Invalid type"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         wishlist_item, created = CustomerWishlist.objects.get_or_create(
@@ -481,14 +471,14 @@ class CustomerWalletChargeView(generics.GenericAPIView):
             wallet=wallet,
             amount=amount,
             type_="charge_gateway",
-            description="شارژ آنلاین (شبیه‌سازی‌شده)",
+            description="Online top-up (simulated)",
         )
 
         from crm.serializers import CustomerWalletTransactionSerializer
 
         return Response(
             {
-                "detail": "شارژ با موفقیت انجام شد",
+                "detail": "Wallet charged successfully",
                 "transaction": CustomerWalletTransactionSerializer(txn).data,
             },
             status=status.HTTP_200_OK,

@@ -50,17 +50,17 @@ class EmployeeSonyAccountSerializer(
     def update(self, instance, validated_data):
         game_ids = validated_data.pop("game_ids", None)
 
-        # آپدیت فیلدهای معمولی
+        # update regular fields
         instance = super().update(instance, validated_data)
 
         if game_ids is not None:
             from django.db import transaction
 
             with transaction.atomic():
-                # همه‌ی بازی‌های قبلی این اکانت پاک میشن
+                # all previous games of this account are cleared
                 SonyAccountGame.objects.filter(sony_account=instance).delete()
 
-                # بازی‌های جدید ست میشن
+                # the new games are set
                 for game_id in game_ids:
                     SonyAccountGame.objects.create(
                         sony_account=instance, game_id=game_id

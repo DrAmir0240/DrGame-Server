@@ -8,24 +8,24 @@ class Supplier(models.Model):
         ('legal', 'حقوقی'),
     )
 
-    # اطلاعات پایه
+    # Basic info
     name = models.CharField(max_length=200)
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='real')
     phone = models.CharField(max_length=20, blank=True, null=True)
     address = models.TextField(blank=True, null=True)
 
-    # اطلاعات مالی
-    account_number = models.CharField(max_length=50, blank=True, null=True, help_text="شماره حساب")
-    sheba = models.CharField(max_length=30, blank=True, null=True, help_text="شماره شبا")
+    # Financial info
+    account_number = models.CharField(max_length=50, blank=True, null=True, help_text="Account number")
+    sheba = models.CharField(max_length=30, blank=True, null=True, help_text="Sheba number")
 
-    # اطلاعات تجاری
+    # Business info
     national_id = models.CharField(
         max_length=20,
         blank=True,
         null=True,
-        help_text="کد ملی (حقیقی) یا شناسه ملی (حقوقی)"
+        help_text="National ID (individual) or National ID (legal)"
     )
-    tax_id = models.CharField(max_length=20, blank=True, null=True, help_text="شناسه مالیاتی")
+    tax_id = models.CharField(max_length=20, blank=True, null=True, help_text="Tax ID")
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -54,7 +54,7 @@ class Product(models.Model):
     category = models.ForeignKey(ProductCategory, on_delete=models.SET_NULL, null=True, related_name='products')
     price = models.DecimalField(decimal_places=5, max_digits=20)
     stock = models.IntegerField(default=0)
-    min_stock = models.PositiveIntegerField(default=0, help_text="حداقل موجودی")
+    min_stock = models.PositiveIntegerField(default=0, help_text="Minimum stock")
     supplier = models.ManyToManyField(Supplier, related_name='products')
     units_sold = models.PositiveIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)

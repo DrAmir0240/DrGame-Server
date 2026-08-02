@@ -31,14 +31,14 @@ class CreateAPIKeyView(APIView):
 
         if not phone or not password or not client_name:
             return Response(
-                {"error": "شماره موبایل، رمز عبور و نام کلاینت الزامی است"},
+                {"error": "Phone number, password and client name are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         user = authenticate(phone=phone, password=password)
         if not user or not user.is_superuser:
             return Response(
-                {"error": "فقط سوپریوزرها می‌توانند API Key تولید کنند"},
+                {"error": "Only superusers can generate API Keys"},
                 status=status.HTTP_401_UNAUTHORIZED
             )
 
@@ -54,7 +54,7 @@ class CreateAPIKeyView(APIView):
 
     def get(self, request):
         return Response(
-            {"error": "فقط متد POST پشتیبانی می‌شود"},
+            {"error": "Only POST method is supported"},
             status=status.HTTP_405_METHOD_NOT_ALLOWED
         )
 
@@ -71,19 +71,19 @@ class RequestOTPView(APIView):
             403: RequestOTPResponseSerializer,
             500: RequestOTPResponseSerializer
         },
-        description="ارسال درخواست OTP با شماره موبایل"
+        description="Request an OTP with a mobile number"
     )
     def post(self, request):
         # api_key = request.headers.get('X-API-Key')
         # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
         #     return Response(
-        #         {"error": "API Key نامعتبر است"},
+        #         {"error": "Invalid API Key"},
         #         status=status.HTTP_403_FORBIDDEN
         #     )
         phone = request.data.get('phone')
         if not phone:
             return Response(
-                {"error": "شماره موبایل الزامی است"},
+                {"error": "Phone number is required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         user = CustomUser.objects.filter(phone=phone).first()
@@ -97,11 +97,11 @@ class RequestOTPView(APIView):
         # success, message = otp.send_otp(phone=phone, otp_code=otp_code)
         # if not success:
         #     return Response(
-        #         {"error": f"خطا در ارسال OTP: {message}"},
+        #         {"error": f"OTP sending failed: {message}"},
         #         status=status.HTTP_500_INTERNAL_SERVER_ERROR
         #     )
         return Response(
-            {"message": "لطفاً کد OTP را وارد کنید"},
+            {"message": "Please enter the OTP code"},
             status=status.HTTP_200_OK
         )
 
@@ -118,10 +118,10 @@ class VerifyOTPView(APIView):
             403: VerifyOTPResponseSerializer,
             404: VerifyOTPResponseSerializer
         },
-        description="تأیید کد OTP و دریافت توکن‌های دسترسی"
+        description="Verify the OTP code and receive access tokens"
     )
     def post(self, request):
-        # (بقیه کد همونیه که فرستادی)
+        # (the rest of the code is the same as what you sent)
         # api_key = request.headers.get('X-API-Key')
         # if not api_key or not APIKey.objects.filter(key=api_key, is_active=True).exists():
         #     return Response(
@@ -199,7 +199,7 @@ class RefreshTokenView(APIView):
             401: RefreshTokenResponseSerializer,
             403: RefreshTokenResponseSerializer
         },
-        description="رفرش توکن برای دریافت توکن دسترسی جدید"
+        description="Refresh the token to obtain a new access token"
     )
     def post(self, request):
         # api_key = request.headers.get('X-API-Key')
@@ -256,8 +256,8 @@ class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [CustomJWTAuthentication]
 
-    def get(self, request):  # اضافه کردن متد GET
-        return self.post(request)  # استفاده از منطق POST
+    def get(self, request):  # add a GET method
+        return self.post(request)  # reuse the POST logic
 
     def post(self, request):
         # api_key = request.headers.get('X-API-Key')
@@ -339,7 +339,7 @@ class UserStatusView(APIView):
             #     "has_access_to_requests"
             # ]
 
-            # پر کردن دیکشنری پرمیشن‌ها به صورت True/False
+            # fill the permissions dict with True/False
             # for field in permission_fields:
             #     employee_permissions[field] = getattr(employee, field, False)
 

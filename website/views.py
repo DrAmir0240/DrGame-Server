@@ -115,7 +115,6 @@ class HomeBannerListView(generics.ListAPIView):
     queryset = HomeBanner.objects.filter(is_chosen=True).order_by("order")
 
     @extend_schema(
-        tags=["Website — Customer: Home"],
         summary="List active home banners",
     )
     def get(self, request, *args, **kwargs):
@@ -127,7 +126,6 @@ class HomeSectionListView(generics.ListAPIView):
     queryset = HomeSection.objects.filter(is_deleted=False)
 
     @extend_schema(
-        tags=["Website — Customer: Home"],
         summary="List home sections",
     )
     def get(self, request, *args, **kwargs):
@@ -138,7 +136,6 @@ class HomeSectionItemListView(generics.ListAPIView):
     serializer_class = HomeSectionItemSerializer
 
     @extend_schema(
-        tags=["Website — Customer: Home"],
         summary="List items for a home section",
     )
     def get(self, request, *args, **kwargs):
@@ -164,7 +161,6 @@ class AboutUsListView(generics.ListAPIView):
     queryset = AboutUs.objects.filter(is_deleted=False, is_active=True)
 
     @extend_schema(
-        tags=["Website — Customer: Home"],
         summary="List AboutUs objects",
     )
     def get(self, request, *args, **kwargs):
@@ -180,7 +176,6 @@ class StoreProductCategoryList(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        tags=["Website — Customer: Product Store"],
         summary="List of Product Categories",
     )
     def get(self, request, *args, **kwargs):
@@ -199,7 +194,6 @@ class StoreProductSearchView(generics.ListAPIView):
     ]
 
     @extend_schema(
-        tags=["Website — Customer: Product Store"],
         summary="Search store products",
     )
     def get(self, request, *args, **kwargs):
@@ -213,7 +207,6 @@ class StoreProductListView(generics.ListAPIView):
     filterset_class = StoreProductFilter
 
     @extend_schema(
-        tags=["Website — Customer: Product Store"],
         summary="List store products with filters",
     )
     def get(self, request, *args, **kwargs):
@@ -227,7 +220,6 @@ class StoreProductDetailView(generics.RetrieveAPIView):
     )
 
     @extend_schema(
-        tags=["Website — Customer: Product Store"],
         summary="Retrieve store product detail with stock and color info",
     )
     def get(self, request, *args, **kwargs):
@@ -247,7 +239,6 @@ class StoreProductImageListView(generics.ListAPIView):
     serializer_class = StoreProductImageSerializer
 
     @extend_schema(
-        tags=["Website — Customer: Product Store"],
         summary="List images for a store product",
     )
     def get(self, request, *args, **kwargs):
@@ -271,7 +262,6 @@ class GameCategoryList(generics.ListAPIView):
     permission_classes = [AllowAny]
 
     @extend_schema(
-        tags=["Website — Customer: Game Store"],
         summary="List of Game Categories",
     )
     def get(self, request, *args, **kwargs):
@@ -285,7 +275,6 @@ class GameSearchView(generics.ListAPIView):
     search_fields = ["title", "description", "category__title"]
 
     @extend_schema(
-        tags=["Website — Customer: Game Store"],
         summary="Search games",
     )
     def get(self, request, *args, **kwargs):
@@ -299,7 +288,6 @@ class GameListView(generics.ListAPIView):
     filterset_class = GameFilter
 
     @extend_schema(
-        tags=["Website — Customer: Game Store"],
         summary="List games with filters",
     )
     def get(self, request, *args, **kwargs):
@@ -311,7 +299,6 @@ class GameDetailView(generics.RetrieveAPIView):
     queryset = Game.objects.filter(is_deleted=False)
 
     @extend_schema(
-        tags=["Website — Customer: Game Store"],
         summary="Retrieve game detail with sony account stock count",
     )
     def get(self, request, *args, **kwargs):
@@ -330,7 +317,6 @@ class GameImageListView(generics.ListAPIView):
     serializer_class = GameImageSerializer
 
     @extend_schema(
-        tags=["Website — Customer: Game Store"],
         summary="List images for a game",
     )
     def get(self, request, *args, **kwargs):
@@ -353,7 +339,6 @@ class ProductCartDetailView(generics.RetrieveAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Product Cart"],
         summary="Get full product cart with totals",
     )
     def get(self, request, *args, **kwargs):
@@ -369,7 +354,6 @@ class ProductCartItemListView(generics.ListAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Product Cart"],
         summary="List items in the customer's product cart",
     )
     def get(self, request, *args, **kwargs):
@@ -386,7 +370,6 @@ class ProductCartAddItemView(generics.CreateAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Product Cart"],
         summary="Add product to cart or increment quantity",
         request=ProductCartAddItemInputSerializer,
         responses={201: ProductCartAddItemOutputSerializer},
@@ -418,7 +401,6 @@ class ProductCartRemoveItemView(generics.DestroyAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Product Cart"],
         summary="Remove product from cart or decrement quantity",
     )
     def delete(self, request, *args, **kwargs):
@@ -443,7 +425,6 @@ class GameCartDetailView(generics.RetrieveAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Game Cart"],
         summary="Get full game cart with volume info",
     )
     def get(self, request, *args, **kwargs):
@@ -459,7 +440,6 @@ class MatchedSonyAccountListView(generics.ListAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Game Cart"],
         summary="List sony accounts matching customer game cart",
     )
     def get(self, request, *args, **kwargs):
@@ -474,7 +454,6 @@ class GameCartVolumeView(generics.RetrieveAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Game Cart"],
         summary="Get total volume and size flag for game cart",
     )
     def get(self, request, *args, **kwargs):
@@ -488,7 +467,6 @@ class GameCartAddItemView(generics.CreateAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Game Cart"],
         summary="Add game to game cart",
         request=GameCartAddItemInputSerializer,
         responses={201: GameCartAddItemOutputSerializer},
@@ -513,7 +491,6 @@ class GameCartRemoveItemView(generics.DestroyAPIView):
     permission_classes = [IsCustomer]
 
     @extend_schema(
-        tags=["Website — Customer: Game Cart"],
         summary="Remove game from game cart",
     )
     def delete(self, request, *args, **kwargs):
@@ -538,7 +515,6 @@ class CustomerBlogCategoryListView(generics.ListAPIView):
     queryset = BlogPostCategory.objects.filter(is_deleted=False)
 
     @extend_schema(
-        tags=["Website — Customer: Blog"],
         summary="List blog categories",
     )
     def get(self, request, *args, **kwargs):
@@ -552,7 +528,6 @@ class CustomerBlogListView(generics.ListAPIView):
     filterset_class = CustomerBlogFilter
 
     @extend_schema(
-        tags=["Website — Customer: Blog"],
         summary="List published blog posts",
     )
     def get(self, request, *args, **kwargs):
@@ -564,7 +539,6 @@ class CustomerBlogDetailView(generics.RetrieveAPIView):
     queryset = BlogPost.objects.filter(is_deleted=False, status="published")
 
     @extend_schema(
-        tags=["Website — Customer: Blog"],
         summary="Retrieve blog post detail",
     )
     def get(self, request, *args, **kwargs):
@@ -575,7 +549,6 @@ class CustomerBlogImageListView(generics.ListAPIView):
     serializer_class = CustomerBlogImageSerializer
 
     @extend_schema(
-        tags=["Website — Customer: Blog"],
         summary="List images for a blog post",
     )
     def get(self, request, *args, **kwargs):
@@ -596,7 +569,6 @@ class CustomerVideoListView(generics.ListAPIView):
     queryset = Video.objects.filter(status="published").order_by("priority")
 
     @extend_schema(
-        tags=["Website — Customer: Video"],
         summary="List published videos",
     )
     def get(self, request, *args, **kwargs):
@@ -608,7 +580,6 @@ class CustomerVideoDetailView(generics.RetrieveAPIView):
     queryset = Video.objects.filter(status="published")
 
     @extend_schema(
-        tags=["Website — Customer: Video"],
         summary="Retrieve video detail with file URL",
     )
     def get(self, request, *args, **kwargs):
@@ -626,14 +597,12 @@ class EmployeeHomeBannerListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home banners",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home banners",
     )
     def post(self, request, *args, **kwargs):
@@ -646,28 +615,24 @@ class EmployeeHomeBannerDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home banner",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home banner",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home banner",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home banner",
     )
     def delete(self, request, *args, **kwargs):
@@ -680,14 +645,12 @@ class EmployeeHomeSectionListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home sections",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home sections",
     )
     def post(self, request, *args, **kwargs):
@@ -700,28 +663,24 @@ class EmployeeHomeSectionDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section",
     )
     def delete(self, request, *args, **kwargs):
@@ -738,14 +697,12 @@ class EmployeeHomeSectionItemListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home section items",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create home section items",
     )
     def post(self, request, *args, **kwargs):
@@ -765,28 +722,24 @@ class EmployeeHomeSectionItemDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section item",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section item",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section item",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete a home section item",
     )
     def delete(self, request, *args, **kwargs):
@@ -803,14 +756,12 @@ class EmployeeAboutUsListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create about-us entries",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="List or create about-us entries",
     )
     def post(self, request, *args, **kwargs):
@@ -823,28 +774,24 @@ class EmployeeAboutUsDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete an about-us entry",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete an about-us entry",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete an about-us entry",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Home"],
         summary="Retrieve, update or delete an about-us entry",
     )
     def delete(self, request, *args, **kwargs):
@@ -873,7 +820,6 @@ class EmployeeStoreProductSearchView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Search store products (employee)",
     )
     def get(self, request, *args, **kwargs):
@@ -886,14 +832,12 @@ class EmployeeStoreProductCategoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create product categories",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create product categories",
     )
     def post(self, request, *args, **kwargs):
@@ -906,28 +850,24 @@ class EmployeeStoreProductCategoryDetailView(generics.RetrieveUpdateDestroyAPIVi
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a product category",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a product category",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a product category",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a product category",
     )
     def delete(self, request, *args, **kwargs):
@@ -942,14 +882,12 @@ class EmployeeStoreProductListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create store products (employee)",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create store products (employee)",
     )
     def post(self, request, *args, **kwargs):
@@ -962,28 +900,24 @@ class EmployeeStoreProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product",
     )
     def delete(self, request, *args, **kwargs):
@@ -999,7 +933,6 @@ class EmployeeProductEntityListView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List product entities for a store product",
     )
     def get(self, request, *args, **kwargs):
@@ -1015,14 +948,12 @@ class EmployeeStoreProductImageListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create images for a store product",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="List or create images for a store product",
     )
     def post(self, request, *args, **kwargs):
@@ -1044,28 +975,24 @@ class EmployeeStoreProductImageDetailView(generics.RetrieveUpdateDestroyAPIView)
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product image",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product image",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product image",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Product Store"],
         summary="Retrieve, update or delete a store product image",
     )
     def delete(self, request, *args, **kwargs):
@@ -1093,7 +1020,6 @@ class EmployeeGameSearchView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Search games (employee)",
     )
     def get(self, request, *args, **kwargs):
@@ -1106,14 +1032,12 @@ class EmployeeGameCategoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create game categories",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create game categories",
     )
     def post(self, request, *args, **kwargs):
@@ -1126,28 +1050,24 @@ class EmployeeGameCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game category",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game category",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game category",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game category",
     )
     def delete(self, request, *args, **kwargs):
@@ -1166,14 +1086,12 @@ class EmployeeGameListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create games (employee)",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create games (employee)",
     )
     def post(self, request, *args, **kwargs):
@@ -1186,28 +1104,24 @@ class EmployeeGameDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game (employee)",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game (employee)",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game (employee)",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game (employee)",
     )
     def delete(self, request, *args, **kwargs):
@@ -1231,14 +1145,12 @@ class EmployeeGameImageListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create game images",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="List or create game images",
     )
     def post(self, request, *args, **kwargs):
@@ -1258,28 +1170,24 @@ class EmployeeGameImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game image",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game image",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game image",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Game Store"],
         summary="Retrieve, update or delete a game image",
     )
     def delete(self, request, *args, **kwargs):
@@ -1314,7 +1222,6 @@ class EmployeeBlogSearchView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Search blog posts (employee)",
     )
     def get(self, request, *args, **kwargs):
@@ -1329,14 +1236,12 @@ class EmployeeBlogCategoryListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog categories",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog categories",
     )
     def post(self, request, *args, **kwargs):
@@ -1349,28 +1254,24 @@ class EmployeeBlogCategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog category",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog category",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog category",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog category",
     )
     def delete(self, request, *args, **kwargs):
@@ -1389,14 +1290,12 @@ class EmployeeBlogListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog posts",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog posts",
     )
     def post(self, request, *args, **kwargs):
@@ -1412,28 +1311,24 @@ class EmployeeBlogDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post",
     )
     def delete(self, request, *args, **kwargs):
@@ -1449,14 +1344,12 @@ class EmployeeBlogImageListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog post images",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="List or create blog post images",
     )
     def post(self, request, *args, **kwargs):
@@ -1476,28 +1369,24 @@ class EmployeeBlogImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post image",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post image",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post image",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Blog"],
         summary="Retrieve, update or delete a blog post image",
     )
     def delete(self, request, *args, **kwargs):
@@ -1521,7 +1410,6 @@ class EmployeeVideoSearchView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="Search videos (employee)",
     )
     def get(self, request, *args, **kwargs):
@@ -1536,14 +1424,12 @@ class EmployeeVideoListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="List or create videos (employee)",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="List or create videos (employee)",
     )
     def post(self, request, *args, **kwargs):
@@ -1556,28 +1442,24 @@ class EmployeeVideoDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="Retrieve, update or delete a video",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="Retrieve, update or delete a video",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="Retrieve, update or delete a video",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["Website — Employee: Video"],
         summary="Retrieve, update or delete a video",
     )
     def delete(self, request, *args, **kwargs):

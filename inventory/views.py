@@ -32,7 +32,7 @@ from platform_settings.views import SoftDeleteViewMixin
 # ---------------------------------------------------------------------------
 # Supplier
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - تامین کننده'], summary='لیست و ساخت')
+@extend_schema(summary='لیست و ساخت')
 class SupplierListCreateView(generics.ListCreateAPIView):
     serializer_class = SupplierSerializer
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -45,7 +45,7 @@ class SupplierListCreateView(generics.ListCreateAPIView):
         return Supplier.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['انبارداری - تامین کننده'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class SupplierRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = SupplierSerializer
     http_method_names = ("get", "patch", "delete")
@@ -57,13 +57,13 @@ class SupplierRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUp
         try:
             return super().get_object()
         except Supplier.DoesNotExist:
-            raise NotFound(detail="تامین‌کننده یافت نشد.")
+            raise NotFound(detail="Supplier not found.")
 
 
 # ---------------------------------------------------------------------------
 # ProductCategory
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - دسته بندی کالاها'], summary='لیست و ساخت')
+@extend_schema(summary='لیست و ساخت')
 class ProductCategoryListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductCategorySerializer
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -76,7 +76,7 @@ class ProductCategoryListCreateView(generics.ListCreateAPIView):
         return ProductCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['انبارداری - دسته بندی کالاها'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class ProductCategoryRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductCategorySerializer
     http_method_names = ("get", "patch", "delete")
@@ -88,13 +88,13 @@ class ProductCategoryRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.Ret
         try:
             return super().get_object()
         except ProductCategory.DoesNotExist:
-            raise NotFound(detail="دسته‌بندی یافت نشد.")
+            raise NotFound(detail="Category not found.")
 
 
 # ---------------------------------------------------------------------------
 # Product
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - کالاها'], summary='آمار')
+@extend_schema(summary='آمار')
 class ProductStatsView(generics.GenericAPIView):
     serializer_class = InventoryStatsSerializer
 
@@ -115,7 +115,7 @@ class ProductStatsView(generics.GenericAPIView):
         return Response(serializer.data)
 
 
-@extend_schema(tags=['انبارداری - کالاها'], summary='جستجوی کالاها')
+@extend_schema(summary='جستجوی کالاها')
 class ProductSearchView(generics.ListAPIView):
     serializer_class = ProductSerializer
     filter_backends = (filters.SearchFilter,)
@@ -129,7 +129,7 @@ class ProductSearchView(generics.ListAPIView):
         )
 
 
-@extend_schema(tags=['انبارداری - کالاها'], summary='لیست با فیلتربندی کامل و ساخت')
+@extend_schema(summary='لیست با فیلتربندی کامل و ساخت')
 class ProductListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductSerializer
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -146,7 +146,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
         )
 
 
-@extend_schema(tags=['انبارداری - کالاها'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class ProductRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductSerializer
     http_method_names = ("get", "patch", "delete")
@@ -162,10 +162,10 @@ class ProductRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpd
         try:
             return super().get_object()
         except Product.DoesNotExist:
-            raise NotFound(detail="محصول یافت نشد.")
+            raise NotFound(detail="Product not found.")
 
 
-@extend_schema(tags=['انبارداری - کالاها'], summary='چویسس برای دراپ‌داون ساخت کالا')
+@extend_schema(summary='چویسس برای دراپ‌داون ساخت کالا')
 class ProductDropdownView(generics.GenericAPIView):
     serializer_class = ProductDropdownSerializer
 
@@ -181,7 +181,7 @@ class ProductDropdownView(generics.GenericAPIView):
 # ---------------------------------------------------------------------------
 # ProductEntity
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - موجودی کالاها'], summary='لیست بر اساس کالاها و ساخت')
+@extend_schema(summary='لیست بر اساس کالاها و ساخت')
 class ProductEntityListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductEntitySerializer
     filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
@@ -193,7 +193,7 @@ class ProductEntityListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         product_id = self.kwargs.get("product_id")
         if not Product.objects.filter(id=product_id, is_deleted=False).exists():
-            raise NotFound(detail="محصول یافت نشد.")
+            raise NotFound(detail="Product not found.")
         return ProductEntity.objects.filter(product_id=product_id, is_deleted=False)
 
     def perform_create(self, serializer):
@@ -201,11 +201,11 @@ class ProductEntityListCreateView(generics.ListCreateAPIView):
         try:
             product = Product.objects.get(id=product_id, is_deleted=False)
         except Product.DoesNotExist:
-            raise NotFound(detail="محصول یافت نشد.")
+            raise NotFound(detail="Product not found.")
         serializer.save(product=product)
 
 
-@extend_schema(tags=['انبارداری - موجودی کالاها'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class ProductEntityRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductEntitySerializer
     http_method_names = ("get", "patch", "delete")
@@ -218,13 +218,13 @@ class ProductEntityRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.Retri
         try:
             return super().get_object()
         except ProductEntity.DoesNotExist:
-            raise NotFound(detail="موجودیت محصول یافت نشد.")
+            raise NotFound(detail="Product entity not found.")
 
 
 # ---------------------------------------------------------------------------
 # ProductImage
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - عکس کالاها'], summary='لیست و ساخت')
+@extend_schema(summary='لیست و ساخت')
 class ProductImageListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductImageSerializer
     filter_backends = (DjangoFilterBackend,)
@@ -233,7 +233,7 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         product_id = self.kwargs.get("product_id")
         if not Product.objects.filter(id=product_id, is_deleted=False).exists():
-            raise NotFound(detail="محصول یافت نشد.")
+            raise NotFound(detail="Product not found.")
         return ProductImage.objects.filter(product_id=product_id, is_deleted=False)
 
     def perform_create(self, serializer):
@@ -241,11 +241,11 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
         try:
             product = Product.objects.get(id=product_id, is_deleted=False)
         except Product.DoesNotExist:
-            raise NotFound(detail="محصول یافت نشد.")
+            raise NotFound(detail="Product not found.")
         serializer.save(product=product)
 
 
-@extend_schema(tags=['انبارداری - عکس کالاها'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class ProductImageRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductImageSerializer
     http_method_names = ("get", "patch", "delete")
@@ -258,13 +258,13 @@ class ProductImageRetrieveUpdateDestroyView(SoftDeleteViewMixin, generics.Retrie
         try:
             return super().get_object()
         except ProductImage.DoesNotExist:
-            raise NotFound(detail="تصویر محصول یافت نشد.")
+            raise NotFound(detail="Product image not found.")
 
 
 # ---------------------------------------------------------------------------
 # InventoryMovement
 # ---------------------------------------------------------------------------
-@extend_schema(tags=['انبارداری - گردش انبار'], summary='لیست و ساخت')
+@extend_schema(summary='لیست و ساخت')
 class InventoryMovementListCreateView(generics.ListCreateAPIView):
     serializer_class = InventoryMovementSerializer
     filter_backends = (DjangoFilterBackend, filters.OrderingFilter)
@@ -279,7 +279,7 @@ class InventoryMovementListCreateView(generics.ListCreateAPIView):
         )
 
 
-@extend_schema(tags=['انبارداری - گردش انبار'], summary='جزعیات و ویرایش و حذف')
+@extend_schema(summary='جزعیات و ویرایش و حذف')
 class InventoryMovementRetrieveUpdateDestroyView(
     SoftDeleteViewMixin, generics.RetrieveUpdateDestroyAPIView
 ):
@@ -296,10 +296,10 @@ class InventoryMovementRetrieveUpdateDestroyView(
         try:
             return super().get_object()
         except InventoryMovement.DoesNotExist:
-            raise NotFound(detail="حرکت انبار یافت نشد.")
+            raise NotFound(detail="Inventory movement not found.")
 
 
-@extend_schema(tags=['انبارداری - گردش انبار'], summary='چویسس برای دراپ‌داون')
+@extend_schema(summary='چویسس برای دراپ‌داون')
 class InventoryMovementDropdownView(generics.ListAPIView):
     serializer_class = InventoryMovementDropdownSerializer
     filter_backends = (DjangoFilterBackend,)

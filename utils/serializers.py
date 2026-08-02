@@ -6,7 +6,7 @@ from inventory.models import SonyAccount
 
 
 class Set2FAURISerializer(serializers.Serializer):
-    uri = serializers.CharField()  # URI کامل otpauth:// که از سونی میاد
+    uri = serializers.CharField()  # full otpauth:// URI coming from Sony
 
 
 class OTPSerializer(serializers.Serializer):

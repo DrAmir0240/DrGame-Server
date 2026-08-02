@@ -81,7 +81,7 @@ class TicketMessage(models.Model):
         upload_to="tickets/attachments/", null=True, blank=True
     )
     is_internal = models.BooleanField(
-        default=False, help_text="یادداشت داخلی — مشتری نمی‌بینه"
+        default=False, help_text="Internal note — not visible to the customer"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)

@@ -13,7 +13,7 @@ urlpatterns = [
     path('roles/<int:pk>/update/', views.EmployeeRoleUpdateView.as_view(), name='role-update'),
     path('roles/<int:pk>/delete/', views.EmployeeRoleDeleteView.as_view(), name='role-delete'),
 
-    # ── بخش ۱ — Employees ────────────────────────────────────
+    # ── Section 1 — Employees ────────────────────────────────────
     path('employees/', views.EmployeeListView.as_view(), name='employee-list'),
     path('employees/create/', views.EmployeeCreateView.as_view(), name='employee-create'),
     path('employees/<int:pk>/', views.EmployeeDetailView.as_view(), name='employee-detail'),
@@ -31,20 +31,20 @@ urlpatterns = [
     path('overtimes/<int:pk>/approve/', views.EmployeeOvertimeApproveView.as_view(), name='overtime-approve'),
     path('overtimes/<int:pk>/delete/', views.EmployeeOvertimeDeleteView.as_view(), name='overtime-delete'),
 
-    # ── بخش ۲ — Recruitment ──────────────────────────────────
+    # ── Section 2 — Recruitment ──────────────────────────────────
     path('resumes/', views.EmploymentResumeListView.as_view(), name='resume-list'),
     path('resumes/<int:pk>/', views.EmploymentResumeDetailView.as_view(), name='resume-detail'),
     path('resumes/create/', views.EmploymentResumeCreateView.as_view(), name='resume-create'),
     path('resumes/<int:pk>/delete/', views.EmploymentResumeDeleteView.as_view(), name='resume-delete'),
 
-    # ── بخش ۳ — Payroll ──────────────────────────────────────
+    # ── Section 3 — Payroll ──────────────────────────────────────
     path('payrolls/', views.PayrollListView.as_view(), name='payroll-list'),
     path('payrolls/create/', views.PayrollCreateView.as_view(), name='payroll-create'),
     path('payrolls/<int:pk>/', views.PayrollDetailView.as_view(), name='payroll-detail'),
     path('payrolls/<int:invoice_id>/transactions/', views.PayrollTransactionListView.as_view(),
          name='payroll-transactions'),
 
-    # ── بخش ۴ — Requests ─────────────────────────────────────
+    # ── Section 4 — Requests ─────────────────────────────────────
     path('request-types/', views.EmployeeRequestTypeListView.as_view(), name='request-type-list'),
     path('request-types/create/', views.EmployeeRequestTypeCreateView.as_view(), name='request-type-create'),
     path('request-types/<int:pk>/delete/', views.EmployeeRequestTypeDeleteView.as_view(),
@@ -56,7 +56,7 @@ urlpatterns = [
     path('requests/<int:pk>/status/', views.EmployeeRequestStatusUpdateView.as_view(), name='request-status-update'),
     path('requests/<int:pk>/delete/', views.EmployeeRequestDeleteView.as_view(), name='request-delete'),
 
-    # ── بخش ۵ — Attendance ───────────────────────────────────
+    # ── Section 5 — Attendance ───────────────────────────────────
     path('arrivals/', views.EmployeeArrivalListView.as_view(), name='arrival-list'),
     path('arrivals/create/', views.EmployeeArrivalCreateView.as_view(), name='arrival-create'),
     path('arrivals/<int:pk>/update/', views.EmployeeArrivalUpdateView.as_view(), name='arrival-update'),

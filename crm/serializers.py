@@ -27,7 +27,7 @@ class CustomerListSerializer(serializers.ModelSerializer):
         return obj.user.full_name()
 
     def get_phone(self, obj):
-        return obj.user.phone  # یا هر فیلدی که CustomUser داره
+        return obj.user.phone  # or any field that CustomUser has
 
     def get_has_b2b(self, obj):
         return hasattr(obj, "b2b_profile") and not obj.b2b_profile.is_deleted
@@ -244,7 +244,7 @@ class CustomerWishlistWriteSerializer(serializers.ModelSerializer):
         if not model_class.objects.filter(
             pk=data["object_id"], is_deleted=False
         ).exists():
-            raise serializers.ValidationError("آیتم مورد نظر یافت نشد")
+            raise serializers.ValidationError("Requested item not found")
         return data
 
     def create(self, validated_data):

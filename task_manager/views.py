@@ -12,7 +12,11 @@ from task_manager.filters import PlannedTaskFilter, DailyTaskFilter
 from task_manager.helpers import get_task_stats, get_employee
 from task_manager.mixins import _PermissionFilterMixin, _TaskActionMixin
 from task_manager.models import PlannedTask, DailyTask
-from task_manager.permissions import task_management_permissions, has_read_permission, has_write_permission
+from task_manager.permissions import (
+    task_management_permissions,
+    has_read_permission,
+    has_write_permission,
+)
 from task_manager.serializers import (
     TaskManagerDashboardSerializer,
     TaskChoicesSerializer,
@@ -22,23 +26,25 @@ from task_manager.serializers import (
     OrganizeTaskCreateSerializer,
     PendingApprovalSerializer,
     ApproveRejectSerializer,
-    TaskSearchSerializer, DailyTaskListSerializer, PersonalDailyTaskSerializer, OrganizeDailyTaskSerializer,
+    TaskSearchSerializer,
+    DailyTaskListSerializer,
+    PersonalDailyTaskSerializer,
+    OrganizeDailyTaskSerializer,
     DailyTaskSearchSerializer,
 )
 
 
 # ─── 1. stats and choices ────────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="Task Manager Dashboard Stats",
     description="""
-    برگرداندن آمار تسک‌ها برای داشبورد.
+    Returns task statistics for the dashboard.
 
-    - my_tasks : آمار تسک‌های کاربر جاری
-    - all_tasks : آمار تمام پرسنل (در صورت داشتن دسترسی)
-    - permissions : دسترسی‌های Task Manager
+    - my_tasks : stats of the current user's tasks
+    - all_tasks : stats of all staff (if the user has access)
+    - permissions : Task Manager permissions
     """,
-    responses=TaskManagerDashboardSerializer
+    responses=TaskManagerDashboardSerializer,
 )
 class PlannedTaskManagerDashboardAPIView(generics.GenericAPIView):
     serializer_class = TaskManagerDashboardSerializer
@@ -49,19 +55,14 @@ class PlannedTaskManagerDashboardAPIView(generics.GenericAPIView):
 
         permissions = task_management_permissions(employee.role)
 
-        my_queryset = PlannedTask.objects.filter(
-            employee=employee,
-            is_deleted=False
-        )
+        my_queryset = PlannedTask.objects.filter(employee=employee, is_deleted=False)
 
         my_tasks = get_task_stats(my_queryset)
 
         all_tasks = None
 
         if has_read_permission(employee):
-            all_queryset = PlannedTask.objects.filter(
-                is_deleted=False
-            )
+            all_queryset = PlannedTask.objects.filter(is_deleted=False)
 
             all_tasks = get_task_stats(all_queryset)
 
@@ -77,11 +78,10 @@ class PlannedTaskManagerDashboardAPIView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="دریافت انتخاب‌ها و مقادیر ثابت",
     description=(
-            "لیست کارمندان (id + نام)، وضعیت‌ها، اولویت‌ها و انواع تسک را "
-            "برمی‌گرداند. برای پر کردن dropdown های فرم ایجاد/ویرایش تسک استفاده می‌شود."
+        "Returns the list of employees (id + name), statuses, priorities and task types. "
+        "Used to fill the dropdowns of the task create/edit form."
     ),
     responses={200: TaskChoicesSerializer},
 )
@@ -95,14 +95,17 @@ class TaskChoicesView(generics.RetrieveAPIView):
 
 # ─── 2. search ────────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="جستجو در تسک‌ها",
     description=(
-            "جستجو بر اساس عنوان یا توضیحات. "
-            "کاربران با دسترسی can_read_task_manager همه تسک‌ها را می‌بینند؛ "
-            "سایرین فقط تسک‌های خودشان را."
+        "Searches by title or description. "
+        "Users with can_read_task_manager access see all tasks; "
+        "others only see their own."
     ),
-    parameters=[OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True)],
+    parameters=[
+        OpenApiParameter(
+            "q", OpenApiTypes.STR, description="search text", required=True
+        )
+    ],
     responses={200: TaskSearchSerializer(many=True)},
 )
 class PlannedTaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
@@ -125,20 +128,30 @@ class PlannedTaskSearchView(_PermissionFilterMixin, generics.ListAPIView):
 
 # ─── 3. list ──────────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="لیست تسک‌ها با فیلتر",
     description=(
-            "لیست تسک‌ها را برمی‌گرداند. می‌توان بر اساس status، priority، type و "
-            "employee_id فیلتر کرد. "
-            "کاربران با دسترسی can_read_task_manager همه تسک‌ها را می‌بینند؛ "
-            "سایرین فقط تسک‌های خودشان را."
+        "Returns the list of tasks. Can be filtered by status, priority, type and "
+        "employee_id. "
+        "Users with can_read_task_manager access see all tasks; "
+        "others only see their own."
     ),
     parameters=[
-        OpenApiParameter("status", OpenApiTypes.STR, description="وضعیت: planed | in_progress | done"),
-        OpenApiParameter("priority", OpenApiTypes.STR,
-                         description="اولویت: immediate | high | medium | low | very_low"),
-        OpenApiParameter("type", OpenApiTypes.STR, description="نوع: Personal | Organize"),
-        OpenApiParameter("employee_id", OpenApiTypes.INT, description="فیلتر بر اساس شناسه کارمند"),
+        OpenApiParameter(
+            "status",
+            OpenApiTypes.STR,
+            description="status: planed | in_progress | done",
+        ),
+        OpenApiParameter(
+            "priority",
+            OpenApiTypes.STR,
+            description="priority: immediate | high | medium | low | very_low",
+        ),
+        OpenApiParameter(
+            "type", OpenApiTypes.STR, description="type: Personal | Organize"
+        ),
+        OpenApiParameter(
+            "employee_id", OpenApiTypes.INT, description="filter by employee id"
+        ),
     ],
     responses={200: PlannedTaskListSerializer(many=True)},
 )
@@ -153,19 +166,16 @@ class PlannedTaskListView(_PermissionFilterMixin, generics.ListAPIView):
         qs = PlannedTask.objects.filter(is_deleted=False)
 
         if has_read_permission(employee):
-            return qs.filter(
-                Q(employee=employee) | Q(type="Organize")
-            )
+            return qs.filter(Q(employee=employee) | Q(type="Organize"))
         return qs.filter(employee=employee)
 
 
 # ─── 4. personal ──────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک شخصی",
     description=(
-            "کاربر جاری فقط به تسک‌های شخصی خودش دسترسی دارد. "
-            "DELETE باعث soft-delete می‌شود نه حذف واقعی."
+        "The current user only has access to their own personal tasks. "
+        "DELETE performs a soft-delete, not a real deletion."
     ),
     responses={200: PersonalTaskCreateSerializer},
 )
@@ -187,11 +197,10 @@ class PersonalPlannedTaskRUDView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="ایجاد تسک شخصی",
     description=(
-            "تسک شخصی برای کاربر جاری ایجاد می‌کند. "
-            "فیلد employee و type به‌صورت خودکار تنظیم می‌شوند."
+        "Creates a personal task for the current user. "
+        "The employee and type fields are set automatically."
     ),
     request=PersonalTaskCreateSerializer,
     responses={201: PersonalTaskCreateSerializer},
@@ -203,11 +212,10 @@ class PersonalPlannedTaskCreateView(generics.CreateAPIView):
 
 # ─── 5. organize — pending approval ──────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="لیست تسک‌های منتظر تأیید",
     description=(
-            "تسک‌های سازمانی که پاداش دارند، وضعیتشان done است "
-            "و هنوز تأیید نشده‌اند را برمی‌گرداند."
+        "Returns organizational tasks that have a reward, whose status is done "
+        "and which have not yet been approved."
     ),
     responses={200: PendingApprovalSerializer(many=True)},
 )
@@ -216,19 +224,22 @@ class PendingApprovalPlannedTaskListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return PlannedTask.objects.filter(
-            type="Organize",
-            has_reward=True,
-            status="done",
-            approved=False,
-            is_deleted=False,
-        ).select_related("employee").order_by("-created_at")
+        return (
+            PlannedTask.objects.filter(
+                type="Organize",
+                has_reward=True,
+                status="done",
+                approved=False,
+                is_deleted=False,
+            )
+            .select_related("employee")
+            .order_by("-created_at")
+        )
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="تأیید تسک",
-    description="تسک سازمانی مورد نظر را تأیید می‌کند (approved=True).",
+    description="Approves the specified organizational task (approved=True).",
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
 )
@@ -239,11 +250,10 @@ class ApprovePlannedTaskView(_TaskActionMixin):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="رد تسک",
     description=(
-            "تسک سازمانی را رد می‌کند. "
-            "وضعیت به in_progress برمی‌گردد تا کارمند بتواند دوباره تلاش کند."
+        "Rejects the organizational task. "
+        "The status returns to in_progress so the employee can try again."
     ),
     request=ApproveRejectSerializer,
     responses={200: PendingApprovalSerializer},
@@ -256,11 +266,10 @@ class RejectPlannedTaskView(_TaskActionMixin):
 
 # ─── 6. organize — CRUD ───────────────────────────────────────────────────────
 @extend_schema(
-    tags=["Task Management"],
     summary="جزئیات، ویرایش و حذف تسک سازمانی",
     description=(
-            "دریافت جزئیات، ویرایش (PATCH) یا soft-delete تسک سازمانی. "
-            "نیازمند دسترسی can_write_task_manager برای ویرایش و حذف."
+        "Get details, edit (PATCH) or soft-delete an organizational task. "
+        "Requires can_write_task_manager access to edit and delete."
     ),
     responses={200: PlannedTaskDetailSerializer},
 )
@@ -270,7 +279,9 @@ class OrganizePlannedTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
     http_method_names = ["get", "patch", "delete"]
 
     def get_queryset(self):
-        return PlannedTask.objects.filter(type="Organize", is_deleted=False).select_related("employee")
+        return PlannedTask.objects.filter(
+            type="Organize", is_deleted=False
+        ).select_related("employee")
 
     def perform_update(self, serializer):
         employee = get_employee(self.request)
@@ -287,11 +298,10 @@ class OrganizePlannedTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="ایجاد تسک سازمانی",
     description=(
-            "تسک سازمانی جدید برای کارمند مشخص‌شده ایجاد می‌کند. "
-            "نیازمند دسترسی can_write_task_manager."
+        "Creates a new organizational task for the specified employee. "
+        "Requires can_write_task_manager access."
     ),
     request=OrganizeTaskCreateSerializer,
     responses={201: OrganizeTaskCreateSerializer},
@@ -308,14 +318,17 @@ class OrganizePlannedTaskCreateView(generics.CreateAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="جستجو در تسک‌ها",
     description=(
-            "جستجو بر اساس عنوان یا توضیحات. "
-            "کاربران با دسترسی can_read_task_manager همه تسک‌ها را می‌بینند؛ "
-            "سایرین فقط تسک‌های خودشان را."
+        "Searches by title or description. "
+        "Users with can_read_task_manager access see all tasks; "
+        "others only see their own."
     ),
-    parameters=[OpenApiParameter("q", OpenApiTypes.STR, description="متن جستجو", required=True)],
+    parameters=[
+        OpenApiParameter(
+            "q", OpenApiTypes.STR, description="search text", required=True
+        )
+    ],
     responses={200: DailyTaskListSerializer(many=True)},
 )
 class DailyTaskSearchAPIView(generics.ListAPIView):
@@ -338,12 +351,11 @@ class DailyTaskSearchAPIView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="دریافت لیست تسک‌ها",
     description=(
-            "لیست تسک‌ها را برمی‌گرداند. کاربران دارای دسترسی "
-            "can_read_task_manager همه تسک‌ها را مشاهده می‌کنند و سایر کاربران "
-            "فقط تسک‌های خود را مشاهده خواهند کرد."
+        "Returns the list of tasks. Users with "
+        "can_read_task_manager access can see all tasks, and other users "
+        "will only see their own."
     ),
     responses={200: DailyTaskListSerializer(many=True)},
 )
@@ -356,9 +368,7 @@ class DailyTaskListAPIView(generics.ListAPIView):
     def get_queryset(self):
         employee = get_employee(self.request)
 
-        queryset = DailyTask.objects.filter(
-            is_deleted=False
-        ).order_by("-created_at")
+        queryset = DailyTask.objects.filter(is_deleted=False).order_by("-created_at")
 
         if has_read_permission(employee):
             return queryset
@@ -367,11 +377,8 @@ class DailyTaskListAPIView(generics.ListAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="ایجاد تسک شخصی",
-    description=(
-            "یک تسک شخصی برای کاربر جاری ایجاد می‌کند."
-    ),
+    description=("Creates a personal task for the current user."),
     request=PersonalDailyTaskSerializer,
     responses={201: PersonalDailyTaskSerializer},
 )
@@ -381,11 +388,8 @@ class PersonalDailyTaskCreateAPIView(generics.CreateAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="دریافت، ویرایش و حذف تسک",
-    description=(
-            "جزئیات، ویرایش و حذف یک تسک."
-    ),
+    description=("Details, edit and delete a task."),
 )
 class PersonalDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PersonalDailyTaskSerializer
@@ -405,11 +409,10 @@ class PersonalDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="ایجاد تسک سازمانی",
     description=(
-            "تسک سازمانی جدید برای کارمند مشخص‌شده ایجاد می‌کند. "
-            "نیازمند دسترسی can_write_task_manager."
+        "Creates a new organizational task for the specified employee. "
+        "Requires can_write_task_manager access."
     ),
     request=OrganizeTaskCreateSerializer,
     responses={201: OrganizeTaskCreateSerializer},
@@ -428,11 +431,9 @@ class OrganizeDailyTaskCreateAPIView(generics.CreateAPIView):
 
 
 @extend_schema(
-    tags=["Task Management"],
     summary="مدیریت تسک سازمانی",
     description=(
-            "دریافت، ویرایش و حذف تسک‌های سازمانی. "
-            "نیازمند دسترسی can_write_task_manager."
+        "Get, edit and delete organizational tasks. Requires can_write_task_manager access."
     ),
 )
 class OrganizeDailyTaskRUDAPIView(generics.RetrieveUpdateDestroyAPIView):

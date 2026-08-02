@@ -8,28 +8,33 @@ from hr.models import Employee
 from hr.serializers import EmployeeSerializer
 from messenger.models import ChatRoom, Message, Membership
 from messenger.serializers import (
-    ChatRoomSerializer, ChatRoomCreateSerializer,
-    MessageSerializer, MessageEditSerializer, ChatRoomUpdateSerializer
+    ChatRoomSerializer,
+    ChatRoomCreateSerializer,
+    MessageSerializer,
+    MessageEditSerializer,
+    ChatRoomUpdateSerializer,
 )
 from users.permissions import IsMainManager, IsEmployee
+
+
 class ChatRoomListView(generics.ListAPIView):
     """
-    لیست چت‌هایی که کاربر فعلی عضو آن است
+    List of chats the current user is a member of
     """
+
     serializer_class = ChatRoomSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        # related_name درست: memberships__user یا users
+        # correct related_name: memberships__user or users
         return ChatRoom.objects.filter(memberships__user=self.request.user).distinct()
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         if not queryset.exists():
             return Response(
-                {"message": "کاربر گفت‌وگویی ندارد"},
-                status=status.HTTP_200_OK
+                {"message": "User has no conversations"}, status=status.HTTP_200_OK
             )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -37,9 +42,10 @@ class ChatRoomListView(generics.ListAPIView):
 
 class ChatRoomCreateView(generics.CreateAPIView):
     """
-    ایجاد چت جدید (فقط MainManager می‌تواند بسازد)
+    Create a new chat (only MainManager can create)
     group, channel, pv
     """
+
     serializer_class = ChatRoomCreateSerializer
     permission_classes = [IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
@@ -47,8 +53,9 @@ class ChatRoomCreateView(generics.CreateAPIView):
 
 class EmployeeListView(generics.ListAPIView):
     """
-    لیست کارکنان برای افزودن به چت یا ایجاد چت (فقط MainManager)
+    List of employees to add to a chat or to create a chat (only MainManager)
     """
+
     serializer_class = EmployeeSerializer
     queryset = Employee.objects.filter()
     permission_classes = [IsMainManager]
@@ -62,28 +69,33 @@ class ChatRoomDeleteView(generics.DestroyAPIView):
 
     def perform_destroy(self, instance: ChatRoom):
         user = self.request.user
-        # فقط مالک اجازه حذف دارد
+        # only the owner may delete
         if instance.owner_id != user.id:
-            raise PermissionDenied("You do not have permission to delete this chat room.")
+            raise PermissionDenied(
+                "You do not have permission to delete this chat room."
+            )
         instance.delete()
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         self.perform_destroy(instance)
-        return Response({"message": "chat successfully deleted"}, status=status.HTTP_200_OK)
+        return Response(
+            {"message": "chat successfully deleted"}, status=status.HTTP_200_OK
+        )
 
 
 class ChatMessagesListView(generics.ListAPIView):
     """
-    لیست پیام‌های یک چت خاص (فقط اعضای چت دسترسی دارند)
-    اگر پیام وجود نداشت پیام اطلاع‌رسانی می‌دهد
+    List messages of a specific chat (only chat members have access)
+    Returns a notification message if there are no messages
     """
+
     serializer_class = MessageSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        chat_id = self.kwargs['pk']
+        chat_id = self.kwargs["pk"]
         chat = get_object_or_404(ChatRoom, pk=chat_id)
         if not chat.users.filter(id=self.request.user.id).exists():
             raise PermissionDenied("You are not a member of this chat.")
@@ -92,121 +104,153 @@ class ChatMessagesListView(generics.ListAPIView):
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         if not queryset.exists():
-            return Response({
-                "message": "هیچ پیامی در این گفتگو وجود ندارد",
-                "messages": []
-            }, status=status.HTTP_200_OK)
+            return Response(
+                {"message": "There are no messages in this conversation", "messages": []},
+                status=status.HTTP_200_OK,
+            )
         return super().list(request, *args, **kwargs)
 
 
 class ChatRoomUpdateView(generics.UpdateAPIView):
     """
-    ویرایش نام/اعضا. فقط مالک اجازه دارد.
+    Edit name/members. Only the owner is allowed.
     """
+
     queryset = ChatRoom.objects.all()
     serializer_class = ChatRoomUpdateSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def get_serializer_context(self):
-        # برای دسترسی به request در serializer
+        # to access request in the serializer
         ctx = super().get_serializer_context()
         return ctx
 
 
 class AddMember(generics.CreateAPIView):
     """
-    افزودن یک Employee به روم (فقط برای group/channel)
+    Add an Employee to a room (only for group/channel)
     """
+
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def post(self, request, *args, **kwargs):
-        chat_id = kwargs.get('chat_id')
-        employee_id = request.data.get('employee_id')
+        chat_id = kwargs.get("chat_id")
+        employee_id = request.data.get("employee_id")
 
         if not chat_id or not employee_id:
-            return Response({"detail": "chat_id and employee_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "chat_id and employee_id are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         chat = get_object_or_404(ChatRoom, id=chat_id)
 
         if chat.is_private:
-            return Response({"detail": "Members can be added only to group or channel chats."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Members can be added only to group or channel chats."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # فقط owner اجازه‌ی افزودن دارد (اگر سیاست شما متفاوت است، این خط را تغییر بده)
+        # only the owner may add (change this line if your policy differs)
         if chat.owner_id != request.user.id:
             raise PermissionDenied("Only the owner can add members to this chat.")
 
         try:
-            employee = Employee.objects.select_related('user').get(id=employee_id)
+            employee = Employee.objects.select_related("user").get(id=employee_id)
         except Employee.DoesNotExist:
-            return Response({"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Employee not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        # عضو بودن قبلی؟
+        # already a member?
         if chat.users.filter(id=employee.user_id).exists():
-            return Response({"detail": "User is already a member of the chat."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "User is already a member of the chat."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         is_muted_flag = True if chat.is_channel else False
-        Membership.objects.create(user=employee.user, chat_room=chat, is_muted=is_muted_flag)
+        Membership.objects.create(
+            user=employee.user, chat_room=chat, is_muted=is_muted_flag
+        )
 
-        return Response({"detail": "Member added successfully."}, status=status.HTTP_201_CREATED)
+        return Response(
+            {"detail": "Member added successfully."}, status=status.HTTP_201_CREATED
+        )
 
 
 class RemoveMember(generics.DestroyAPIView):
     """
-    حذف عضو از روم (فقط برای group/channel)
+    Remove a member from a room (only for group/channel)
     """
+
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def delete(self, request, *args, **kwargs):
-        chat_id = kwargs.get('chat_id')
-        user_id = request.data.get('user_id')
+        chat_id = kwargs.get("chat_id")
+        user_id = request.data.get("user_id")
 
         if not chat_id or not user_id:
-            return Response({"detail": "chat_id and user_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "chat_id and user_id are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         chat = get_object_or_404(ChatRoom, id=chat_id)
 
         if chat.is_private:
-            return Response({"detail": "Members can be removed only from group or channel chats."},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Members can be removed only from group or channel chats."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # مالک را نمی‌توان حذف کرد
+        # the owner cannot be removed
         if chat.owner_id == int(user_id):
-            return Response({"detail": "Cannot remove the owner of the chat."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Cannot remove the owner of the chat."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # فقط owner اجازه‌ی حذف دارد (در صورت سیاست دیگر، تغییر بده)
+        # only the owner may delete (change this if the policy differs)
         if chat.owner_id != request.user.id:
             raise PermissionDenied("Only the owner can remove members from this chat.")
 
         membership = Membership.objects.filter(chat_room=chat, user_id=user_id).first()
         if not membership:
-            return Response({"detail": "User is not a member of this chat."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "User is not a member of this chat."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         membership.delete()
-        # 200 بر می‌گردانیم چون بدنه داریم (نه 204)
-        return Response({"detail": "Member removed successfully."}, status=status.HTTP_200_OK)
+        # return 200 because we have a body (not 204)
+        return Response(
+            {"detail": "Member removed successfully."}, status=status.HTTP_200_OK
+        )
 
 
 class SendMessageView(generics.CreateAPIView):
     """
-    ارسال پیام به یک چت (فقط اعضای چت)
+    Send a message to a chat (chat members only)
     """
+
     serializer_class = MessageSerializer
     permission_classes = [IsEmployee | IsMainManager]
     authentication_classes = [CustomJWTAuthentication]
 
     def perform_create(self, serializer):
-        # validate در Serializer قبلاً عضویت را چک کرده است
+        # the Serializer validate already checked membership
         serializer.save(sender=self.request.user)
 
 
 class DeleteMessageView(generics.UpdateAPIView):
     """
-    حذف پیام (Soft Delete) فقط توسط فرستنده پیام
+    Delete a message (Soft Delete) only by the message sender
     """
+
     serializer_class = MessageSerializer
     queryset = Message.objects.all()
     permission_classes = [IsEmployee | IsMainManager]
@@ -223,8 +267,9 @@ class DeleteMessageView(generics.UpdateAPIView):
 
 class EditMessageView(generics.UpdateAPIView):
     """
-    ویرایش پیام فقط توسط فرستنده پیام
+    Edit a message only by the message sender
     """
+
     serializer_class = MessageEditSerializer
     queryset = Message.objects.all()
     permission_classes = [IsEmployee | IsMainManager]

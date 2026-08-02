@@ -238,10 +238,10 @@ class Video(models.Model):
 
 # Home CMS
 class HomeBanner(models.Model):
-    title = models.CharField(max_length=100, verbose_name="عنوان")
-    image = models.ImageField(upload_to="banners/", verbose_name="تصویر")
-    is_chosen = models.BooleanField(default=False, verbose_name="فعال")
-    order = models.PositiveIntegerField(default=0, unique=True, verbose_name="ترتیب")
+    title = models.CharField(max_length=100, verbose_name="Title")
+    image = models.ImageField(upload_to="banners/", verbose_name="Image")
+    is_chosen = models.BooleanField(default=False, verbose_name="Active")
+    order = models.PositiveIntegerField(default=0, unique=True, verbose_name="Order")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -251,7 +251,7 @@ class HomeBanner(models.Model):
                 and HomeBanner.objects.filter(is_chosen=True).exclude(pk=self.pk).count()
                 >= 3
         ):
-            raise ValidationError("حداکثر ۳ بنر می‌توانند فعال باشند")
+            raise ValidationError("At most 3 banners can be active")
 
     def save(self, *args, **kwargs):
         self.full_clean()

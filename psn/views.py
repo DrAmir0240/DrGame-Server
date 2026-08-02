@@ -46,7 +46,7 @@ class EmployeePanelGetNewSonyAccount(generics.GenericAPIView):
     def get(self, request, *args, **kwargs):
         employee = request.user.employee
 
-        # مرحله اول: بررسی اکانت‌های فعلی کارمند
+        # Step 1: check the employee's current accounts
         unchecked_account = (
             SonyAccount.objects.filter(
                 employee=employee, is_deleted=False, games__isnull=True
@@ -57,11 +57,11 @@ class EmployeePanelGetNewSonyAccount(generics.GenericAPIView):
 
         if unchecked_account:
             return Response(
-                {"error": "شمااکانت چک‌نشده دارید، لطفاً اول همان اکانت را بررسی کنید."},
+                {"error": "You have an unchecked account; please check that account first."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # مرحله دوم: گرفتن قدیمی‌ترین اکانت بدون کارمند
+        # Step 2: get the oldest account without an employee
         oldest_account = (
             SonyAccount.objects.filter(
                 employee__isnull=True, is_deleted=False, is_owned=False
@@ -72,11 +72,11 @@ class EmployeePanelGetNewSonyAccount(generics.GenericAPIView):
 
         if not oldest_account:
             return Response(
-                {"error": "هیچ اکانت آزادی برای اختصاص یافتن موجود نیست."},
+                {"error": "No free account is available for assignment."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        # اساین به کارمند
+        # assign to the employee
         oldest_account.employee = employee
         oldest_account.save()
 
@@ -171,14 +171,12 @@ class PSNSonyAccountListCreateView(generics.ListCreateAPIView):
     search_fields = ["username"]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or create Sony accounts",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or create Sony accounts",
     )
     def post(self, request, *args, **kwargs):
@@ -196,28 +194,24 @@ class PSNSonyAccountDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account",
     )
     def delete(self, request, *args, **kwargs):
@@ -232,14 +226,12 @@ class PSNSonyAccountGameListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or bulk-add games to a Sony account",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or bulk-add games to a Sony account",
     )
     def post(self, request, *args, **kwargs):
@@ -271,14 +263,12 @@ class PSNSonyAccountGameDetailView(generics.RetrieveDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve or remove a game from a Sony account",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve or remove a game from a Sony account",
     )
     def delete(self, request, *args, **kwargs):
@@ -301,7 +291,6 @@ class PSNGameListView(generics.ListAPIView):
     search_fields = ["title"]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List games (lightweight — id, title, image only)",
     )
     def get(self, request, *args, **kwargs):
@@ -314,14 +303,12 @@ class PSNSonyAccountStatusListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or create Sony account statuses",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List or create Sony account statuses",
     )
     def post(self, request, *args, **kwargs):
@@ -334,28 +321,24 @@ class PSNSonyAccountStatusDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account status",
     )
     def get(self, request, *args, **kwargs):
         return super().get(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account status",
     )
     def put(self, request, *args, **kwargs):
         return super().put(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account status",
     )
     def patch(self, request, *args, **kwargs):
         return super().patch(request, *args, **kwargs)
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="Retrieve, update or delete a Sony account status",
     )
     def delete(self, request, *args, **kwargs):
@@ -368,7 +351,6 @@ class PSNSonyAccountCategoryListView(generics.ListAPIView):
     permission_classes = [IsEmployee]
 
     @extend_schema(
-        tags=["PSN — Employee"],
         summary="List Sony account order categories",
     )
     def get(self, request, *args, **kwargs):

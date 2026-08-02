@@ -46,7 +46,7 @@ class MainManager(models.Model):
 
 class OTP(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='otps')
-    code = models.CharField(max_length=5)  # برای OTP 8 رقمی
+    code = models.CharField(max_length=5)  # for an 8-digit OTP
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
 
@@ -57,7 +57,7 @@ class OTP(models.Model):
         url = settings.FARAZ_URL
         pattern = settings.FARAZ_SMS_PATTERN
         api_key = settings.FARAZ_API_KEY
-        phone = '+98' + phone[1:]  # فرمت شماره تلفن
+        phone = '+98' + phone[1:]  # phone number format
         headers = {
             "Authorization": api_key,
             "Content-Type": "application/json"
@@ -85,21 +85,21 @@ class OTP(models.Model):
                 response_json = response.json()
                 print(f"Response JSON: {response_json}")
 
-                # گرفتن status از داخل meta
+                # get status from within meta
                 meta = response_json.get("meta", {})
                 status_ok = meta.get("status") is True
 
                 if status_ok:
                     print(f"OTP for {phone}: {otp_code}")
-                    return True, "پیامک با موفقیت ارسال شد"
+                    return True, "SMS sent successfully"
                 else:
-                    return False, f"خطا در ارسال پیامک: {meta.get('message', 'نامشخص')}"
+                    return False, f"Error sending SMS: {meta.get('message', 'Unknown')}"
             except ValueError:
                 print("Response is not valid JSON")
-                return False, "خطا در ارسال پیامک: پاسخ API معتبر نیست"
+                return False, "Error sending SMS: invalid API response"
         except requests.exceptions.RequestException as e:
             print(f"Request Error: {str(e)}")
-            return False, f"خطا در ارتباط با سرویس پیامک: {str(e)}"
+            return False, f"Error connecting to SMS service: {str(e)}"
 
 
 class APIKey(models.Model):
@@ -113,5 +113,5 @@ class APIKey(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.key:
-            self.key = secrets.token_urlsafe(52)[:70]  # تولید رشته رندوم 70 کاراکتری
+            self.key = secrets.token_urlsafe(52)[:70]  # generate a random 70-character string
         super().save(*args, **kwargs)

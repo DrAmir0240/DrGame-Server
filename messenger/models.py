@@ -7,7 +7,7 @@ from users.models import CustomUser
 # Create your models here.
 
 class ChatRoom(models.Model):
-    # انواع چت
+    # Chat types
     PV = 'pv'
     GROUP = 'group'
     CHANNEL = 'channel'
@@ -19,24 +19,24 @@ class ChatRoom(models.Model):
 
     name = models.CharField(
         max_length=100,
-        blank=True,  # برای pv ممکن است نام نمایشی از عضو مقابل بیاید
+        blank=True,  # for pv, the display name may come from the other member
     )
     type = models.CharField(
         max_length=10,
-        choices=CHAT_TYPES,  # محدودسازی به انواع تعریف‌شده
+        choices=CHAT_TYPES,  # restrict to the defined types
     )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='owned_rooms',  # همه‌ی روم‌هایی که کاربر مالک‌شان است
+        related_name='owned_rooms',  # all rooms the user owns
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # شرکت‌کنندگان: به‌صورت M2M از طریق Membership
+    # Participants: M2M via Membership
     users = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
         through='Membership',
-        related_name='chat_rooms'  # همه‌ی روم‌هایی که کاربر عضو‌شان است
+        related_name='chat_rooms'  # all rooms the user is a member of
     )
 
     class Meta:
@@ -44,14 +44,14 @@ class ChatRoom(models.Model):
             models.Index(fields=['type']),
             models.Index(fields=['created_at']),
         ]
-        ordering = ['-created_at']  # روم‌های تازه‌تر بالاتر
+        ordering = ['-created_at']  # newer rooms first
 
     def __str__(self):
-        # نمایش خوانا در ادمین
+        # readable display in the admin
         base = self.name or f'Room-{self.pk}'
         return f'{base} ({self.type})'
 
-    # هلپرهای خواناتر
+    # more readable helpers
     @property
     def is_private(self):
         return self.type == self.PV
@@ -66,23 +66,23 @@ class ChatRoom(models.Model):
 
 
 class Membership(models.Model):
-    # نگاشت کاربر به اتاق
+    # mapping of user to room
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='memberships',  # همه‌ی عضویت‌های کاربر
+        related_name='memberships',  # all memberships of the user
     )
     chat_room = models.ForeignKey(
         ChatRoom,
         on_delete=models.CASCADE,
-        related_name='memberships',  # همه‌ی عضویت‌های یک روم
+        related_name='memberships',  # all memberships of a room
     )
-    is_admin = models.BooleanField(default=False)   # مدیر روم؟
-    is_muted = models.BooleanField(default=False)   # ساکت (برای channel معمولاً True)
+    is_admin = models.BooleanField(default=False)   # room admin?
+    is_muted = models.BooleanField(default=False)   # muted (usually True for channels)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('user', 'chat_room')  # هر کاربر در هر روم فقط یک بار
+        unique_together = ('user', 'chat_room')  # each user only once per room
         indexes = [
             models.Index(fields=['chat_room', 'user']),
         ]
@@ -92,35 +92,35 @@ class Membership(models.Model):
 
 
 class Message(models.Model):
-    # پیام‌های یک روم
+    # messages of a room
     room = models.ForeignKey(
         ChatRoom,
         on_delete=models.CASCADE,
-        related_name='messages',  # پیام‌های یک روم
+        related_name='messages',  # messages of a room
     )
     sender = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null=True,  # اگر کاربر حذف شد، پیام بماند ولی sender نال
+        null=True,  # keep the message but null the sender if the user is deleted
         related_name='sent_messages',
     )
     text = models.TextField(
         blank=True,
-        null=True,  # برای Soft Delete متن را نال می‌کنیم
+        null=True,  # null the text for soft delete
     )
     reply_to = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        related_name='replies',  # پیام‌هایی که به این پاسخ داده‌اند
+        related_name='replies',  # messages that replied to this one
     )
     created_at = models.DateTimeField(auto_now_add=True)
     is_edited = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
     class Meta:
-        ordering = ['-created_at']  # پیام‌های تازه‌تر اول
+        ordering = ['-created_at']  # newest messages first
         indexes = [
             models.Index(fields=['room', 'created_at']),
         ]

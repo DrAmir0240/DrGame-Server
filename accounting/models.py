@@ -30,13 +30,13 @@ class AccountSide(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
 
-    # Generic FK — مشخص می‌کنه به کدوم مدل وصله
+    # Generic FK — indicates which model this points to
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="نوع مدل مرتبط (Customer، Employee، Supplier)",
+        help_text="Related model type (Customer, Employee, Supplier)",
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     content_object = GenericForeignKey("content_type", "object_id")
@@ -92,14 +92,14 @@ class Invoice(models.Model):
     discount = models.IntegerField(default=0)
     amount = models.IntegerField()
     paid_amount = models.IntegerField(
-        default=0, help_text="مجموع مبلغ پرداخت‌شده — از Celery آپدیت می‌شه"
+        default=0, help_text="Total paid amount — updated from Celery"
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="draft")
     payment_status = models.CharField(
         max_length=20, choices=PAYMENT_STATUS_CHOICES, default="unpaid"
     )
     is_payroll = models.BooleanField(
-        default=False, help_text="آیا این فاکتور فیش حقوقیه؟"
+        default=False, help_text="Is this invoice a payroll slip?"
     )
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -111,16 +111,16 @@ class Invoice(models.Model):
         return max(0, self.amount - self.discount - self.paid_amount)
 
     def __str__(self):
-        return f"فاکتور #{self.id} - {self.account_side}"
+        return f"Invoice #{self.id} - {self.account_side}"
 
 
 class InvoiceItem(models.Model):
     """
-    آیتم‌های فاکتور — می‌تونه به هر مدلی وصل باشه:
+    Invoice items — can link to any model:
     - SonyAccountOrder
     - RepairOrder
     - ProductOrder
-    - یا هر مدل دیگه‌ای
+    - or any other model
     """
 
     invoice = models.ForeignKey(Invoice, on_delete=models.CASCADE, related_name="items")
@@ -129,13 +129,13 @@ class InvoiceItem(models.Model):
     unit_price = models.IntegerField()
     discount = models.IntegerField(default=0)
 
-    # Generic FK — مشخص می‌کنه این آیتم به کدوم سفارش/موجودیت وصله
+    # Generic FK — indicates which order/entity this item belongs to
     content_type = models.ForeignKey(
         ContentType,
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="نوع مدل مرتبط (SonyAccountOrder، RepairOrder، ProductOrder و...)",
+        help_text="Related model type (SonyAccountOrder, RepairOrder, ProductOrder, ...)",
     )
     object_id = models.PositiveIntegerField(null=True, blank=True)
     content_object = GenericForeignKey("content_type", "object_id")
@@ -154,7 +154,7 @@ class InvoiceItem(models.Model):
 
 class PayrollDetail(models.Model):
     """
-    جزئیات فیش حقوقی — فقط وقتی invoice.is_payroll=True معنی داره
+    Payroll details — only meaningful when invoice.is_payroll=True
     """
 
     invoice = models.OneToOneField(
@@ -164,24 +164,24 @@ class PayrollDetail(models.Model):
         limit_choices_to={"is_payroll": True},
     )
 
-    # درآمدها
-    base_salary = models.IntegerField(default=0, help_text="حقوق پایه")
-    overtime_amount = models.IntegerField(default=0, help_text="اضافه‌کاری")
-    bonus = models.IntegerField(default=0, help_text="پاداش")
-    housing_allowance = models.IntegerField(default=0, help_text="حق مسکن")
-    food_allowance = models.IntegerField(default=0, help_text="حق خوار و بار")
+    # Income
+    base_salary = models.IntegerField(default=0, help_text="Base salary")
+    overtime_amount = models.IntegerField(default=0, help_text="Overtime")
+    bonus = models.IntegerField(default=0, help_text="Bonus")
+    housing_allowance = models.IntegerField(default=0, help_text="Housing allowance")
+    food_allowance = models.IntegerField(default=0, help_text="Food allowance")
     transportation_allowance = models.IntegerField(
-        default=0, help_text="حق ایاب و ذهاب"
+        default=0, help_text="Transportation allowance"
     )
 
-    # کسورات
-    insurance_deduction = models.IntegerField(default=0, help_text="کسر بیمه")
-    tax_deduction = models.IntegerField(default=0, help_text="کسر مالیات")
-    loan_deduction = models.IntegerField(default=0, help_text="کسر اقساط وام")
-    other_deductions = models.IntegerField(default=0, help_text="سایر کسورات")
+    # Deductions
+    insurance_deduction = models.IntegerField(default=0, help_text="Insurance deduction")
+    tax_deduction = models.IntegerField(default=0, help_text="Tax deduction")
+    loan_deduction = models.IntegerField(default=0, help_text="Loan installment deduction")
+    other_deductions = models.IntegerField(default=0, help_text="Other deductions")
 
-    work_days = models.IntegerField(default=0, help_text="روزهای کارکرد")
-    overtime_hours = models.IntegerField(default=0, help_text="ساعات اضافه‌کاری")
+    work_days = models.IntegerField(default=0, help_text="Work days")
+    overtime_hours = models.IntegerField(default=0, help_text="Overtime hours")
     description = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -211,7 +211,7 @@ class PayrollDetail(models.Model):
         return self.gross_salary - self.total_deductions
 
     def __str__(self):
-        return f"فیش حقوقی فاکتور #{self.invoice_id}"
+        return f"Payroll slip for invoice #{self.invoice_id}"
 
 
 class Transaction(models.Model):
@@ -276,14 +276,14 @@ class WalletTransaction(models.Model):
         Wallet, on_delete=models.CASCADE, related_name="transactions"
     )
     type = models.CharField(max_length=20, choices=TYPE_CHOICES)
-    amount = models.PositiveBigIntegerField(help_text="مبلغ به تومان")
+    amount = models.PositiveBigIntegerField(help_text="Amount in Toman")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
     description = models.CharField(max_length=300, blank=True)
     gateway_ref = models.CharField(
-        max_length=100, blank=True, null=True, help_text="شناسه پرداخت درگاه"
+        max_length=100, blank=True, null=True, help_text="Gateway payment ID"
     )
     gateway_name = models.CharField(
-        max_length=50, blank=True, null=True, help_text="مثال: zarinpal"
+        max_length=50, blank=True, null=True, help_text="Example: zarinpal"
     )
     order_content_type = models.ForeignKey(
         ContentType, on_delete=models.SET_NULL, null=True, blank=True
@@ -294,10 +294,10 @@ class WalletTransaction(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        help_text="فقط برای charge_admin",
+        help_text="Only for charge_admin",
     )
-    balance_before = models.PositiveBigIntegerField(help_text="موجودی قبل از تراکنش")
-    balance_after = models.PositiveBigIntegerField(help_text="موجودی بعد از تراکنش")
+    balance_before = models.PositiveBigIntegerField(help_text="Balance before transaction")
+    balance_after = models.PositiveBigIntegerField(help_text="Balance after transaction")
     created_at = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 

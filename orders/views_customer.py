@@ -1,5 +1,5 @@
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import generics, status, filters
+from rest_framework import generics, filters
 from rest_framework.response import Response
 
 from users.permissions import IsCustomer
@@ -97,37 +97,6 @@ class CustomerSonyOrderDetailView(generics.RetrieveAPIView):
         )
 
 
-class CustomerSonyOrderCreateView(generics.CreateAPIView):
-    permission_classes = [IsCustomer]
-
-    def post(self, request, *args, **kwargs):
-        from orders.models import SonyAccountOrderCategory, SonyAccountOrder
-
-        category_id = request.data.get("category_id")
-        if not category_id:
-            return Response(
-                {"detail": "category_id required"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            category = SonyAccountOrderCategory.objects.get(
-                pk=category_id, is_deleted=False
-            )
-        except SonyAccountOrderCategory.DoesNotExist:
-            return Response(
-                {"detail": "دسته‌بندی نامعتبر"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        order = SonyAccountOrder.objects.create(
-            customer=request.user.customer,
-            category=category,
-            source="website",
-        )
-        from orders.serializers_customer import SonyOrderDetailSerializer
-
-        return Response(
-            SonyOrderDetailSerializer(order).data, status=status.HTTP_201_CREATED
-        )
-
-
 class CustomerProductOrderListView(generics.ListAPIView):
     permission_classes = [IsCustomer]
     serializer_class = ProductOrderListSerializer
@@ -156,36 +125,6 @@ class CustomerProductOrderDetailView(generics.RetrieveAPIView):
         )
 
 
-class CustomerProductOrderCreateView(generics.CreateAPIView):
-    permission_classes = [IsCustomer]
-
-    def post(self, request, *args, **kwargs):
-        from orders.models import ProductOrderCategory, ProductOrder
-
-        category_id = request.data.get("category_id")
-        if not category_id:
-            return Response(
-                {"detail": "category_id required"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            category = ProductOrderCategory.objects.get(
-                pk=category_id, is_deleted=False
-            )
-        except ProductOrderCategory.DoesNotExist:
-            return Response(
-                {"detail": "دسته‌بندی نامعتبر"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        order = ProductOrder.objects.create(
-            customer=request.user.customer,
-            category=category,
-        )
-        from orders.serializers_customer import ProductOrderDetailSerializer
-
-        return Response(
-            ProductOrderDetailSerializer(order).data, status=status.HTTP_201_CREATED
-        )
-
-
 class CustomerRepairOrderListView(generics.ListAPIView):
     permission_classes = [IsCustomer]
     serializer_class = RepairOrderListSerializer
@@ -211,34 +150,4 @@ class CustomerRepairOrderDetailView(generics.RetrieveAPIView):
             )
             .select_related("stage", "category")
             .prefetch_related("stage_logs", "devices")
-        )
-
-
-class CustomerRepairOrderCreateView(generics.CreateAPIView):
-    permission_classes = [IsCustomer]
-
-    def post(self, request, *args, **kwargs):
-        from orders.models import RepairOrderCategory, RepairOrder
-
-        category_id = request.data.get("category_id")
-        description = request.data.get("description", "")
-        if not category_id:
-            return Response(
-                {"detail": "category_id required"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            category = RepairOrderCategory.objects.get(pk=category_id, is_deleted=False)
-        except RepairOrderCategory.DoesNotExist:
-            return Response(
-                {"detail": "دسته‌بندی نامعتبر"}, status=status.HTTP_400_BAD_REQUEST
-            )
-        order = RepairOrder.objects.create(
-            customer=request.user.customer,
-            category=category,
-            description=description,
-        )
-        from orders.serializers_customer import RepairOrderDetailSerializer
-
-        return Response(
-            RepairOrderDetailSerializer(order).data, status=status.HTTP_201_CREATED
         )

@@ -131,7 +131,7 @@ class AssignDeliveryToCustomerForGamedOrder(generics.GenericAPIView):
         try:
             repair_order = RepairOrder.objects.get(pk=order_id)
         except GameOrder.DoesNotExist:
-            return Response({"error": "سفارش پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = DeliveryManSerializer(data=request.data)
         if serializer.is_valid():
             deliveryman, created = DeliveryMan.objects.get_or_create(
@@ -140,7 +140,7 @@ class AssignDeliveryToCustomerForGamedOrder(generics.GenericAPIView):
             )
             repair_order.delivery_to_customer = deliveryman
             repair_order.save()
-            return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
+            return Response({"message": "Courier successfully assigned to the order."}, status=status.HTTP_200_OK)
 
 
 # ==================== TelegramOrders Views ====================
@@ -182,7 +182,7 @@ class AssignDeliveryToCustomerForRepairOrder(generics.GenericAPIView):
         try:
             repair_order = RepairOrder.objects.get(pk=order_id)
         except GameOrder.DoesNotExist:
-            return Response({"error": "سفارش پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Order not found."}, status=status.HTTP_404_NOT_FOUND)
         serializer = DeliveryManSerializer(data=request.data)
         if serializer.is_valid():
             deliveryman, created = DeliveryMan.objects.get_or_create(
@@ -191,7 +191,7 @@ class AssignDeliveryToCustomerForRepairOrder(generics.GenericAPIView):
             )
             repair_order.delivery_to_customer = deliveryman
             repair_order.save()
-            return Response({"message": "پیک با موفقیت به سفارش متصل شد."}, status=status.HTTP_200_OK)
+            return Response({"message": "Courier successfully assigned to the order."}, status=status.HTTP_200_OK)
 
 
 # ==================== CourseOrders Views ====================
@@ -306,21 +306,21 @@ from orders.services import (
 # =============================================================================
 
 # --- 1.1 Config (manager): Category ---
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='لیست دسته‌بندی‌های اکانت سونی')
+@extend_schema(summary='لیست دسته‌بندی‌های اکانت سونی')
 class SonyAccountOrderCategoryListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = SonyAccountOrderCategoryListSerializer
     queryset = SonyAccountOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ایجاد دسته‌بندی')
+@extend_schema(summary='ایجاد دسته‌بندی')
 class SonyAccountOrderCategoryCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderCategoryDetailSerializer
     queryset = SonyAccountOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ویرایش دسته‌بندی')
+@extend_schema(summary='ویرایش دسته‌بندی')
 class SonyAccountOrderCategoryUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderCategoryDetailSerializer
@@ -328,7 +328,7 @@ class SonyAccountOrderCategoryUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='حذف دسته‌بندی')
+@extend_schema(summary='حذف دسته‌بندی')
 class SonyAccountOrderCategoryDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -340,7 +340,7 @@ class SonyAccountOrderCategoryDeleteView(generics.DestroyAPIView):
 
 
 # --- 1.1 Config (manager): Stage ---
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='لیست مراحل یک دسته‌بندی')
+@extend_schema(summary='لیست مراحل یک دسته‌بندی')
 class SonyAccountOrderStageListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = SonyAccountOrderStageListSerializer
@@ -352,21 +352,21 @@ class SonyAccountOrderStageListView(generics.ListAPIView):
         ).select_related('employee_role').order_by('order')
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ایجاد مرحله')
+@extend_schema(summary='ایجاد مرحله')
 class SonyAccountOrderStageCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderStageDetailSerializer
     queryset = SonyAccountOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='جزئیات مرحله')
+@extend_schema(summary='جزئیات مرحله')
 class SonyAccountOrderStageDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = SonyAccountOrderStageDetailSerializer
     queryset = SonyAccountOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ویرایش مرحله')
+@extend_schema(summary='ویرایش مرحله')
 class SonyAccountOrderStageUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderStageDetailSerializer
@@ -374,7 +374,7 @@ class SonyAccountOrderStageUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='حذف مرحله')
+@extend_schema(summary='حذف مرحله')
 class SonyAccountOrderStageDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -386,14 +386,14 @@ class SonyAccountOrderStageDeleteView(generics.DestroyAPIView):
 
 
 # --- 1.1 Config (manager): Stage Action ---
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ایجاد اکشن برای مرحله')
+@extend_schema(summary='ایجاد اکشن برای مرحله')
 class SonyAccountOrderStageActionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderStageActionSerializer
     queryset = SonyAccountOrderStageAction.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='ویرایش اکشن')
+@extend_schema(summary='ویرایش اکشن')
 class SonyAccountOrderStageActionUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = SonyAccountOrderStageActionSerializer
@@ -401,7 +401,7 @@ class SonyAccountOrderStageActionUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Sony Account — Config'], summary='حذف اکشن')
+@extend_schema(summary='حذف اکشن')
 class SonyAccountOrderStageActionDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -413,7 +413,7 @@ class SonyAccountOrderStageActionDeleteView(generics.DestroyAPIView):
 
 
 # --- 1.2 Worker panel ---
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='لیست stage های قابل دسترس این کارمند')
+@extend_schema(summary='لیست stage های قابل دسترس این کارمند')
 class MySonyAccountStagesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = SonyAccountOrderStageQueueSerializer
@@ -427,7 +427,7 @@ class MySonyAccountStagesView(generics.ListAPIView):
         ).order_by('order')
 
 
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='لیست سفارشات یک stage')
+@extend_schema(summary='لیست سفارشات یک stage')
 class SonyAccountOrderByStageView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = SonyAccountOrderCardSerializer
@@ -447,7 +447,7 @@ class SonyAccountOrderByStageView(generics.ListAPIView):
         ).prefetch_related('action_logs').order_by('-created_at')
 
 
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='جزئیات سفارش')
+@extend_schema(summary='جزئیات سفارش')
 class SonyAccountOrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = SonyAccountOrderDetailSerializer
@@ -458,7 +458,7 @@ class SonyAccountOrderDetailView(generics.RetrieveAPIView):
     )
 
 
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='لیست اکشن‌های stage فعلی سفارش')
+@extend_schema(summary='لیست اکشن‌های stage فعلی سفارش')
 class SonyAccountOrderActionsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = SonyAccountOrderActionSerializer
@@ -475,7 +475,7 @@ class SonyAccountOrderActionsView(generics.ListAPIView):
         return context
 
 
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='اجرای یک اکشن روی سفارش')
+@extend_schema(summary='اجرای یک اکشن روی سفارش')
 class SonyAccountOrderExecuteActionView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ExecuteActionSerializer
@@ -503,7 +503,7 @@ class SonyAccountOrderExecuteActionView(generics.GenericAPIView):
         return Response(result)
 
 
-@extend_schema(tags=['Orders — Sony Account — Worker'], summary='انتقال سفارش به مرحله بعدی')
+@extend_schema(summary='انتقال سفارش به مرحله بعدی')
 class SonyAccountOrderAdvanceStageView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = AdvanceStageSerializer
@@ -530,21 +530,21 @@ class SonyAccountOrderAdvanceStageView(generics.GenericAPIView):
 # =============================================================================
 
 # --- 2.1 Config (manager): Category ---
-@extend_schema(tags=['Orders — Repair — Config'], summary='لیست دسته‌بندی‌های تعمیر')
+@extend_schema(summary='لیست دسته‌بندی‌های تعمیر')
 class RepairOrderCategoryListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = RepairOrderCategoryListSerializer
     queryset = RepairOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='ایجاد دسته‌بندی')
+@extend_schema(summary='ایجاد دسته‌بندی')
 class RepairOrderCategoryCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderCategoryDetailSerializer
     queryset = RepairOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='ویرایش دسته‌بندی')
+@extend_schema(summary='ویرایش دسته‌بندی')
 class RepairOrderCategoryUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderCategoryDetailSerializer
@@ -552,7 +552,7 @@ class RepairOrderCategoryUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='حذف دسته‌بندی')
+@extend_schema(summary='حذف دسته‌بندی')
 class RepairOrderCategoryDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -564,7 +564,7 @@ class RepairOrderCategoryDeleteView(generics.DestroyAPIView):
 
 
 # --- 2.1 Config (manager): Stage ---
-@extend_schema(tags=['Orders — Repair — Config'], summary='لیست مراحل یک دسته‌بندی')
+@extend_schema(summary='لیست مراحل یک دسته‌بندی')
 class RepairOrderStageListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = RepairOrderStageListSerializer
@@ -576,21 +576,21 @@ class RepairOrderStageListView(generics.ListAPIView):
         ).select_related('employee_role').order_by('order')
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='ایجاد مرحله')
+@extend_schema(summary='ایجاد مرحله')
 class RepairOrderStageCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderStageDetailSerializer
     queryset = RepairOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='جزئیات مرحله')
+@extend_schema(summary='جزئیات مرحله')
 class RepairOrderStageDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = RepairOrderStageDetailSerializer
     queryset = RepairOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='ویرایش مرحله')
+@extend_schema(summary='ویرایش مرحله')
 class RepairOrderStageUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderStageDetailSerializer
@@ -598,7 +598,7 @@ class RepairOrderStageUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='حذف مرحله')
+@extend_schema(summary='حذف مرحله')
 class RepairOrderStageDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -610,14 +610,14 @@ class RepairOrderStageDeleteView(generics.DestroyAPIView):
 
 
 # --- 2.1 Config (manager): Stage Action ---
-@extend_schema(tags=['Orders — Repair — Config'], summary='ایجاد اکشن برای مرحله')
+@extend_schema(summary='ایجاد اکشن برای مرحله')
 class RepairOrderStageActionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderStageActionSerializer
     queryset = RepairOrderStageAction.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='ویرایش اکشن')
+@extend_schema(summary='ویرایش اکشن')
 class RepairOrderStageActionUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = RepairOrderStageActionSerializer
@@ -625,7 +625,7 @@ class RepairOrderStageActionUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Repair — Config'], summary='حذف اکشن')
+@extend_schema(summary='حذف اکشن')
 class RepairOrderStageActionDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -637,7 +637,7 @@ class RepairOrderStageActionDeleteView(generics.DestroyAPIView):
 
 
 # --- 2.2 Worker panel ---
-@extend_schema(tags=['Orders — Repair — Worker'], summary='لیست stage های قابل دسترس این کارمند')
+@extend_schema(summary='لیست stage های قابل دسترس این کارمند')
 class MyRepairStagesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = RepairOrderStageQueueSerializer
@@ -651,7 +651,7 @@ class MyRepairStagesView(generics.ListAPIView):
         ).order_by('order')
 
 
-@extend_schema(tags=['Orders — Repair — Worker'], summary='لیست سفارشات یک stage')
+@extend_schema(summary='لیست سفارشات یک stage')
 class RepairOrderByStageView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = RepairOrderCardSerializer
@@ -671,7 +671,7 @@ class RepairOrderByStageView(generics.ListAPIView):
         ).prefetch_related('action_logs').order_by('-created_at')
 
 
-@extend_schema(tags=['Orders — Repair — Worker'], summary='جزئیات سفارش')
+@extend_schema(summary='جزئیات سفارش')
 class RepairOrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = RepairOrderDetailSerializer
@@ -682,7 +682,7 @@ class RepairOrderDetailView(generics.RetrieveAPIView):
     )
 
 
-@extend_schema(tags=['Orders — Repair — Worker'], summary='لیست اکشن‌های stage فعلی سفارش')
+@extend_schema(summary='لیست اکشن‌های stage فعلی سفارش')
 class RepairOrderActionsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = RepairOrderActionSerializer
@@ -699,7 +699,7 @@ class RepairOrderActionsView(generics.ListAPIView):
         return context
 
 
-@extend_schema(tags=['Orders — Repair — Worker'], summary='اجرای یک اکشن روی سفارش')
+@extend_schema(summary='اجرای یک اکشن روی سفارش')
 class RepairOrderExecuteActionView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ExecuteActionSerializer
@@ -727,7 +727,7 @@ class RepairOrderExecuteActionView(generics.GenericAPIView):
         return Response(result)
 
 
-@extend_schema(tags=['Orders — Repair — Worker'], summary='انتقال سفارش به مرحله بعدی')
+@extend_schema(summary='انتقال سفارش به مرحله بعدی')
 class RepairOrderAdvanceStageView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = AdvanceStageSerializer
@@ -754,21 +754,21 @@ class RepairOrderAdvanceStageView(generics.GenericAPIView):
 # =============================================================================
 
 # --- 3.1 Config (manager): Category ---
-@extend_schema(tags=['Orders — Product — Config'], summary='لیست دسته‌بندی‌های محصول')
+@extend_schema(summary='لیست دسته‌بندی‌های محصول')
 class ProductOrderCategoryListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = ProductOrderCategoryListSerializer
     queryset = ProductOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='ایجاد دسته‌بندی')
+@extend_schema(summary='ایجاد دسته‌بندی')
 class ProductOrderCategoryCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderCategoryDetailSerializer
     queryset = ProductOrderCategory.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='ویرایش دسته‌بندی')
+@extend_schema(summary='ویرایش دسته‌بندی')
 class ProductOrderCategoryUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderCategoryDetailSerializer
@@ -776,7 +776,7 @@ class ProductOrderCategoryUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='حذف دسته‌بندی')
+@extend_schema(summary='حذف دسته‌بندی')
 class ProductOrderCategoryDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -788,7 +788,7 @@ class ProductOrderCategoryDeleteView(generics.DestroyAPIView):
 
 
 # --- 3.1 Config (manager): Stage ---
-@extend_schema(tags=['Orders — Product — Config'], summary='لیست مراحل یک دسته‌بندی')
+@extend_schema(summary='لیست مراحل یک دسته‌بندی')
 class ProductOrderStageListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = ProductOrderStageListSerializer
@@ -800,21 +800,21 @@ class ProductOrderStageListView(generics.ListAPIView):
         ).select_related('employee_role').order_by('order')
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='ایجاد مرحله')
+@extend_schema(summary='ایجاد مرحله')
 class ProductOrderStageCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderStageDetailSerializer
     queryset = ProductOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='جزئیات مرحله')
+@extend_schema(summary='جزئیات مرحله')
 class ProductOrderStageDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'read')]
     serializer_class = ProductOrderStageDetailSerializer
     queryset = ProductOrderStage.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='ویرایش مرحله')
+@extend_schema(summary='ویرایش مرحله')
 class ProductOrderStageUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderStageDetailSerializer
@@ -822,7 +822,7 @@ class ProductOrderStageUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='حذف مرحله')
+@extend_schema(summary='حذف مرحله')
 class ProductOrderStageDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -834,14 +834,14 @@ class ProductOrderStageDeleteView(generics.DestroyAPIView):
 
 
 # --- 3.1 Config (manager): Stage Action ---
-@extend_schema(tags=['Orders — Product — Config'], summary='ایجاد اکشن برای مرحله')
+@extend_schema(summary='ایجاد اکشن برای مرحله')
 class ProductOrderStageActionCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderStageActionSerializer
     queryset = ProductOrderStageAction.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='ویرایش اکشن')
+@extend_schema(summary='ویرایش اکشن')
 class ProductOrderStageActionUpdateView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = ProductOrderStageActionSerializer
@@ -849,7 +849,7 @@ class ProductOrderStageActionUpdateView(generics.UpdateAPIView):
     http_method_names = ['patch']
 
 
-@extend_schema(tags=['Orders — Product — Config'], summary='حذف اکشن')
+@extend_schema(summary='حذف اکشن')
 class ProductOrderStageActionDeleteView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated, IsEmployee, employee_permission('orders', 'write')]
     serializer_class = drf_serializers.Serializer
@@ -861,7 +861,7 @@ class ProductOrderStageActionDeleteView(generics.DestroyAPIView):
 
 
 # --- 3.2 Worker panel ---
-@extend_schema(tags=['Orders — Product — Worker'], summary='لیست stage های قابل دسترس این کارمند')
+@extend_schema(summary='لیست stage های قابل دسترس این کارمند')
 class MyProductStagesView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ProductOrderStageQueueSerializer
@@ -875,7 +875,7 @@ class MyProductStagesView(generics.ListAPIView):
         ).order_by('order')
 
 
-@extend_schema(tags=['Orders — Product — Worker'], summary='لیست سفارشات یک stage')
+@extend_schema(summary='لیست سفارشات یک stage')
 class ProductOrderByStageView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ProductOrderCardSerializer
@@ -895,7 +895,7 @@ class ProductOrderByStageView(generics.ListAPIView):
         ).prefetch_related('action_logs').order_by('-created_at')
 
 
-@extend_schema(tags=['Orders — Product — Worker'], summary='جزئیات سفارش')
+@extend_schema(summary='جزئیات سفارش')
 class ProductOrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ProductOrderDetailSerializer
@@ -906,7 +906,7 @@ class ProductOrderDetailView(generics.RetrieveAPIView):
     )
 
 
-@extend_schema(tags=['Orders — Product — Worker'], summary='لیست اکشن‌های stage فعلی سفارش')
+@extend_schema(summary='لیست اکشن‌های stage فعلی سفارش')
 class ProductOrderActionsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ProductOrderActionSerializer
@@ -923,7 +923,7 @@ class ProductOrderActionsView(generics.ListAPIView):
         return context
 
 
-@extend_schema(tags=['Orders — Product — Worker'], summary='اجرای یک اکشن روی سفارش')
+@extend_schema(summary='اجرای یک اکشن روی سفارش')
 class ProductOrderExecuteActionView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = ExecuteActionSerializer
@@ -951,7 +951,7 @@ class ProductOrderExecuteActionView(generics.GenericAPIView):
         return Response(result)
 
 
-@extend_schema(tags=['Orders — Product — Worker'], summary='انتقال سفارش به مرحله بعدی')
+@extend_schema(summary='انتقال سفارش به مرحله بعدی')
 class ProductOrderAdvanceStageView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated, IsEmployee]
     serializer_class = AdvanceStageSerializer

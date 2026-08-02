@@ -27,7 +27,7 @@ urlpatterns = [
     path('report/net/', views.NetFinancialReportView.as_view()),
 
     # daily notebook : daily invoice and transaction and account side crud payable and receivable
-    # دفتر روزانه
+    # Daily ledger
     path('daily/transactions/', views.DailyTransactionListView.as_view()),
     path('daily/transactions/<int:pk>/', views.DailyTransactionDetailView.as_view()),
     path('daily/transactions/<int:pk>/edit/', views.DailyTransactionUpdateView.as_view()),
@@ -40,35 +40,35 @@ urlpatterns = [
 
 
     # accounting : all incomes and all outcomes and salary part and invoice lists
-    # درآمد
+    # Income
     path('income/', views.IncomeInvoiceListView.as_view()),
     path('income/<int:pk>/', views.IncomeInvoiceDetailView.as_view()),
     path('income/create/', views.IncomeInvoiceCreateView.as_view()),
     path('income/<int:pk>/edit/', views.IncomeInvoiceUpdateView.as_view()),
     path('income/<int:pk>/delete/', views.IncomeInvoiceDeleteView.as_view()),
 
-    # هزینه
+    # Expense
     path('expense/', views.ExpenseInvoiceListView.as_view()),
     path('expense/<int:pk>/', views.ExpenseInvoiceDetailView.as_view()),
     path('expense/create/', views.ExpenseInvoiceCreateView.as_view()),
     path('expense/<int:pk>/edit/', views.ExpenseInvoiceUpdateView.as_view()),
     path('expense/<int:pk>/delete/', views.ExpenseInvoiceDeleteView.as_view()),
 
-    # فیش حقوقی
+    # Payroll
     path('payroll/', views.PayrollInvoiceListView.as_view()),
     path('payroll/<int:pk>/', views.PayrollInvoiceDetailView.as_view()),
     path('payroll/create/', views.PayrollInvoiceCreateView.as_view()),
     path('payroll/<int:pk>/edit/', views.PayrollInvoiceUpdateView.as_view()),
     path('payroll/<int:pk>/delete/', views.PayrollInvoiceDeleteView.as_view()),
 
-    # فاکتور خرید
+    # Purchase invoices
     path('purchase/', views.PurchaseInvoiceListView.as_view()),
     path('purchase/<int:pk>/', views.PurchaseInvoiceDetailView.as_view()),
     path('purchase/create/', views.PurchaseInvoiceCreateView.as_view()),
     path('purchase/<int:pk>/edit/', views.PurchaseInvoiceUpdateView.as_view()),
     path('purchase/<int:pk>/delete/', views.PurchaseInvoiceDeleteView.as_view()),
 
-    # فاکتور فروش
+    # Sales invoices
     path('sales/', views.SalesInvoiceListView.as_view()),
     path('sales/<int:pk>/', views.SalesInvoiceDetailView.as_view()),
     path('sales/create/', views.SalesInvoiceCreateView.as_view()),

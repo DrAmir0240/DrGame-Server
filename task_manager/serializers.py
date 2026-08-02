@@ -24,7 +24,8 @@ class TaskManagerDashboardSerializer(serializers.Serializer):
 
 
 class TaskChoicesSerializer(serializers.Serializer):
-    """سریالایزر برای انتخابات و فیلدهای وابسته تسک"""
+    """Serializer for choices and dependent task fields"""
+
     employees = serializers.SerializerMethodField()
     status_choices = serializers.SerializerMethodField()
     priority_choices = serializers.SerializerMethodField()
@@ -39,53 +40,93 @@ class TaskChoicesSerializer(serializers.Serializer):
 
     # noinspection PyMethodMayBeStatic
     def get_status_choices(self, _obj):
-        return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("status").choices]
+        return [
+            {"value": k, "label": v}
+            for k, v in PlannedTask._meta.get_field("status").choices
+        ]
 
     # noinspection PyMethodMayBeStatic
     def get_priority_choices(self, _obj):
-        return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("priority").choices]
+        return [
+            {"value": k, "label": v}
+            for k, v in PlannedTask._meta.get_field("priority").choices
+        ]
 
     # noinspection PyMethodMayBeStatic
     def get_type_choices(self, _obj):
-        return [{"value": k, "label": v} for k, v in PlannedTask._meta.get_field("type").choices]
+        return [
+            {"value": k, "label": v}
+            for k, v in PlannedTask._meta.get_field("type").choices
+        ]
 
 
 class PlannedTaskListSerializer(serializers.ModelSerializer):
-    """سریالایزر سبک برای لیست تسک‌ها"""
+    """Lightweight serializer for the task list"""
+
     employee_name = serializers.CharField(source="employee.__str__", read_only=True)
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "employee", "employee_name", "title", "type",
-            "status", "priority", "has_reward", "reward_amount",
-            "approved", "start_date", "deadline", "created_at",
+            "id",
+            "employee",
+            "employee_name",
+            "title",
+            "type",
+            "status",
+            "priority",
+            "has_reward",
+            "reward_amount",
+            "approved",
+            "start_date",
+            "deadline",
+            "created_at",
         ]
 
 
 class PlannedTaskDetailSerializer(serializers.ModelSerializer):
-    """سریالایزر کامل برای جزئیات / ایجاد / ویرایش تسک"""
+    """Full serializer for task detail / create / edit"""
+
     employee_name = serializers.CharField(source="employee.__str__", read_only=True)
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "employee", "employee_name", "title", "voice", "type",
-            "description", "status", "priority", "has_reward",
-            "reward_amount", "approved", "start_date", "deadline",
-            "is_deleted", "created_at", "updated_at",
+            "id",
+            "employee",
+            "employee_name",
+            "title",
+            "voice",
+            "type",
+            "description",
+            "status",
+            "priority",
+            "has_reward",
+            "reward_amount",
+            "approved",
+            "start_date",
+            "deadline",
+            "is_deleted",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = ["id", "approved", "is_deleted", "created_at", "updated_at"]
 
 
 class PersonalTaskCreateSerializer(serializers.ModelSerializer):
-    """سریالایزر ایجاد/ویرایش تسک شخصی — employee از request.user گرفته می‌شود"""
+    """Personal task create/edit serializer — employee is taken from request.user"""
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "title", "voice", "description", "status",
-            "priority", "start_date", "deadline",
+            "id",
+            "title",
+            "voice",
+            "description",
+            "status",
+            "priority",
+            "start_date",
+            "deadline",
         ]
         read_only_fields = ["id"]
 
@@ -105,14 +146,22 @@ class PersonalTaskCreateSerializer(serializers.ModelSerializer):
 
 
 class OrganizeTaskCreateSerializer(serializers.ModelSerializer):
-    """سریالایزر ایجاد تسک سازمانی توسط مدیر"""
+    """Serializer for creating an organizational task by a manager"""
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "employee", "title", "voice", "description",
-            "status", "priority", "has_reward", "reward_amount",
-            "start_date", "deadline",
+            "id",
+            "employee",
+            "title",
+            "voice",
+            "description",
+            "status",
+            "priority",
+            "has_reward",
+            "reward_amount",
+            "start_date",
+            "deadline",
         ]
         read_only_fields = ["id"]
 
@@ -121,33 +170,52 @@ class OrganizeTaskCreateSerializer(serializers.ModelSerializer):
 
 
 class PendingApprovalSerializer(serializers.ModelSerializer):
-    """سریالایزر تسک‌های منتظر تأیید (پاداش‌دار و انجام‌شده)"""
+    """Serializer for tasks awaiting approval (rewarded and done)"""
+
     employee_name = serializers.CharField(source="employee.__str__", read_only=True)
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "employee", "employee_name", "title", "type",
-            "priority", "has_reward", "reward_amount", "approved",
-            "start_date", "deadline", "created_at",
+            "id",
+            "employee",
+            "employee_name",
+            "title",
+            "type",
+            "priority",
+            "has_reward",
+            "reward_amount",
+            "approved",
+            "start_date",
+            "deadline",
+            "created_at",
         ]
         read_only_fields = fields
 
 
 class ApproveRejectSerializer(serializers.Serializer):
-    """بدنه درخواست تأیید یا رد تسک (برای نمایش در سواگر)"""
-    task_id = serializers.IntegerField(help_text="شناسه تسک")
+    """Request body for approving or rejecting a task (for Swagger display)"""
+
+    task_id = serializers.IntegerField(help_text="Task ID")
 
 
 class TaskSearchSerializer(serializers.ModelSerializer):
-    """سریالایزر نتایج جستجو"""
+    """Search results serializer"""
+
     employee_name = serializers.CharField(source="employee.__str__", read_only=True)
 
     class Meta:
         model = PlannedTask
         fields = [
-            "id", "employee", "employee_name", "title", "type",
-            "status", "priority", "start_date", "deadline",
+            "id",
+            "employee",
+            "employee_name",
+            "title",
+            "type",
+            "status",
+            "priority",
+            "start_date",
+            "deadline",
         ]
 
 
@@ -158,7 +226,11 @@ class DailyTaskSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = DailyTask
         fields = [
-            "id", "employees", "employee_names", "title", "type",
+            "id",
+            "employees",
+            "employee_names",
+            "title",
+            "type",
             "created_at",
         ]
 

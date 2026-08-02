@@ -7,7 +7,11 @@ from rest_framework import status, viewsets, generics
 from users.auth import CustomJWTAuthentication
 from users.permissions import IsMainManager, IsEmployee
 from accounting.models import GameOrder
-from utils.serializers import SonyAccountMatchedSerializer, GameOrderMatchedSerializer, SonyAccountAddFromFileSerializer
+from utils.serializers import (
+    SonyAccountMatchedSerializer,
+    GameOrderMatchedSerializer,
+    SonyAccountAddFromFileSerializer,
+)
 from inventory.models import SonyAccount
 from utils.serializers import Set2FAURISerializer, OTPSerializer, SonyAccountSerializer
 from utils.crypto import encrypt_text, decrypt_text
@@ -20,8 +24,9 @@ from utils.telegram import send_telegram_message, TelegramError
 
 class Set2FASecretView(APIView):
     """
-    ثبت secret ای که از سونی گرفتیم و فعال کردن 2FA
+    Store the secret obtained from Sony and enable 2FA
     """
+
     permission_classes = [IsMainManager | IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -33,29 +38,37 @@ class Set2FASecretView(APIView):
         try:
             account = SonyAccount.objects.get(pk=pk)
         except SonyAccount.DoesNotExist:
-            return Response({"detail": "SonyAccount not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "SonyAccount not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        uri = serializer.validated_data['uri']
-        # استخراج secret از URI
+        uri = serializer.validated_data["uri"]
+        # extract secret from URI
         parsed = urllib.parse.urlparse(uri)
         params = urllib.parse.parse_qs(parsed.query)
-        secret = params.get('secret')
+        secret = params.get("secret")
         if not secret:
-            return Response({"detail": "Secret not found in URI"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Secret not found in URI"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        secret = secret[0]  # فقط رشته base32
+        secret = secret[0]  # only the base32 string
 
         account.two_step_secret = encrypt_text(secret)
         account.two_step_enabled = True
-        account.save(update_fields=['two_step_secret', 'two_step_enabled'])
+        account.save(update_fields=["two_step_secret", "two_step_enabled"])
 
-        return Response({"detail": "2FA enabled successfully"}, status=status.HTTP_200_OK)
+        return Response(
+            {"detail": "2FA enabled successfully"}, status=status.HTTP_200_OK
+        )
 
 
 class GetOTPView(APIView):
     """
-    دریافت کد OTP لحظه‌ای حساب
+    Get the current OTP code of the account
     """
+
     permission_classes = [IsMainManager | IsEmployee]
     authentication_classes = [CustomJWTAuthentication]
 
@@ -63,17 +76,22 @@ class GetOTPView(APIView):
         try:
             account = SonyAccount.objects.get(pk=pk)
         except SonyAccount.DoesNotExist:
-            return Response({"detail": "SonyAccount not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "SonyAccount not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         if not account.two_step_secret:
-            return Response({"detail": "2FA is not enabled for this account"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "2FA is not enabled for this account"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # رمزگشایی secret
+        # decrypt secret
         secret = decrypt_text(account.two_step_secret)
         totp = pyotp.TOTP(secret)
         otp_data = {
             "code": totp.now(),
-            "remaining": totp.interval - (int(time.time()) % totp.interval)
+            "remaining": totp.interval - (int(time.time()) % totp.interval),
         }
 
         serializer = OTPSerializer(data=otp_data)
@@ -83,40 +101,45 @@ class GetOTPView(APIView):
 
 class SonyAccountViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    ViewSet نمونه برای SonyAccount.
-    - list/retrieve به صورت پیش‌فرض
-    - اکشن سفارشی: POST /sony-users/{id}/send-to-telegram/
+    Example ViewSet for SonyAccount.
+    - list/retrieve by default
+    - custom action: POST /sony-users/{id}/send-to-telegram/
     """
+
     queryset = SonyAccount.objects.filter(is_deleted=False)
-    serializer_class = SonyAccountSerializer  # اگر نداری، موقت یک Serializer مینیمال بنویس
-    permission_classes = [IsEmployee | IsMainManager]  # این را با پرمیشن‌های خودت (مثلاً IsEmployee) جایگزین کن
+    serializer_class = SonyAccountSerializer  # if you don't have one, temporarily write a minimal serializer
+    permission_classes = [
+        IsEmployee | IsMainManager
+    ]  # replace this with your own permissions (e.g. IsEmployee)
 
     @action(detail=True, methods=["post"], url_path="send-to-telegram")
     def send_to_telegram(self, request, pk=None):
         """
-        اکانت را بارگذاری → پیام را بساز → به تلگرام بفرست.
-        بدنهٔ درخواست نمی‌خواهد چیزی بفرستد.
+        Load the account → build the message → send it to Telegram.
+        The request body does not need to send anything.
         """
-        # 1) کشیدن اکانت
+        # 1) fetch account
         try:
             account = fetch_account_with_games(pk)
         except SonyAccount.DoesNotExist:
-            return Response({"detail": "اکانت پیدا نشد."}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "Account not found."}, status=status.HTTP_404_NOT_FOUND
+            )
 
-        # 2) ساخت پیام
+        # 2) build message
         message = build_account_message(account)
 
-        # 3) ارسال به تلگرام
+        # 3) send to Telegram
         try:
             resp = send_telegram_message(message)
         except TelegramError as e:
             return Response({"detail": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
 
-        # 4) پاسخ موفق
+        # 4) success response
         return Response(
             {
-                "detail": "پیام با موفقیت ارسال شد.",
-                "telegram_response": resp,  # شامل message_id و ...
+                "detail": "Message sent successfully.",
+                "telegram_response": resp,  # includes message_id and ...
             },
             status=status.HTTP_200_OK,
         )
@@ -128,22 +151,23 @@ class SonyAccountByGameOrderView(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        order_id = self.kwargs['order_id']
+        order_id = self.kwargs["order_id"]
 
         try:
             order = GameOrder.objects.get(id=order_id, is_deleted=False)
         except GameOrder.DoesNotExist:
             return SonyAccount.objects.none()
 
-        # فقط ID بازی‌ها رو بگیر
-        selected_games = order.games.values_list('game', flat=True)
+        # only take the game IDs
+        selected_games = order.games.values_list("game", flat=True)
 
-        queryset = SonyAccount.objects.filter(
-            is_deleted=False,
-            account_games__game__in=selected_games
-        ).annotate(
-            matching_games_count=Count('games')
-        ).order_by('-matching_games_count')
+        queryset = (
+            SonyAccount.objects.filter(
+                is_deleted=False, account_games__game__in=selected_games
+            )
+            .annotate(matching_games_count=Count("games"))
+            .order_by("-matching_games_count")
+        )
 
         return queryset
 
@@ -159,7 +183,7 @@ class GameOrdersBySonyAccountView(generics.ListAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get_queryset(self):
-        sony_account_id = self.kwargs['sony_account_id']
+        sony_account_id = self.kwargs["sony_account_id"]
         try:
             sony_account = SonyAccount.objects.get(id=sony_account_id, is_deleted=False)
         except SonyAccount.DoesNotExist:
@@ -167,16 +191,18 @@ class GameOrdersBySonyAccountView(generics.ListAPIView):
 
         selected_games = sony_account.games.all()
 
-        queryset = GameOrder.objects.filter(
-            is_deleted=False,
-            games__game__in=selected_games  # 👈 اصلاح شد
-        ).annotate(
-            matching_games_count=Count(
-                'games',
-                filter=Q(games__game__in=selected_games),
-                distinct=True
+        queryset = (
+            GameOrder.objects.filter(
+                is_deleted=False,
+                games__game__in=selected_games,  # fixed
             )
-        ).order_by('-matching_games_count')
+            .annotate(
+                matching_games_count=Count(
+                    "games", filter=Q(games__game__in=selected_games), distinct=True
+                )
+            )
+            .order_by("-matching_games_count")
+        )
 
         return queryset
 

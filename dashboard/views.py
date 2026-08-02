@@ -91,7 +91,7 @@ class PersonalGameOrderStatsAPIView(generics.GenericAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
-        employee = request.user.employee  # فرض بر اینه که هر یوزر یه Employee داره
+        employee = request.user.employee  # assumes every user has an Employee
 
         qs_orders = GameOrder.objects.filter(employee=employee, is_deleted=False)
         qs_items = GameOrderItem.objects.filter(
@@ -173,7 +173,7 @@ class FinanceSummaryAPIView(generics.GenericAPIView):
         total_customer_debt = 0
         for customer in customer_debt:
             total_customer_debt -= customer.balance
-        # موجودی همه متودهای پرداخت
+        # balance of all payment methods
         total_payment_method_balance = (
             PaymentMethod.objects.filter(is_deleted=False).aggregate(
                 total=Sum("balance")
@@ -253,7 +253,7 @@ class ProductsStatsAPIView(generics.GenericAPIView):
         filters.SearchFilter,
         filters.OrderingFilter,
     ]
-    filterset_class = EmployeeProductFilter  # همون فیلتر لیست
+    filterset_class = EmployeeProductFilter  # same filter as the list
 
     def get_queryset(self):
         return Product.objects.filter(is_deleted=False).select_related("category")
@@ -308,9 +308,9 @@ class RealAssetStatsAPIView(generics.GenericAPIView):
 # ==================== Reports Views ====================
 class SellReportsAPIView(generics.GenericAPIView):
     """
-    با گذاشتن
+    By appending
     ?start-date=2025-08-01&end-date=2025-08-15
-    در انتهای یو ار ال نتایج بر حس تاریخ فیلتر میشوند
+    to the URL, results are filtered by date
     """
 
     serializer_class = SellReportSerializer
@@ -318,14 +318,14 @@ class SellReportsAPIView(generics.GenericAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
-        # گرفتن پارامترهای تاریخ از URL
+        # Get date parameters from URL
         start_date_str = request.GET.get("start-date")
         end_date_str = request.GET.get("end-date")
 
         start_date = parse_date(start_date_str) if start_date_str else None
         end_date = parse_date(end_date_str) if end_date_str else None
 
-        # فیلتر دینامیک برای هر مدل
+        # Dynamic filter for each model
         gqs = GameOrder.objects.filter(is_deleted=False, payment_status="paid")
         rqs = RepairOrder.objects.filter(is_deleted=False, payment_status="paid")
         pqs = Order.objects.filter(is_deleted=False, payment_status="paid")
@@ -369,23 +369,23 @@ class FinanceReportsAPIView(generics.GenericAPIView):
     authentication_classes = [CustomJWTAuthentication]
 
     def get(self, request, *args, **kwargs):
-        # پارامترهای تاریخ از URL
+        # Date parameters from URL
         start_date_str = request.GET.get("start-date")
         end_date_str = request.GET.get("end-date")
 
         start_date = parse_date(start_date_str) if start_date_str else None
         end_date = parse_date(end_date_str) if end_date_str else None
 
-        # کوئری‌ست پایه
+        # Base queryset
         qs = Transaction.objects.filter(is_deleted=False, status="paid")
 
-        # فیلتر بر اساس created_at
+        # Filter by created_at
         if start_date:
             qs = qs.filter(created_at__date__gte=start_date)
         if end_date:
             qs = qs.filter(created_at__date__lte=end_date)
 
-        # محاسبه مقادیر
+        # Calculate values
         income_amount = (
             qs.filter(in_out=True).aggregate(total=Sum("amount"))["total"] or 0
         )
@@ -417,9 +417,9 @@ class FinanceReportsAPIView(generics.GenericAPIView):
 
 class PerFormanceReportAPIView(generics.ListAPIView):
     """
-    با گذاشتن
+    By appending
     ?start-date=2025-08-01&end-date=2025-08-15
-    در انتهای یو ار ال نتایج بر حس تاریخ فیلتر میشوند
+    to the URL, results are filtered by date
     """
 
     queryset = Employee.objects.filter(is_deleted=False)
@@ -430,9 +430,9 @@ class PerFormanceReportAPIView(generics.ListAPIView):
 
 class CustomerReportAPIView(generics.ListAPIView):
     """
-    با گذاشتن
+    By appending
     ?start-date=2025-08-01&end-date=2025-08-15
-    در انتهای یو ار ال نتایج بر حس تاریخ فیلتر میشوند
+    to the URL, results are filtered by date
     """
 
     queryset = Customer.objects.filter(is_deleted=False)

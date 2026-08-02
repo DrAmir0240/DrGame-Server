@@ -33,21 +33,20 @@ DATE_RANGE_PARAMS = [
         OpenApiTypes.DATE,
         location='query',
         required=False,
-        description='پیش‌فرض: اول ماه جاری — فرمت: YYYY-MM-DD',
+        description='Default: start of the current month — format: YYYY-MM-DD',
     ),
     OpenApiParameter(
         'end_date',
         OpenApiTypes.DATE,
         location='query',
         required=False,
-        description='پیش‌فرض: بدون محدودیت — فرمت: YYYY-MM-DD',
+        description='Default: no limit — format: YYYY-MM-DD',
     ),
 ]
 
 
 # ── Dropdown Choices ──────────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=['حسابداری - چویسس'],
     summary='چویسس برای بخش حسابداری',
 )
 class InvoiceDropdownView(generics.ListAPIView):
@@ -58,7 +57,7 @@ class InvoiceDropdownView(generics.ListAPIView):
     GET /api/accounting/invoice/dropdown/?type=payment_status
     """
 
-    serializer_class = None  # ← به جای override کردن get_serializer_class
+    serializer_class = None  # instead of overriding get_serializer_class
 
     HANDLERS = {
         'account_side',
@@ -71,11 +70,11 @@ class InvoiceDropdownView(generics.ListAPIView):
         t = request.query_params.get('type')
 
         if not t:
-            raise ValidationError({'type': 'این پارامتر الزامیه.'})
+            raise ValidationError({'type': 'This parameter is required.'})
 
         if t not in self.HANDLERS:
             raise ValidationError(
-                {'type': f'مقدار نامعتبر. گزینه‌های مجاز: {", ".join(self.HANDLERS)}'}
+                {'type': f'Invalid value. Allowed options: {", ".join(self.HANDLERS)}'}
             )
 
         handler = getattr(InvoiceDropdownHelper, f'get_{t}')
@@ -84,7 +83,6 @@ class InvoiceDropdownView(generics.ListAPIView):
 
 # ── Repair Order ──────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=[' حسابداری - گزارش — تعمیرات'],
     parameters=DATE_RANGE_PARAMS,
     responses=RepairOrderSummarySerializer,
     summary='گزارش کلی سفارشات تعمیر',
@@ -99,7 +97,6 @@ class RepairOrderReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — تعمیرات'],
     responses=WeeklyDaySerializer(many=True),
     summary='گزارش هفتگی سفارشات تعمیر (شنبه تا جمعه)',
 )
@@ -113,7 +110,6 @@ class RepairOrderWeeklyReportView(generics.GenericAPIView):
 
 # ── Product Order ─────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=[' حسابداری - گزارش — سفارش کالا'],
     parameters=DATE_RANGE_PARAMS,
     responses=ProductOrderSummarySerializer,
     summary='گزارش کلی سفارشات کالا',
@@ -128,7 +124,6 @@ class ProductOrderReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — سفارش کالا'],
     responses=WeeklyDaySerializer(many=True),
     summary='گزارش هفتگی سفارشات کالا (شنبه تا جمعه)',
 )
@@ -141,7 +136,6 @@ class ProductOrderWeeklyReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — سفارش کالا'],
     parameters=DATE_RANGE_PARAMS,
     responses=ProductOrderByCategorySerializer(many=True),
     summary='گزارش سفارشات کالا به تفکیک دسته‌بندی',
@@ -157,7 +151,6 @@ class ProductOrderByCategoryReportView(generics.GenericAPIView):
 
 # ── Sony Account Order ────────────────────────────────────────────────────────
 @extend_schema(
-    tags=[' حسابداری - گزارش — اکانت سونی'],
     parameters=DATE_RANGE_PARAMS,
     responses=SonyAccountOrderFullReportSerializer,
     summary='گزارش کامل سفارشات اکانت سونی (summary + تفکیک همه فیلدها)',
@@ -178,7 +171,6 @@ class SonyAccountOrderReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — اکانت سونی'],
     responses=WeeklyDaySerializer(many=True),
     summary='گزارش هفتگی سفارشات اکانت سونی (شنبه تا جمعه)',
 )
@@ -192,7 +184,6 @@ class SonyAccountOrderWeeklyReportView(generics.GenericAPIView):
 
 # ── Financial ─────────────────────────────────────────────────────────────────
 @extend_schema(
-    tags=[' حسابداری - گزارش — مالی'],
     parameters=DATE_RANGE_PARAMS,
     responses=DirectionSummarySerializer,
     summary='گزارش درآمدها (تراکنش‌های دریافتی)',
@@ -207,7 +198,6 @@ class IncomeReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — مالی'],
     parameters=DATE_RANGE_PARAMS,
     responses=DirectionSummarySerializer,
     summary='گزارش هزینه‌ها (تراکنش‌های پرداختی)',
@@ -222,7 +212,6 @@ class ExpenseReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — مالی'],
     parameters=DATE_RANGE_PARAMS,
     responses=NetFinancialSerializer,
     summary='گزارش خالص مالی (درآمد − هزینه)',
@@ -237,7 +226,6 @@ class NetFinancialReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — مالی'],
     responses=WeeklyDaySerializer(many=True),
     summary='گزارش هفتگی درآمدها (شنبه تا جمعه)',
 )
@@ -250,7 +238,6 @@ class IncomeWeeklyReportView(generics.GenericAPIView):
 
 
 @extend_schema(
-    tags=[' حسابداری - گزارش — مالی'],
     responses=WeeklyDaySerializer(many=True),
     summary='گزارش هفتگی هزینه‌ها (شنبه تا جمعه)',
 )
@@ -263,7 +250,7 @@ class ExpenseWeeklyReportView(generics.GenericAPIView):
 
 
 # ── Daily Transactions ────────────────────────────────────────────────────────
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='لیست تراکنش‌های امروز')
+@extend_schema(summary='لیست تراکنش‌های امروز')
 class DailyTransactionListView(generics.ListAPIView):
     serializer_class = (
         TransactionListSerializer)
@@ -275,7 +262,7 @@ class DailyTransactionListView(generics.ListAPIView):
         ).select_related('account_side', 'bank_account').order_by('-created_at')
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='جزئیات تراکنش')
+@extend_schema(summary='جزئیات تراکنش')
 class DailyTransactionDetailView(generics.RetrieveAPIView):
     serializer_class = TransactionDetailSerializer
 
@@ -285,7 +272,7 @@ class DailyTransactionDetailView(generics.RetrieveAPIView):
         )
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='ویرایش تراکنش')
+@extend_schema(summary='ویرایش تراکنش')
 class DailyTransactionUpdateView(generics.UpdateAPIView):
     serializer_class = TransactionDetailSerializer
 
@@ -293,7 +280,7 @@ class DailyTransactionUpdateView(generics.UpdateAPIView):
         return Transaction.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='حذف تراکنش (soft delete)')
+@extend_schema(summary='حذف تراکنش (soft delete)')
 class DailyTransactionDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Transaction.objects.filter(is_deleted=False)
@@ -305,7 +292,7 @@ class DailyTransactionDeleteView(generics.DestroyAPIView):
 
 # ── Daily Invoices ────────────────────────────────────────────────────────────
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='لیست فاکتورهای امروز')
+@extend_schema(summary='لیست فاکتورهای امروز')
 class DailyInvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceListSerializer
     filterset_class = DailyInvoiceFilter
@@ -316,7 +303,7 @@ class DailyInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='جزئیات فاکتور')
+@extend_schema(summary='جزئیات فاکتور')
 class DailyInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -326,7 +313,7 @@ class DailyInvoiceDetailView(generics.RetrieveAPIView):
         ).prefetch_related('items')
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='ویرایش فاکتور')
+@extend_schema(summary='ویرایش فاکتور')
 class DailyInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -334,7 +321,7 @@ class DailyInvoiceUpdateView(generics.UpdateAPIView):
         return Invoice.objects.filter(is_deleted=False)
 
 
-@extend_schema(tags=[' حسابداری - دفتر روزانه'], summary='حذف فاکتور (soft delete)')
+@extend_schema(summary='حذف فاکتور (soft delete)')
 class DailyInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False)
@@ -352,7 +339,7 @@ def get_income_category():
     return category
 
 
-@extend_schema(tags=['حسابداری — درآمد'], summary='لیست فاکتورهای درآمدی')
+@extend_schema(summary='لیست فاکتورهای درآمدی')
 class IncomeInvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceListSerializer
     filterset_class = IncomeInvoiceFilter
@@ -365,7 +352,7 @@ class IncomeInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(tags=['حسابداری — درآمد'], summary='جزئیات فاکتور درآمدی')
+@extend_schema(summary='جزئیات فاکتور درآمدی')
 class IncomeInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -376,7 +363,7 @@ class IncomeInvoiceDetailView(generics.RetrieveAPIView):
         ).select_related('account_side', 'category').prefetch_related('items')
 
 
-@extend_schema(tags=['حسابداری — درآمد'], summary='ثبت فاکتور درآمدی')
+@extend_schema(summary='ثبت فاکتور درآمدی')
 class IncomeInvoiceCreateView(generics.CreateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -387,7 +374,7 @@ class IncomeInvoiceCreateView(generics.CreateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — درآمد'], summary='ویرایش فاکتور درآمدی')
+@extend_schema(summary='ویرایش فاکتور درآمدی')
 class IncomeInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -398,7 +385,7 @@ class IncomeInvoiceUpdateView(generics.UpdateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — درآمد'], summary='حذف فاکتور درآمدی (soft delete)')
+@extend_schema(summary='حذف فاکتور درآمدی (soft delete)')
 class IncomeInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False, category__direction='in')
@@ -416,7 +403,7 @@ def get_expense_category():
     return category
 
 
-@extend_schema(tags=['حسابداری — هزینه'], summary='لیست فاکتورهای هزینه‌ای')
+@extend_schema(summary='لیست فاکتورهای هزینه‌ای')
 class ExpenseInvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceListSerializer
     filterset_class = ExpenseInvoiceFilter
@@ -429,7 +416,7 @@ class ExpenseInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(tags=['حسابداری — هزینه'], summary='جزئیات فاکتور هزینه‌ای')
+@extend_schema(summary='جزئیات فاکتور هزینه‌ای')
 class ExpenseInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -440,7 +427,7 @@ class ExpenseInvoiceDetailView(generics.RetrieveAPIView):
         ).select_related('account_side', 'category').prefetch_related('items')
 
 
-@extend_schema(tags=['حسابداری — هزینه'], summary='ثبت فاکتور هزینه‌ای')
+@extend_schema(summary='ثبت فاکتور هزینه‌ای')
 class ExpenseInvoiceCreateView(generics.CreateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -451,7 +438,7 @@ class ExpenseInvoiceCreateView(generics.CreateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — هزینه'], summary='ویرایش فاکتور هزینه‌ای')
+@extend_schema(summary='ویرایش فاکتور هزینه‌ای')
 class ExpenseInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -462,7 +449,7 @@ class ExpenseInvoiceUpdateView(generics.UpdateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — هزینه'], summary='حذف فاکتور هزینه‌ای (soft delete)')
+@extend_schema(summary='حذف فاکتور هزینه‌ای (soft delete)')
 class ExpenseInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False, category__direction='out')
@@ -472,7 +459,7 @@ class ExpenseInvoiceDeleteView(generics.DestroyAPIView):
         instance.save(update_fields=['is_deleted'])
 
 
-@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='لیست فیش‌های حقوقی')
+@extend_schema(summary='لیست فیش‌های حقوقی')
 class PayrollInvoiceListView(generics.ListAPIView):
     serializer_class = PayrollInvoiceListSerializer
     filterset_class = PayrollInvoiceFilter
@@ -484,7 +471,7 @@ class PayrollInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'payroll_detail').order_by('-created_at')
 
 
-@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='جزئیات فیش حقوقی')
+@extend_schema(summary='جزئیات فیش حقوقی')
 class PayrollInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = PayrollInvoiceDetailSerializer
 
@@ -495,12 +482,12 @@ class PayrollInvoiceDetailView(generics.RetrieveAPIView):
         ).select_related('account_side', 'payroll_detail')
 
 
-@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='ثبت فیش حقوقی')
+@extend_schema(summary='ثبت فیش حقوقی')
 class PayrollInvoiceCreateView(generics.CreateAPIView):
     serializer_class = PayrollInvoiceWriteSerializer
 
 
-@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='ویرایش فیش حقوقی')
+@extend_schema(summary='ویرایش فیش حقوقی')
 class PayrollInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = PayrollInvoiceWriteSerializer
 
@@ -508,7 +495,7 @@ class PayrollInvoiceUpdateView(generics.UpdateAPIView):
         return Invoice.objects.filter(is_deleted=False, is_payroll=True)
 
 
-@extend_schema(tags=['حسابداری — فیش حقوقی'], summary='حذف فیش حقوقی (soft delete)')
+@extend_schema(summary='حذف فیش حقوقی (soft delete)')
 class PayrollInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False, is_payroll=True)
@@ -526,7 +513,7 @@ def get_purchase_category():
     return category
 
 
-@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='لیست فاکتورهای خرید')
+@extend_schema(summary='لیست فاکتورهای خرید')
 class PurchaseInvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceListSerializer
     filterset_class = ExpenseInvoiceFilter
@@ -538,7 +525,7 @@ class PurchaseInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='جزئیات فاکتور خرید')
+@extend_schema(summary='جزئیات فاکتور خرید')
 class PurchaseInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -549,7 +536,7 @@ class PurchaseInvoiceDetailView(generics.RetrieveAPIView):
         ).select_related('account_side', 'category').prefetch_related('items')
 
 
-@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='ثبت فاکتور خرید')
+@extend_schema(summary='ثبت فاکتور خرید')
 class PurchaseInvoiceCreateView(generics.CreateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -560,7 +547,7 @@ class PurchaseInvoiceCreateView(generics.CreateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='ویرایش فاکتور خرید')
+@extend_schema(summary='ویرایش فاکتور خرید')
 class PurchaseInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -568,7 +555,7 @@ class PurchaseInvoiceUpdateView(generics.UpdateAPIView):
         return Invoice.objects.filter(is_deleted=False, category__title='خرید')
 
 
-@extend_schema(tags=['حسابداری — فاکتور خرید'], summary='حذف فاکتور خرید (soft delete)')
+@extend_schema(summary='حذف فاکتور خرید (soft delete)')
 class PurchaseInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False, category__title='خرید')
@@ -586,7 +573,7 @@ def get_sales_category():
     return category
 
 
-@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='لیست فاکتورهای فروش')
+@extend_schema(summary='لیست فاکتورهای فروش')
 class SalesInvoiceListView(generics.ListAPIView):
     serializer_class = InvoiceListSerializer
     filterset_class = IncomeInvoiceFilter
@@ -598,7 +585,7 @@ class SalesInvoiceListView(generics.ListAPIView):
         ).select_related('account_side', 'category').order_by('-created_at')
 
 
-@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='جزئیات فاکتور فروش')
+@extend_schema(summary='جزئیات فاکتور فروش')
 class SalesInvoiceDetailView(generics.RetrieveAPIView):
     serializer_class = InvoiceDetailSerializer
 
@@ -609,7 +596,7 @@ class SalesInvoiceDetailView(generics.RetrieveAPIView):
         ).select_related('account_side', 'category').prefetch_related('items')
 
 
-@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='ثبت فاکتور فروش')
+@extend_schema(summary='ثبت فاکتور فروش')
 class SalesInvoiceCreateView(generics.CreateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -620,7 +607,7 @@ class SalesInvoiceCreateView(generics.CreateAPIView):
         )
 
 
-@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='ویرایش فاکتور فروش')
+@extend_schema(summary='ویرایش فاکتور فروش')
 class SalesInvoiceUpdateView(generics.UpdateAPIView):
     serializer_class = InvoiceWriteSerializer
 
@@ -628,7 +615,7 @@ class SalesInvoiceUpdateView(generics.UpdateAPIView):
         return Invoice.objects.filter(is_deleted=False, category__title='فروش')
 
 
-@extend_schema(tags=['حسابداری — فاکتور فروش'], summary='حذف فاکتور فروش (soft delete)')
+@extend_schema(summary='حذف فاکتور فروش (soft delete)')
 class SalesInvoiceDeleteView(generics.DestroyAPIView):
     def get_queryset(self):
         return Invoice.objects.filter(is_deleted=False, category__title='فروش')

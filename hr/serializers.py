@@ -25,124 +25,140 @@ from hr.models import (
 
 
 class PermissionSerializer(serializers.ModelSerializer):
-    module_display = serializers.CharField(source='get_module_display', read_only=True)
-    action_display = serializers.CharField(source='get_action_display', read_only=True)
+    module_display = serializers.CharField(source="get_module_display", read_only=True)
+    action_display = serializers.CharField(source="get_action_display", read_only=True)
 
     class Meta:
         model = Permission
-        fields = ['id', 'module', 'module_display', 'action', 'action_display', 'extra_flag']
+        fields = [
+            "id",
+            "module",
+            "module_display",
+            "action",
+            "action_display",
+            "extra_flag",
+        ]
 
 
 class MyPermissionsSerializer(serializers.Serializer):
-    """فرمت flat برای فرانت"""
+    """Flat format for the frontend"""
+
     permissions = serializers.DictField()
-
-
-
 
 
 class EmployeeRoleListSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeRole
-        fields = ['id', 'role_name', 'description']
+        fields = ["id", "role_name", "description"]
 
 
 class EmployeeRoleDetailSerializer(serializers.ModelSerializer):
-    permissions_detail = PermissionSerializer(source='permissions', many=True, read_only=True)
-    permissions        = serializers.PrimaryKeyRelatedField(
+    permissions_detail = PermissionSerializer(
+        source="permissions", many=True, read_only=True
+    )
+    permissions = serializers.PrimaryKeyRelatedField(
         queryset=Permission.objects.all(), many=True, write_only=True
     )
 
     class Meta:
         model = EmployeeRole
         fields = [
-            'id', 'role_name', 'description',
-            'permissions', 'permissions_detail',
-            'created_at', 'updated_at'
+            "id",
+            "role_name",
+            "description",
+            "permissions",
+            "permissions_detail",
+            "created_at",
+            "updated_at",
         ]
 
 
 # ═══════════════════════════════════════════════════════════
-# بخش ۱ — پرونده کارمندان
+# Section 1 — Employee files
 # ═══════════════════════════════════════════════════════════
 
+
 class EmployeeListSerializer(serializers.ModelSerializer):
-    roles_detail = EmployeeRoleListSerializer(source='roles', many=True, read_only=True)
+    roles_detail = EmployeeRoleListSerializer(source="roles", many=True, read_only=True)
     full_name = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
+        return f"{obj.first_name} {obj.last_name}"
 
     class Meta:
         model = Employee
         fields = [
-            'id',
-            'full_name',
-            'first_name',
-            'last_name',
-            'employee_id',
-            'profile_picture',
-            'roles',        # write — list of IDs
-            'roles_detail',  # read
-            'is_deleted',
-            'created_at',
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "employee_id",
+            "profile_picture",
+            "roles",  # write — list of IDs
+            "roles_detail",  # read
+            "is_deleted",
+            "created_at",
         ]
 
 
 class EmployeeDetailSerializer(serializers.ModelSerializer):
-    roles_detail = EmployeeRoleListSerializer(source='roles', many=True, read_only=True)
+    roles_detail = EmployeeRoleListSerializer(source="roles", many=True, read_only=True)
     full_name = serializers.SerializerMethodField()
     wallet_balance = serializers.SerializerMethodField()
     last_arrival = serializers.SerializerMethodField()
     stats = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
+        return f"{obj.first_name} {obj.last_name}"
 
     def get_wallet_balance(self, obj):
-        # از طریق obj.user به Wallet وصل میشه
-        wallet = getattr(obj.user, 'wallet', None)
+        # connects to Wallet via obj.user
+        wallet = getattr(obj.user, "wallet", None)
         return wallet.balance if wallet else 0
 
     def get_last_arrival(self, obj):
-        arrival = obj.arrivals.filter(is_deleted=False).order_by('-check_in').first()
+        arrival = obj.arrivals.filter(is_deleted=False).order_by("-check_in").first()
         if not arrival:
             return None
         return {
-            'check_in': arrival.check_in,
-            'check_out': arrival.check_out,
+            "check_in": arrival.check_in,
+            "check_out": arrival.check_out,
         }
 
     def get_stats(self, obj):
         return {
-            'total_requests': obj.requests.filter(is_deleted=False).count(),
-            'pending_requests': obj.requests.filter(status='waiting', is_deleted=False).count(),
-            'total_files': obj.files.filter(is_deleted=False).count(),
-            'total_overtimes': obj.overtimes.filter(is_deleted=False).count(),
-            'pending_overtimes': obj.overtimes.filter(is_approved=False, is_deleted=False).count(),
+            "total_requests": obj.requests.filter(is_deleted=False).count(),
+            "pending_requests": obj.requests.filter(
+                status="waiting", is_deleted=False
+            ).count(),
+            "total_files": obj.files.filter(is_deleted=False).count(),
+            "total_overtimes": obj.overtimes.filter(is_deleted=False).count(),
+            "pending_overtimes": obj.overtimes.filter(
+                is_approved=False, is_deleted=False
+            ).count(),
         }
 
     class Meta:
         model = Employee
         fields = [
-            'id',
-            'full_name',
-            'first_name',
-            'last_name',
-            'national_code',
-            'birth_date',
-            'employee_id',
-            'profile_picture',
-            'has_commission',
-            'commission_amount',
-            'roles',
-            'roles_detail',
-            'wallet_balance',
-            'last_arrival',
-            'stats',
-            'is_deleted',
-            'created_at',
-            'updated_at',
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "national_code",
+            "birth_date",
+            "employee_id",
+            "profile_picture",
+            "has_commission",
+            "commission_amount",
+            "roles",
+            "roles_detail",
+            "wallet_balance",
+            "last_arrival",
+            "stats",
+            "is_deleted",
+            "created_at",
+            "updated_at",
         ]
 
 
@@ -150,80 +166,82 @@ class EmployeeCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'user',
-            'first_name',
-            'last_name',
-            'national_code',
-            'birth_date',
-            'employee_id',
-            'profile_picture',
-            'has_commission',
-            'commission_amount',
-            'roles',
+            "user",
+            "first_name",
+            "last_name",
+            "national_code",
+            "birth_date",
+            "employee_id",
+            "profile_picture",
+            "has_commission",
+            "commission_amount",
+            "roles",
         ]
 
 
 class EmployeeFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeFile
-        fields = ['id', 'employee', 'title', 'file', 'created_at', 'updated_at']
+        fields = ["id", "employee", "title", "file", "created_at", "updated_at"]
 
 
 class EmployeeOvertimeSerializer(serializers.ModelSerializer):
-    approved_by_detail = EmployeeListSerializer(source='approved_by', read_only=True)
+    approved_by_detail = EmployeeListSerializer(source="approved_by", read_only=True)
 
     class Meta:
         model = EmployeeOvertime
         fields = [
-            'id',
-            'employee',
-            'date',
-            'hours',
-            'description',
-            'is_approved',
-            'approved_by',
-            'approved_by_detail',
-            'created_at',
-            'updated_at',
+            "id",
+            "employee",
+            "date",
+            "hours",
+            "description",
+            "is_approved",
+            "approved_by",
+            "approved_by_detail",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['is_approved', 'approved_by']
+        read_only_fields = ["is_approved", "approved_by"]
 
 
 # ═══════════════════════════════════════════════════════════
-# بخش ۲ — استخدام
+# Section 2 — Recruitment
 # ═══════════════════════════════════════════════════════════
+
 
 class EmploymentResumeSerializer(serializers.ModelSerializer):
     user_detail = serializers.SerializerMethodField()
 
     def get_user_detail(self, obj):
         return {
-            'id': obj.user.id,
-            'phone': obj.user.phone,
-            'full_name': obj.user.full_name(),
+            "id": obj.user.id,
+            "phone": obj.user.phone,
+            "full_name": obj.user.full_name(),
         }
 
     class Meta:
         model = EmploymentResume
         fields = [
-            'id',
-            'first_name',
-            'last_name',
-            'national_code',
-            'birth_date',
-            'phone_number',
-            'description',
-            'resume_file',
-            'user',
-            'user_detail',
-            'created_at',
-            'updated_at',
+            "id",
+            "first_name",
+            "last_name",
+            "national_code",
+            "birth_date",
+            "phone_number",
+            "description",
+            "resume_file",
+            "user",
+            "user_detail",
+            "created_at",
+            "updated_at",
         ]
 
 
 # ═══════════════════════════════════════════════════════════
-# بخش ۳ — فیش حقوقی
+# Section 3 — Payroll
 # ═══════════════════════════════════════════════════════════
+
 
 class PayrollDetailSerializer(serializers.ModelSerializer):
     gross_salary = serializers.ReadOnlyField()
@@ -233,81 +251,86 @@ class PayrollDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = PayrollDetail
         fields = [
-            'id',
-            'base_salary',
-            'overtime_amount',
-            'bonus',
-            'housing_allowance',
-            'food_allowance',
-            'transportation_allowance',
-            'insurance_deduction',
-            'tax_deduction',
-            'loan_deduction',
-            'other_deductions',
-            'work_days',
-            'overtime_hours',
-            'description',
-            'gross_salary',
-            'total_deductions',
-            'net_salary',
+            "id",
+            "base_salary",
+            "overtime_amount",
+            "bonus",
+            "housing_allowance",
+            "food_allowance",
+            "transportation_allowance",
+            "insurance_deduction",
+            "tax_deduction",
+            "loan_deduction",
+            "other_deductions",
+            "work_days",
+            "overtime_hours",
+            "description",
+            "gross_salary",
+            "total_deductions",
+            "net_salary",
         ]
 
 
 class PayrollInvoiceListSerializer(serializers.ModelSerializer):
-    account_side_detail = AccountSideSerializer(source='account_side', read_only=True)
+    account_side_detail = AccountSideSerializer(source="account_side", read_only=True)
     remaining_amount = serializers.ReadOnlyField()
 
     class Meta:
         model = Invoice
         fields = [
-            'id',
-            'account_side',
-            'account_side_detail',
-            'amount',
-            'paid_amount',
-            'remaining_amount',
-            'payment_status',
-            'status',
-            'created_at',
+            "id",
+            "account_side",
+            "account_side_detail",
+            "amount",
+            "paid_amount",
+            "remaining_amount",
+            "payment_status",
+            "status",
+            "created_at",
         ]
 
 
 class PayrollInvoiceDetailSerializer(serializers.ModelSerializer):
-    account_side_detail = AccountSideSerializer(source='account_side', read_only=True)
+    account_side_detail = AccountSideSerializer(source="account_side", read_only=True)
     payroll_detail = PayrollDetailSerializer(read_only=True)
     remaining_amount = serializers.ReadOnlyField()
 
     class Meta:
         model = Invoice
         fields = [
-            'id',
-            'account_side',
-            'account_side_detail',
-            'category',
-            'amount',
-            'discount',
-            'paid_amount',
-            'remaining_amount',
-            'status',
-            'payment_status',
-            'description',
-            'payroll_detail',
-            'created_at',
-            'updated_at',
+            "id",
+            "account_side",
+            "account_side_detail",
+            "category",
+            "amount",
+            "discount",
+            "paid_amount",
+            "remaining_amount",
+            "status",
+            "payment_status",
+            "description",
+            "payroll_detail",
+            "created_at",
+            "updated_at",
         ]
 
 
 class PayrollCreateSerializer(serializers.Serializer):
     """
-    صدور فیش حقوقی — Invoice + PayrollDetail را همزمان می‌سازد
+    Issue payroll — creates Invoice + PayrollDetail simultaneously
     """
-    # فیلدهای Invoice
-    account_side = serializers.PrimaryKeyRelatedField(queryset=AccountSide.objects.all())
-    category = serializers.PrimaryKeyRelatedField(queryset=InvoiceCategory.objects.all())
+
+    # Invoice fields
+    account_side = serializers.PrimaryKeyRelatedField(
+        queryset=AccountSide.objects.all()
+    )
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=InvoiceCategory.objects.all()
+    )
     discount = serializers.IntegerField(default=0)
     description = serializers.CharField(required=False, allow_blank=True)
 
-    # فیلدهای PayrollDetail
+    # PayrollDetail fields
     base_salary = serializers.IntegerField(default=0)
     overtime_amount = serializers.IntegerField(default=0)
     bonus = serializers.IntegerField(default=0)
@@ -326,28 +349,39 @@ class PayrollCreateSerializer(serializers.Serializer):
         from accounting.models import Invoice, PayrollDetail
 
         payroll_fields = [
-            'base_salary', 'overtime_amount', 'bonus',
-            'housing_allowance', 'food_allowance', 'transportation_allowance',
-            'insurance_deduction', 'tax_deduction', 'loan_deduction',
-            'other_deductions', 'work_days', 'overtime_hours', 'payroll_description'
+            "base_salary",
+            "overtime_amount",
+            "bonus",
+            "housing_allowance",
+            "food_allowance",
+            "transportation_allowance",
+            "insurance_deduction",
+            "tax_deduction",
+            "loan_deduction",
+            "other_deductions",
+            "work_days",
+            "overtime_hours",
+            "payroll_description",
         ]
-        payroll_data = {k: validated_data.pop(k) for k in payroll_fields if k in validated_data}
-        payroll_desc = payroll_data.pop('payroll_description', '')
+        payroll_data = {
+            k: validated_data.pop(k) for k in payroll_fields if k in validated_data
+        }
+        payroll_desc = payroll_data.pop("payroll_description", "")
 
-        # محاسبه amount از net_salary
+        # compute amount from net_salary
         gross = (
-            payroll_data.get('base_salary', 0)
-            + payroll_data.get('overtime_amount', 0)
-            + payroll_data.get('bonus', 0)
-            + payroll_data.get('housing_allowance', 0)
-            + payroll_data.get('food_allowance', 0)
-            + payroll_data.get('transportation_allowance', 0)
+            payroll_data.get("base_salary", 0)
+            + payroll_data.get("overtime_amount", 0)
+            + payroll_data.get("bonus", 0)
+            + payroll_data.get("housing_allowance", 0)
+            + payroll_data.get("food_allowance", 0)
+            + payroll_data.get("transportation_allowance", 0)
         )
         deductions = (
-            payroll_data.get('insurance_deduction', 0)
-            + payroll_data.get('tax_deduction', 0)
-            + payroll_data.get('loan_deduction', 0)
-            + payroll_data.get('other_deductions', 0)
+            payroll_data.get("insurance_deduction", 0)
+            + payroll_data.get("tax_deduction", 0)
+            + payroll_data.get("loan_deduction", 0)
+            + payroll_data.get("other_deductions", 0)
         )
         net = gross - deductions
 
@@ -355,7 +389,7 @@ class PayrollCreateSerializer(serializers.Serializer):
             **validated_data,
             amount=net,
             is_payroll=True,
-            status='primary',
+            status="primary",
         )
         PayrollDetail.objects.create(
             invoice=invoice,
@@ -366,87 +400,93 @@ class PayrollCreateSerializer(serializers.Serializer):
 
 
 class PayrollTransactionSerializer(serializers.ModelSerializer):
-    bank_account_detail = BankAccountSerializer(source='bank_account', read_only=True)
+    bank_account_detail = BankAccountSerializer(source="bank_account", read_only=True)
 
     class Meta:
         model = Transaction
         fields = [
-            'id',
-            'amount',
-            'direction',
-            'bank_account',
-            'bank_account_detail',
-            'description',
-            'created_at',
+            "id",
+            "amount",
+            "direction",
+            "bank_account",
+            "bank_account_detail",
+            "description",
+            "created_at",
         ]
 
 
 # ═══════════════════════════════════════════════════════════
-# بخش ۴ — درخواست‌ها
+# Section 4 — Requests
 # ═══════════════════════════════════════════════════════════
+
 
 class EmployeeRequestTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeRequestType
-        fields = ['id', 'title', 'needs_approval', 'description']
+        fields = ["id", "title", "needs_approval", "description"]
 
 
 class EmployeeRequestListSerializer(serializers.ModelSerializer):
-    request_type_detail = EmployeeRequestTypeSerializer(source='request_type', read_only=True)
-    employee_detail = EmployeeListSerializer(source='employee', read_only=True)
+    request_type_detail = EmployeeRequestTypeSerializer(
+        source="request_type", read_only=True
+    )
+    employee_detail = EmployeeListSerializer(source="employee", read_only=True)
 
     class Meta:
         model = EmployeeRequest
         fields = [
-            'id',
-            'employee',
-            'employee_detail',
-            'title',
-            'request_type',
-            'request_type_detail',
-            'status',
-            'created_at',
+            "id",
+            "employee",
+            "employee_detail",
+            "title",
+            "request_type",
+            "request_type_detail",
+            "status",
+            "created_at",
         ]
 
 
 class EmployeeRequestDetailSerializer(serializers.ModelSerializer):
-    request_type_detail = EmployeeRequestTypeSerializer(source='request_type', read_only=True)
-    employee_detail = EmployeeListSerializer(source='employee', read_only=True)
+    request_type_detail = EmployeeRequestTypeSerializer(
+        source="request_type", read_only=True
+    )
+    employee_detail = EmployeeListSerializer(source="employee", read_only=True)
 
     class Meta:
         model = EmployeeRequest
         fields = [
-            'id',
-            'employee',
-            'employee_detail',
-            'title',
-            'request_type',
-            'request_type_detail',
-            'description',
-            'status',
-            'created_at',
-            'updated_at',
+            "id",
+            "employee",
+            "employee_detail",
+            "title",
+            "request_type",
+            "request_type_detail",
+            "description",
+            "status",
+            "created_at",
+            "updated_at",
         ]
 
 
 class EmployeeRequestCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeRequest
-        fields = ['employee', 'title', 'request_type', 'description']
+        fields = ["employee", "title", "request_type", "description"]
 
 
 class EmployeeRequestStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeRequest
-        fields = ['status']
+        fields = ["status"]
 
 
 # ═══════════════════════════════════════════════════════════
-# بخش ۵ — حضور و غیاب
+# Section 5 — Attendance
 # ═══════════════════════════════════════════════════════════
+
 
 class EmployeeArrivalSerializer(serializers.ModelSerializer):
-    employee_detail = EmployeeListSerializer(source='employee', read_only=True)
+    employee_detail = EmployeeListSerializer(source="employee", read_only=True)
     duration_minutes = serializers.SerializerMethodField()
 
     def get_duration_minutes(self, obj):
@@ -458,40 +498,42 @@ class EmployeeArrivalSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeArrival
         fields = [
-            'id',
-            'employee',
-            'employee_detail',
-            'check_in',
-            'check_out',
-            'duration_minutes',
-            'created_at',
+            "id",
+            "employee",
+            "employee_detail",
+            "check_in",
+            "check_out",
+            "duration_minutes",
+            "created_at",
         ]
 
 
 class EmployeeArrivalCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = EmployeeArrival
-        fields = ['employee', 'check_in', 'check_out']
+        fields = ["employee", "check_in", "check_out"]
 
 
 # ═══════════════════════════════════════════════════════════
-# سازگاری با سایر اپ‌ها — task_manager به این وابسته است
+# Compatibility with other apps — task_manager depends on this
 # ═══════════════════════════════════════════════════════════
+
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    """نمایش خلاصه کارمند — به‌صورت nested در task_manager استفاده می‌شود (read-only)."""
+    """Employee summary — used nested in task_manager (read-only)."""
+
     full_name = serializers.SerializerMethodField()
 
     def get_full_name(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
+        return f"{obj.first_name} {obj.last_name}"
 
     class Meta:
         model = Employee
         fields = [
-            'id',
-            'full_name',
-            'first_name',
-            'last_name',
-            'employee_id',
-            'profile_picture',
+            "id",
+            "full_name",
+            "first_name",
+            "last_name",
+            "employee_id",
+            "profile_picture",
         ]
