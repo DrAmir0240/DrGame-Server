@@ -269,6 +269,13 @@ class SonyAccountOrder(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
 
+    @property
+    def end_date(self):
+        if self.category and self.category.rent_time_days:
+            from datetime import timedelta
+            return self.created_at + timedelta(days=self.category.rent_time_days)
+        return None
+
     def __str__(self):
         return f"Sony account order #{self.id} - {self.customer}"
 
